@@ -1,0 +1,12 @@
+#!/bin/sh -l
+# FILENAME:  run_py.sub
+#PBS -q marisol
+#PBS -l nodes=2:ppn=20
+#PBS -l walltime=120:00:00
+
+cd $PBS_O_WORKDIR
+module load moose
+
+~/stork-opt -i crysp.i
+
+pwd

@@ -304,6 +304,7 @@ protected:
   MaterialProperty<RankTwoTensor> & _lag_e_old;
   MaterialProperty<std::vector<Real> > & _gss;
   MaterialProperty<std::vector<Real> > & _gss_old;
+  MaterialProperty<std::vector<Real> > & _slip_incr_out;
   MaterialProperty<Real> & _acc_slip;
   MaterialProperty<Real> & _acc_slip_old;
   MaterialProperty<RankTwoTensor> & _update_rot;

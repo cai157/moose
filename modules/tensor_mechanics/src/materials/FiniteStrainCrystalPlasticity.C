@@ -87,6 +87,7 @@ FiniteStrainCrystalPlasticity::FiniteStrainCrystalPlasticity(const InputParamete
     _lag_e_old(declarePropertyOld<RankTwoTensor>("lage")), // Lagrangian strain of previous increment
     _gss(declareProperty<std::vector<Real> >("gss")), // Slip system resistances
     _gss_old(declarePropertyOld<std::vector<Real> >("gss")), // Slip system resistances of previous increment
+    _slip_incr_out(declareProperty<std::vector<Real> >("slip_incr_out")),
     _acc_slip(declareProperty<Real>("acc_slip")), // Accumulated slip
     _acc_slip_old(declarePropertyOld<Real>("acc_slip")), // Accumulated alip of previous increment
     _update_rot(declareProperty<RankTwoTensor>("update_rot")), // Rotation tensor considering material rotation and crystal orientation
@@ -747,9 +748,14 @@ FiniteStrainCrystalPlasticity::updateGss()
 
   Real a = _hprops[4]; // Kalidindi
 
+  _slip_incr_out[_qp].resize(_nss);
+
   _accslip_tmp = _accslip_tmp_old;
   for (unsigned int i=0; i < _nss; ++i)
     _accslip_tmp += std::abs(_slip_incr(i));
+
+  for (unsigned int i=0; i < _nss; ++i)
+    _slip_incr_out[_qp][i] = _slip_incr(i);
 
   // Real val = std::cosh(_h0 * _accslip_tmp / (_tau_sat - _tau_init)); // Karthik
   // val = _h0 * std::pow(1.0/val,2.0); // Kalidindi
