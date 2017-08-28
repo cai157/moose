@@ -22,6 +22,7 @@ InputParameters validParams<PolycrystalKernelAction>()
   params.addParam<bool>("implicit", true, "Whether kernels are implicit or not");
   params.addParam<VariableName>("T", "Name of temperature variable");
   params.addParam<bool>("use_displaced_mesh", false, "Whether to use displaced mesh in the kernels");
+
   return params;
 }
 

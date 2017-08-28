@@ -126,6 +126,7 @@
 #include "BarrierFunctionMaterial.h"
 #include "CompositeMobilityTensor.h"
 #include "ComputePolycrystalElasticityTensor.h"
+#include "ComputePolycrystalElasticityTensorCP.h"
 #include "ConstantAnisotropicMobility.h"
 #include "CrossTermBarrierFunctionMaterial.h"
 #include "DeformedGrainMaterial.h"
@@ -398,6 +399,7 @@ PhaseFieldApp::registerObjects(Factory & factory)
   registerMaterial(BarrierFunctionMaterial);
   registerMaterial(CompositeMobilityTensor);
   registerMaterial(ComputePolycrystalElasticityTensor);
+  registerMaterial(ComputePolycrystalElasticityTensorCP);
   registerMaterial(ConstantAnisotropicMobility);
   registerMaterial(CrossTermBarrierFunctionMaterial);
   registerMaterial(DeformedGrainMaterial);
