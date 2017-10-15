@@ -280,8 +280,12 @@ GrainTracker::finalize()
   if (_first_time)
     assignGrains();
   else
+  {
+    _console << "before trackgrains in else Finished inside of trackGrains" << std::endl;
     trackGrains();
+  }
   Moose::perf_log.pop("trackGrains()", "GrainTracker");
+  _console << "before finished inside Finished inside of trackGrains" << std::endl;
   _console << "Finished inside of trackGrains" << std::endl;
 
   /**
@@ -535,7 +539,8 @@ GrainTracker::trackGrains()
     // Print out stats on overall tracking changes per var_index
     for (auto map_num = decltype(_maps_size)(0); map_num < _maps_size; ++map_num)
     {
-      _console << "\nGrains active index " << map_num << ": " << map_sizes[map_num]
+      _console << "before active index in trackgrains Finished inside of trackGrains" << std::endl;
+        _console << "\nGrains active index " << map_num << ": " << map_sizes[map_num]
                << " -> " << _feature_counts_per_map[map_num];
       if (map_sizes[map_num] > _feature_counts_per_map[map_num])
         _console << "--";

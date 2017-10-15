@@ -8,11 +8,10 @@
 #ifndef COMPUTEPOLYCRYSTALELASTICITYTENSORCP_H
 #define COMPUTEPOLYCRYSTALELASTICITYTENSORCP_H
 
-#include "ComputeElasticityTensor.h"
+#include "ComputeElasticityTensorBase.h"
 #include "GrainDataTracker.h"
 #include "RankTwoTensor.h"
-#include "ElementPropertyReadFile.h"
-#include "RotationTensor.h"
+
 
 //Forward Declarations
 class ComputePolycrystalElasticityTensorCP;
@@ -21,20 +20,19 @@ class EulerAngleProvider;
 /**
  * Compute an evolving elasticity tensor coupled to a grain growth phase field model.
  */
-class ComputePolycrystalElasticityTensorCP : public ComputeElasticityTensor
+class ComputePolycrystalElasticityTensorCP : public ComputeElasticityTensorBase
 {
 public:
   ComputePolycrystalElasticityTensorCP(const InputParameters & parameters);
 
 protected:
   virtual void computeQpElasticityTensor();
-  virtual void assignEulerAngles();
-
   Real _length_scale;
   Real _pressure_scale;
 
   /// Grain tracker object
   const GrainDataTracker<RankFourTensor> & _grain_tracker;
+  const GrainDataTracker<RankTwoTensor> & _grain_tracker_crysrot;
 
   /// Number of order parameters
   unsigned int _op_num;
@@ -45,11 +43,11 @@ protected:
   /// vector of elasticity tensor material properties
   std::vector< MaterialProperty<RankFourTensor> *> _D_elastic_tensor;
   MaterialProperty<RankTwoTensor> & _crysrot;
-  const ElementPropertyReadFile * _read_prop_user_object;
+//  const ElementPropertyReadFile * _read_prop_user_object;
     
-  MaterialProperty<RealVectorValue> & _Euler_angles_mat_prop;
+ // MaterialProperty<RealVectorValue> & _Euler_angles_mat_prop;
 
-  RotationTensor _R;
+ // RotationTensor _R;
   /// Conversion factor from J to eV
   const Real _JtoeV;
 };

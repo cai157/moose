@@ -28,9 +28,9 @@ protected:
   virtual T newGrain(unsigned int new_grain_id) = 0;
 
   virtual void newGrainCreated(unsigned int new_grain_id);
-
   /// per grain data
   std::vector<T> _grain_data;
+
 };
 
 
@@ -48,14 +48,16 @@ GrainDataTracker<T>::getData(unsigned int grain_id) const
   return _grain_data[grain_id];
 }
 
+
+
 template <typename T>
 void
 GrainDataTracker<T>::newGrainCreated(unsigned int new_grain_id)
 {
-  if (_grain_data.size() <= new_grain_id)
-    _grain_data.resize(new_grain_id + 1);
-
-  _grain_data[new_grain_id] = newGrain(new_grain_id);
+    if (_grain_data.size() <= new_grain_id)
+        _grain_data.resize(new_grain_id + 1);
+    
+    _grain_data[new_grain_id] = newGrain(new_grain_id);
 }
 
 #endif // GRAINDATATRACKER_H
