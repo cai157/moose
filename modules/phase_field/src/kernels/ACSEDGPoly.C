@@ -1,26 +1,32 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "ACSEDGPoly.h"
 #include "Material.h"
 #include "GrainTrackerInterface.h"
 
-template<>
-InputParameters validParams<ACSEDGPoly>()
+template <>
+InputParameters
+validParams<ACSEDGPoly>()
 {
   InputParameters params = ACBulk<Real>::validParams();
   params.addClassDescription("Stored Energy contribution to grain growth");
   params.addRequiredCoupledVar("v", "Array of coupled variable names");
-  params.addRequiredParam<unsigned int>("deformed_grain_num", "Number of OP representing deformed grains");
-  params.addRequiredParam<UserObjectName>("grain_tracker", "The GrainTracker UserObject to get values from.");
+  params.addRequiredParam<unsigned int>("deformed_grain_num",
+                                        "Number of OP representing deformed grains");
+  params.addRequiredParam<UserObjectName>("grain_tracker",
+                                          "The GrainTracker UserObject to get values from.");
   return params;
 }
 
-ACSEDGPoly::ACSEDGPoly(const InputParameters & parameters) :
-    ACBulk<Real>(parameters),
+ACSEDGPoly::ACSEDGPoly(const InputParameters & parameters)
+  : ACBulk<Real>(parameters),
     _op_num(coupledComponents("v")),
     _vals(_op_num),
     _vals_var(_op_num),
@@ -59,15 +65,18 @@ ACSEDGPoly::computeDFDOP(PFFunctionType type)
   // Calculate the contributions of the deformation energy to the residual and Jacobian
   Real drho_eff_detai = 2.0 * _u[_qp] * (rho_i - _rho_eff[_qp]) / SumEtai2;
 
-  // Calculate the Stored Energy contribution to either the residual or Jacobian of the grain growth free energy
+  // Calculate the Stored Energy contribution to either the residual or Jacobian of the grain growth
+  // free energy
   switch (type)
   {
     case Residual:
-      return   _beta[_qp] * drho_eff_detai;
+      return _beta[_qp] * drho_eff_detai;
 
     case Jacobian:
-      return   _beta[_qp] * _phi[_j][_qp] * (2.0 * SumEtai2 * ((rho_i - _rho_eff[_qp]) - _u[_qp] * drho_eff_detai)
-              - 4.0 * _u[_qp] * _u[_qp] * (rho_i - _rho_eff[_qp])) / (SumEtai2 * SumEtai2);
+      return _beta[_qp] * _phi[_j][_qp] *
+             (2.0 * SumEtai2 * ((rho_i - _rho_eff[_qp]) - _u[_qp] * drho_eff_detai) -
+              4.0 * _u[_qp] * _u[_qp] * (rho_i - _rho_eff[_qp])) /
+             (SumEtai2 * SumEtai2);
   }
   mooseError("Invalid type passed in");
 }

@@ -1,32 +1,48 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "PorousFlow1PhaseP.h"
+#include "PorousFlowCapillaryPressure.h"
 
-template<>
-InputParameters validParams<PorousFlow1PhaseP>()
+template <>
+InputParameters
+validParams<PorousFlow1PhaseP>()
 {
   InputParameters params = validParams<PorousFlowVariableBase>();
-
-  params.addRequiredCoupledVar("porepressure", "Variable that represents the porepressure of the single phase");
-  params.addClassDescription("This Material is used for the fully saturated single-phase situation where porepressure is the primary variable");
+  params.addRequiredCoupledVar("porepressure",
+                               "Variable that represents the porepressure of the single phase");
+  params.addParam<UserObjectName>("capillary_pressure",
+                                  "Name of the UserObject defining the capillary pressure");
+  params.addClassDescription("This Material is used for the fully saturated single-phase situation "
+                             "where porepressure is the primary variable");
   return params;
 }
 
-PorousFlow1PhaseP::PorousFlow1PhaseP(const InputParameters & parameters) :
-    PorousFlowVariableBase(parameters),
+PorousFlow1PhaseP::PorousFlow1PhaseP(const InputParameters & parameters)
+  : PorousFlowVariableBase(parameters),
 
-    _porepressure_var(_nodal_material ? coupledNodalValue("porepressure") : coupledValue("porepressure")),
+    _porepressure_var(_nodal_material ? coupledNodalValue("porepressure")
+                                      : coupledValue("porepressure")),
     _gradp_qp_var(coupledGradient("porepressure")),
     _porepressure_varnum(coupled("porepressure")),
-    _p_var_num(_dictator.isPorousFlowVariable(_porepressure_varnum) ? _dictator.porousFlowVariableNum(_porepressure_varnum) : 0)
+    _p_var_num(_dictator.isPorousFlowVariable(_porepressure_varnum)
+                   ? _dictator.porousFlowVariableNum(_porepressure_varnum)
+                   : 0),
+    _pc_uo(parameters.isParamSetByUser("capillary_pressure")
+               ? &getUserObject<PorousFlowCapillaryPressure>("capillary_pressure")
+               : nullptr)
 {
   if (_num_phases != 1)
-    mooseError("The Dictator proclaims that the number of phases is " << _dictator.numPhases() << " whereas PorousFlow1PhaseP can only be used for 1-phase simulations.  Be aware that the Dictator has noted your mistake.");
+    mooseError("The Dictator proclaims that the number of phases is ",
+               _dictator.numPhases(),
+               " whereas PorousFlow1PhaseP can only be used for 1-phase simulations.  Be aware "
+               "that the Dictator has noted your mistake.");
 }
 
 void
@@ -48,7 +64,7 @@ PorousFlow1PhaseP::computeQpProperties()
   if (!_nodal_material)
   {
     (*_gradp_qp)[_qp][0] = _gradp_qp_var[_qp];
-    (*_grads_qp)[_qp][0] =  dseff * _gradp_qp_var[_qp];
+    (*_grads_qp)[_qp][0] = dseff * _gradp_qp_var[_qp];
   }
 
   // _porepressure is only dependent on _porepressure, and its derivative is 1
@@ -61,7 +77,8 @@ PorousFlow1PhaseP::computeQpProperties()
     {
       (*_dgradp_qp_dgradv)[_qp][0][_p_var_num] = 1.0;
       (*_dgrads_qp_dgradv)[_qp][0][_p_var_num] = dseff;
-      (*_dgrads_qp_dv)[_qp][0][_p_var_num] = d2EffectiveSaturation_dP2(_porepressure_var[_qp]) * _gradp_qp_var[_qp];
+      (*_dgrads_qp_dv)[_qp][0][_p_var_num] =
+          d2EffectiveSaturation_dP2(_porepressure_var[_qp]) * _gradp_qp_var[_qp];
     }
   }
 }
@@ -74,19 +91,19 @@ PorousFlow1PhaseP::buildQpPPSS()
 }
 
 Real
-PorousFlow1PhaseP::effectiveSaturation(Real /* pressure */) const
+PorousFlow1PhaseP::effectiveSaturation(Real pc) const
 {
-  return 1.0;
+  return _pc_uo->effectiveSaturation(pc);
 }
 
 Real
-PorousFlow1PhaseP::dEffectiveSaturation_dP(Real /* pressure */) const
+PorousFlow1PhaseP::dEffectiveSaturation_dP(Real pc) const
 {
-  return 0.0;
+  return _pc_uo->dEffectiveSaturation(pc);
 }
 
 Real
-PorousFlow1PhaseP::d2EffectiveSaturation_dP2(Real /* pressure */) const
+PorousFlow1PhaseP::d2EffectiveSaturation_dP2(Real pc) const
 {
-  return 0.0;
+  return _pc_uo->d2EffectiveSaturation(pc);
 }

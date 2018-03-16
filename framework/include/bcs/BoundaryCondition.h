@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef BOUNDARYCONDITION_H
 #define BOUNDARYCONDITION_H
@@ -20,17 +15,21 @@
 #include "SetupInterface.h"
 #include "ParallelUniqueId.h"
 #include "FunctionInterface.h"
+#include "DistributionInterface.h"
 #include "UserObjectInterface.h"
 #include "TransientInterface.h"
 #include "PostprocessorInterface.h"
+#include "VectorPostprocessorInterface.h"
 #include "GeometricSearchInterface.h"
 #include "BoundaryRestrictableRequired.h"
 #include "Restartable.h"
-#include "ZeroInterface.h"
 #include "MeshChangedInterface.h"
 
 // Forward declerations
-class MooseVariable;
+template <typename>
+class MooseVariableField;
+typedef MooseVariableField<Real> MooseVariable;
+typedef MooseVariableField<VectorValue<Real>> VectorMooseVariable;
 class MooseMesh;
 class Problem;
 class SubProblem;
@@ -38,27 +37,26 @@ class SystemBase;
 class BoundaryCondition;
 class Assembly;
 
-template<>
+template <>
 InputParameters validParams<BoundaryCondition>();
 
 /**
  * Base class for creating new types of boundary conditions.
  */
-class BoundaryCondition :
-  public MooseObject,
-  public BoundaryRestrictableRequired,
-  public SetupInterface,
-  public FunctionInterface,
-  public UserObjectInterface,
-  public TransientInterface,
-  public PostprocessorInterface,
-  public GeometricSearchInterface,
-  public Restartable,
-  public ZeroInterface,
-  public MeshChangedInterface
+class BoundaryCondition : public MooseObject,
+                          public BoundaryRestrictableRequired,
+                          public SetupInterface,
+                          public FunctionInterface,
+                          public DistributionInterface,
+                          public UserObjectInterface,
+                          public TransientInterface,
+                          public PostprocessorInterface,
+                          public VectorPostprocessorInterface,
+                          public GeometricSearchInterface,
+                          public Restartable,
+                          public MeshChangedInterface
 {
 public:
-
   /**
    * Class constructor.
    * @param parameters The InputParameters for the object
@@ -67,10 +65,10 @@ public:
   BoundaryCondition(const InputParameters & parameters, bool nodal);
 
   /**
-   * Gets the variable this BC is active on
-   * @return the variable
+   * Get a reference to the MooseVariableFE
+   * @return Reference to MooseVariableFE
    */
-  MooseVariable & variable();
+  virtual MooseVariableFE & variable() = 0;
 
   /**
    * Get a reference to the subproblem
@@ -81,16 +79,17 @@ public:
   /**
    * Hook for turning the boundary condition on and off.
    *
-   * It is not safe to use variable values in this function, since (a) this is not called inside a quadrature loop,
+   * It is not safe to use variable values in this function, since (a) this is not called inside a
+   * quadrature loop,
    * (b) reinit() is not called, thus the variables values are not computed.
-   * NOTE: In NodalBC-derived classes, we can use the variable values, since renitNodeFace() was called before calling
+   * NOTE: In NodalBC-derived classes, we can use the variable values, since renitNodeFace() was
+   * called before calling
    * this method. However, one has to index into the values manually, i.e. not using _qp.
    * @return true if the boundary condition should be applied, otherwise false
    */
   virtual bool shouldApply();
 
 protected:
-
   /// Reference to SubProblem
   SubProblem & _subproblem;
 
@@ -105,9 +104,6 @@ protected:
 
   /// Reference to assembly
   Assembly & _assembly;
-
-  /// variable this BC works on
-  MooseVariable & _var;
 
   /// Mesh this BC is defined on
   MooseMesh & _mesh;

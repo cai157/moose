@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "ContactPressureAux.h"
 
 #include "NodalArea.h"
@@ -11,28 +14,28 @@
 
 #include "libmesh/string_to_enum.h"
 
-template<>
-InputParameters validParams<ContactPressureAux>()
+template <>
+InputParameters
+validParams<ContactPressureAux>()
 {
   InputParameters params = validParams<AuxKernel>();
   params.addRequiredCoupledVar("nodal_area", "The nodal area");
   params.addRequiredParam<BoundaryName>("paired_boundary", "The boundary to be penetrated");
-  params.set<MultiMooseEnum>("execute_on") = "nonlinear";
+  params.set<ExecFlagEnum>("execute_on") = EXEC_NONLINEAR;
   return params;
 }
 
-ContactPressureAux::ContactPressureAux(const InputParameters & params) :
-    AuxKernel(params),
+ContactPressureAux::ContactPressureAux(const InputParameters & params)
+  : AuxKernel(params),
     _nodal_area(coupledValue("nodal_area")),
-    _penetration_locator(getPenetrationLocator(getParam<BoundaryName>("paired_boundary"),
-                         getParam<std::vector<BoundaryName> >("boundary")[0],
-                         Utility::string_to_enum<Order>(getParam<MooseEnum>("order"))))
+    _penetration_locator(
+        getPenetrationLocator(getParam<BoundaryName>("paired_boundary"),
+                              getParam<std::vector<BoundaryName>>("boundary")[0],
+                              Utility::string_to_enum<Order>(getParam<MooseEnum>("order"))))
 {
 }
 
-ContactPressureAux::~ContactPressureAux()
-{
-}
+ContactPressureAux::~ContactPressureAux() {}
 
 Real
 ContactPressureAux::computeValue()

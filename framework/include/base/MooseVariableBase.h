@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOOSEVARIABLEBASE_H
 #define MOOSEVARIABLEBASE_H
@@ -18,7 +13,6 @@
 #include "MooseTypes.h"
 #include "MooseArray.h"
 
-// libMesh includes
 #include "libmesh/tensor_value.h"
 #include "libmesh/vector_value.h"
 #include "libmesh/fe_type.h"
@@ -30,19 +24,6 @@ class DofMap;
 class Variable;
 }
 
-typedef MooseArray<Real>               VariableValue;
-typedef MooseArray<RealGradient>       VariableGradient;
-typedef MooseArray<RealTensor>         VariableSecond;
-
-typedef MooseArray<std::vector<Real> >         VariableTestValue;
-typedef MooseArray<std::vector<RealGradient> > VariableTestGradient;
-typedef MooseArray<std::vector<RealTensor> >   VariableTestSecond;
-
-typedef MooseArray<std::vector<Real> >         VariablePhiValue;
-typedef MooseArray<std::vector<RealGradient> > VariablePhiGradient;
-typedef MooseArray<std::vector<RealTensor> >   VariablePhiSecond;
-
-class Assembly;
 class SubProblem;
 class SystemBase;
 class MooseMesh;
@@ -50,7 +31,10 @@ class MooseMesh;
 class MooseVariableBase
 {
 public:
-  MooseVariableBase(unsigned int var_num, const FEType & fe_type, SystemBase & sys, Assembly & assembly, Moose::VarKindType var_kind);
+  MooseVariableBase(unsigned int var_num,
+                    const FEType & fe_type,
+                    SystemBase & sys,
+                    Moose::VarKindType var_kind);
   virtual ~MooseVariableBase();
 
   /**
@@ -104,9 +88,11 @@ public:
   /**
    * The DofMap associated with the system this variable is in.
    */
-  const DofMap & dofMap() { return _dof_map; }
+  const DofMap & dofMap() const { return _dof_map; }
 
   std::vector<dof_id_type> & dofIndices() { return _dof_indices; }
+
+  const std::vector<dof_id_type> & dofIndices() const { return _dof_indices; }
 
   unsigned int numberOfDofs() { return _dof_indices.size(); }
 
@@ -132,8 +118,6 @@ protected:
   /// libMesh variable object for this variable
   const Variable & _variable;
 
-  /// Assembly data
-  Assembly & _assembly;
   /// DOF map
   const DofMap & _dof_map;
   /// DOF indices

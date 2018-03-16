@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef PETSCSUPPORT_H
 #define PETSCSUPPORT_H
@@ -21,16 +16,14 @@
 
 // MOOSE includes
 #include "MultiMooseEnum.h"
-#include "InputParameters.h"
 
-// libMesh includes
-#include "libmesh/petsc_nonlinear_solver.h"
 #include "libmesh/petsc_macro.h"
 
 // Forward declarations
 class FEProblemBase;
 class NonlinearSystemBase;
 class CommandLine;
+class InputParameters;
 
 namespace Moose
 {
@@ -43,9 +36,7 @@ namespace PetscSupport
 class PetscOptions
 {
 public:
-  PetscOptions() :
-      flags("", "", true)
-  {}
+  PetscOptions() : flags("", "", true) {}
 
   /// Keys for PETSc key-value pairs
   std::vector<std::string> inames;
@@ -82,7 +73,7 @@ void outputNorm(libMesh::Real old_norm, libMesh::Real norm, bool use_color = fal
 /**
  * Helper function for displaying the linear residual during PETSC solve
  */
-PetscErrorCode petscLinearMonitor(KSP /*ksp*/, PetscInt its, PetscReal rnorm, void *void_ptr);
+PetscErrorCode petscLinearMonitor(KSP /*ksp*/, PetscInt its, PetscReal rnorm, void * void_ptr);
 
 /**
  * Stores the PETSc options supplied from the InputParameters with MOOSE
@@ -112,9 +103,22 @@ MultiMooseEnum getCommonPetscKeys();
  */
 void setSinglePetscOption(const std::string & name, const std::string & value = "");
 
+void addPetscOptionsFromCommandline();
+
+/**
+ * This method takes an adjacency matrix, and a desired number of colors and applies
+ * a graph coloring algorithm to produce a coloring. The coloring is returned as a vector
+ * of unsigned integers indicating which color or group each vextex in the adjacency matrix
+ * belongs to.
+ */
+void colorAdjacencyMatrix(PetscScalar * adjacency_matrix,
+                          unsigned int size,
+                          unsigned int colors,
+                          std::vector<unsigned int> & vertex_colors,
+                          const char * coloring_algorithm);
 }
 }
 
-#endif //LIBMESH_HAVE_PETSC
+#endif // LIBMESH_HAVE_PETSC
 
-#endif //PETSCSUPPORT_H
+#endif // PETSCSUPPORT_H

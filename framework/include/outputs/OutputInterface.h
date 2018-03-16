@@ -1,28 +1,32 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef OUTPUTINTERFACE_H
 #define OUTPUTINTERFACE_H
 
 // MOOSE includes
-#include "InputParameters.h"
+#include "MooseTypes.h"
+
+// C++ includes
+#include <set>
+#include <string>
 
 // Forward declerations
+class InputParameters;
+class MooseApp;
 class OutputInterface;
 class OutputWarehouse;
 
-template<>
+template <typename T>
+InputParameters validParams();
+
+template <>
 InputParameters validParams<OutputInterface>();
 
 /**
@@ -34,11 +38,11 @@ InputParameters validParams<OutputInterface>();
 class OutputInterface
 {
 public:
-
   /**
    * Handles 'outputs' parameter for objects that desire control of variable outputs
    * @param parameters The parameters object holding data for the class to use.
-   * @param build_list If false the buildOutputHideVariableList must be called explicitly, this behavior
+   * @param build_list If false the buildOutputHideVariableList must be called explicitly, this
+   * behavior
    *                   is required for automatic output of material properties
    */
   OutputInterface(const InputParameters & parameters, bool build_list = true);
@@ -61,7 +65,6 @@ public:
   const std::set<OutputName> & getOutputs();
 
 private:
-
   /// Reference the the MooseApp; neede for access to the OutputWarehouse
   MooseApp & _oi_moose_app;
 

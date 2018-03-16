@@ -1,27 +1,31 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "StagnationPressureAux.h"
 #include "SinglePhaseFluidProperties.h"
 
-template<>
-InputParameters validParams<StagnationPressureAux>()
+template <>
+InputParameters
+validParams<StagnationPressureAux>()
 {
   InputParameters params = validParams<AuxKernel>();
   params.addRequiredCoupledVar("e", "Specific internal energy");
   params.addRequiredCoupledVar("v", "Specific volume");
   params.addRequiredCoupledVar("vel", "Velocity");
   params.addRequiredParam<UserObjectName>("fp", "The name of the user object for fluid properties");
-
+  params.addClassDescription(
+      "Computes stagnation pressure from specific volume, specific internal energy, and velocity");
   return params;
 }
 
-StagnationPressureAux::StagnationPressureAux(const InputParameters & parameters) :
-    AuxKernel(parameters),
+StagnationPressureAux::StagnationPressureAux(const InputParameters & parameters)
+  : AuxKernel(parameters),
     _specific_volume(coupledValue("v")),
     _specific_internal_energy(coupledValue("e")),
     _velocity(coupledValue("vel")),
@@ -36,10 +40,10 @@ StagnationPressureAux::computeValue()
   const Real v = _specific_volume[_qp];
   const Real e = _specific_internal_energy[_qp];
   const Real u = _velocity[_qp];
-  const Real p = _fp.pressure(v, e);
+  const Real p = _fp.p_from_v_e(v, e);
 
   // static entropy is equal to stagnation entropy by definition of the stagnation state
-  const Real s = _fp.s(v, e);
+  const Real s = _fp.s_from_v_e(v, e);
 
   // stagnation enthalpy
   const Real h0 = e + p * v + 0.5 * u * u;

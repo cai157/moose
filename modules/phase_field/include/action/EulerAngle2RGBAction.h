@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef EULERANGLE2RGBACTION_H
 #define EULERANGLE2RGBACTION_H
 
@@ -15,7 +18,7 @@
  * correct derivatives of the elastic free energy in a non-split Cahn-Hilliard
  * simulation are assembled.
  */
-class EulerAngle2RGBAction: public Action
+class EulerAngle2RGBAction : public Action
 {
 public:
   EulerAngle2RGBAction(const InputParameters & params);
@@ -26,7 +29,7 @@ private:
   const std::string _var_name_base;
 };
 
-template<>
+template <>
 InputParameters validParams<EulerAngle2RGBAction>();
 
-#endif //EULERANGLE2RGBACTION_H
+#endif // EULERANGLE2RGBACTION_H

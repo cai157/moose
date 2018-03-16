@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef INSMOMENTUMNOBCBCBASE_H
 #define INSMOMENTUMNOBCBCBASE_H
 
@@ -12,7 +15,7 @@
 // Forward Declarations
 class INSMomentumNoBCBCBase;
 
-template<>
+template <>
 InputParameters validParams<INSMomentumNoBCBCBase>();
 
 /**
@@ -30,7 +33,7 @@ class INSMomentumNoBCBCBase : public IntegratedBC
 public:
   INSMomentumNoBCBCBase(const InputParameters & parameters);
 
-  virtual ~INSMomentumNoBCBCBase(){}
+  virtual ~INSMomentumNoBCBCBase() {}
 
 protected:
   // Coupled variables
@@ -50,13 +53,12 @@ protected:
   unsigned _w_vel_var_number;
   unsigned _p_var_number;
 
-  Real _mu;
-  Real _rho;
   RealVectorValue _gravity;
-
   unsigned _component;
   bool _integrate_p_by_parts;
-};
 
+  const MaterialProperty<Real> & _mu;
+  const MaterialProperty<Real> & _rho;
+};
 
 #endif

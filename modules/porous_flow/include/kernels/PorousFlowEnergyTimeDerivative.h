@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWENERGYTIMEDERIVATIVE_H
 #define POROUSFLOWENERGYTIMEDERIVATIVE_H
@@ -14,7 +16,7 @@
 // Forward Declarations
 class PorousFlowEnergyTimeDerivative;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowEnergyTimeDerivative>();
 
 /**
@@ -53,10 +55,10 @@ protected:
   const MaterialProperty<Real> & _porosity_old;
 
   /// d(porosity)/d(porous-flow variable) - these derivatives will be wrt variables at the nodes
-  const MaterialProperty<std::vector<Real> > & _dporosity_dvar;
+  const MaterialProperty<std::vector<Real>> & _dporosity_dvar;
 
   /// d(porosity)/d(grad porous-flow variable) - remember these derivatives will be wrt grad(vars) at qps
-  const MaterialProperty<std::vector<RealGradient> > & _dporosity_dgradvar;
+  const MaterialProperty<std::vector<RealGradient>> & _dporosity_dgradvar;
 
   /// the nearest qp to the node
   const MaterialProperty<unsigned int> * const _nearest_qp;
@@ -68,41 +70,41 @@ protected:
   const MaterialProperty<Real> & _rock_energy_nodal_old;
 
   /// d(nodal rock energy density)/d(PorousFlow variable)
-  const MaterialProperty<std::vector<Real> > & _drock_energy_nodal_dvar;
+  const MaterialProperty<std::vector<Real>> & _drock_energy_nodal_dvar;
 
   /// nodal fluid density
-  const MaterialProperty<std::vector<Real> > * _fluid_density;
+  const MaterialProperty<std::vector<Real>> * const _fluid_density;
 
   /// old value of nodal fluid density
-  const MaterialProperty<std::vector<Real> > * _fluid_density_old;
+  const MaterialProperty<std::vector<Real>> * const _fluid_density_old;
 
   /// d(nodal fluid density)/d(porous-flow variable)
-  const MaterialProperty<std::vector<std::vector<Real> > > * _dfluid_density_dvar;
+  const MaterialProperty<std::vector<std::vector<Real>>> * const _dfluid_density_dvar;
 
   /// nodal fluid saturation
-  const MaterialProperty<std::vector<Real> > * _fluid_saturation_nodal;
+  const MaterialProperty<std::vector<Real>> * const _fluid_saturation_nodal;
 
   /// old value of fluid saturation
-  const MaterialProperty<std::vector<Real> > * _fluid_saturation_nodal_old;
+  const MaterialProperty<std::vector<Real>> * const _fluid_saturation_nodal_old;
 
   /// d(nodal fluid saturation)/d(porous-flow variable)
-  const MaterialProperty<std::vector<std::vector<Real> > > * _dfluid_saturation_nodal_dvar;
+  const MaterialProperty<std::vector<std::vector<Real>>> * const _dfluid_saturation_nodal_dvar;
 
   /// internal energy of the phases, evaluated at the nodes
-  const MaterialProperty<std::vector<Real> > * _energy_nodal;
+  const MaterialProperty<std::vector<Real>> * const _energy_nodal;
 
   /// old value of internal energy of the phases, evaluated at the nodes
-  const MaterialProperty<std::vector<Real> > * _energy_nodal_old;
+  const MaterialProperty<std::vector<Real>> * const _energy_nodal_old;
 
   /// d(internal energy)/d(PorousFlow variable)
-  const MaterialProperty<std::vector<std::vector<Real> > > * _denergy_nodal_dvar;
+  const MaterialProperty<std::vector<std::vector<Real>>> * const _denergy_nodal_dvar;
 
   /**
    * Derivative of residual with respect to PorousFlow variable number pvar
    * This is used by both computeQpJacobian and computeQpOffDiagJacobian
    * @param pvar take the derivative of the residual wrt this PorousFlow variable
    */
-  Real computeQpJac(unsigned int pvar);
+  Real computeQpJac(unsigned int pvar) const;
 };
 
-#endif //POROUSFLOWENERGYTIMEDERIVATIVE_H
+#endif // POROUSFLOWENERGYTIMEDERIVATIVE_H

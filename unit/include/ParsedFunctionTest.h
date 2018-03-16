@@ -1,55 +1,55 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef USERFUNCTIONTEST_H
 #define USERFUNCTIONTEST_H
 
-//CPPUnit includes
-#include "GuardedHelperMacros.h"
+#include "gtest_include.h"
 
-// Forward declarations
-class MooseMesh;
-class FEProblem;
-class Factory;
-class MooseApp;
+#include "InputParameters.h"
+#include "MooseParsedFunction.h"
+#include "FEProblem.h"
+#include "MooseUnitApp.h"
+#include "AppFactory.h"
+#include "GeneratedMesh.h"
+#include "MooseParsedFunctionWrapper.h"
 
-class ParsedFunctionTest : public CppUnit::TestFixture
+class ParsedFunctionTest : public ::testing::Test
 {
-
-  CPPUNIT_TEST_SUITE( ParsedFunctionTest );
-
-  CPPUNIT_TEST( basicConstructor );
-  CPPUNIT_TEST( advancedConstructor );
-  CPPUNIT_TEST( testVariables );
-  CPPUNIT_TEST( testConstants );
-
-  CPPUNIT_TEST_SUITE_END();
-
-public:
-  void basicConstructor();
-  void advancedConstructor();
-  void testVariables();
-  void testConstants();
-
-  void init();
-  void finalize();
-
 protected:
-  MooseApp * _app;
+  void SetUp()
+  {
+    const char * argv[2] = {"foo", "\0"};
+
+    _app = AppFactory::createAppShared("MooseUnitApp", 1, (char **)argv);
+    _factory = &_app->getFactory();
+
+    InputParameters mesh_params = _factory->getValidParams("GeneratedMesh");
+    mesh_params.set<MooseEnum>("dim") = "3";
+    mesh_params.set<std::string>("_object_name") = "mesh";
+    _mesh = libmesh_make_unique<GeneratedMesh>(mesh_params);
+
+    InputParameters problem_params = _factory->getValidParams("FEProblem");
+    problem_params.set<MooseMesh *>("mesh") = _mesh.get();
+    problem_params.set<std::string>("_object_name") = "FEProblem";
+    _fe_problem = libmesh_make_unique<FEProblem>(problem_params);
+  }
+
+  ParsedFunction<Real> * fptr(MooseParsedFunction & f)
+  {
+    return f._function_ptr->_function_ptr.get();
+  }
+
+  std::shared_ptr<MooseApp> _app;
+  std::unique_ptr<MooseMesh> _mesh;
+  std::unique_ptr<FEProblem> _fe_problem;
   Factory * _factory;
-  MooseMesh * _mesh;
-  FEProblem * _fe_problem;
 };
 
-#endif  // USERFUNCTIONTEST_H
+#endif // USERFUNCTIONTEST_H

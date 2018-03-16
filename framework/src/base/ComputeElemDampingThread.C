@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "ComputeElemDampingThread.h"
@@ -19,11 +14,10 @@
 #include "Problem.h"
 #include "ElementDamper.h"
 
-// libMesh includes
 #include "libmesh/threads.h"
 
-ComputeElemDampingThread::ComputeElemDampingThread(FEProblemBase & feproblem) :
-    ThreadedElementLoop<ConstElemRange>(feproblem),
+ComputeElemDampingThread::ComputeElemDampingThread(FEProblemBase & feproblem)
+  : ThreadedElementLoop<ConstElemRange>(feproblem),
     _damping(1.0),
     _nl(feproblem.getNonlinearSystemBase()),
     _element_dampers(_nl.getElementDamperWarehouse())
@@ -31,36 +25,38 @@ ComputeElemDampingThread::ComputeElemDampingThread(FEProblemBase & feproblem) :
 }
 
 // Splitting Constructor
-ComputeElemDampingThread::ComputeElemDampingThread(ComputeElemDampingThread & x, Threads::split split) :
-    ThreadedElementLoop<ConstElemRange>(x, split),
+ComputeElemDampingThread::ComputeElemDampingThread(ComputeElemDampingThread & x,
+                                                   Threads::split split)
+  : ThreadedElementLoop<ConstElemRange>(x, split),
     _damping(1.0),
     _nl(x._nl),
     _element_dampers(x._element_dampers)
 {
 }
 
-ComputeElemDampingThread::~ComputeElemDampingThread()
-{
-}
+ComputeElemDampingThread::~ComputeElemDampingThread() {}
 
 void
-ComputeElemDampingThread::onElement(const Elem *elem)
+ComputeElemDampingThread::onElement(const Elem * elem)
 {
   _fe_problem.prepare(elem, _tid);
   _fe_problem.reinitElem(elem, _tid);
 
   std::set<MooseVariable *> damped_vars;
 
-  const std::vector<MooseSharedPointer<ElementDamper> > & edampers = _nl.getElementDamperWarehouse().getActiveObjects(_tid);
+  const std::vector<std::shared_ptr<ElementDamper>> & edampers =
+      _nl.getElementDamperWarehouse().getActiveObjects(_tid);
   for (const auto & damper : edampers)
     damped_vars.insert(damper->getVariable());
 
   _nl.reinitIncrementAtQpsForDampers(_tid, damped_vars);
 
-  const std::vector<MooseSharedPointer<ElementDamper> > & objects = _element_dampers.getActiveObjects(_tid);
+  const std::vector<std::shared_ptr<ElementDamper>> & objects =
+      _element_dampers.getActiveObjects(_tid);
   for (const auto & obj : objects)
   {
     Real cur_damping = obj->computeDamping();
+    obj->checkMinDamping(cur_damping);
     if (cur_damping < _damping)
       _damping = cur_damping;
   }

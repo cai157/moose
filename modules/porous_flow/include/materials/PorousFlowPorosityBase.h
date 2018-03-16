@@ -1,19 +1,21 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWPOROSITYBASE_H
 #define POROUSFLOWPOROSITYBASE_H
 
 #include "PorousFlowMaterialVectorBase.h"
 
-//Forward Declarations
+// Forward Declarations
 class PorousFlowPorosityBase;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowPorosityBase>();
 
 /**
@@ -25,20 +27,14 @@ public:
   PorousFlowPorosityBase(const InputParameters & parameters);
 
 protected:
-  /// When calculating nodal porosity, use the strain at the nearest quadpoint to the node
-  const bool _strain_at_nearest_qp;
-
   /// computed porosity at the nodes or quadpoints
   MaterialProperty<Real> & _porosity;
 
-  /// old value of porosity
-  MaterialProperty<Real> & _porosity_old;
-
   /// d(porosity)/d(PorousFlow variable)
-  MaterialProperty<std::vector<Real> > & _dporosity_dvar;
+  MaterialProperty<std::vector<Real>> & _dporosity_dvar;
 
   /// d(porosity)/d(grad PorousFlow variable)
-  MaterialProperty<std::vector<RealGradient> > & _dporosity_dgradvar;
+  MaterialProperty<std::vector<RealGradient>> & _dporosity_dgradvar;
 };
 
-#endif //POROUSFLOWPOROSITYBASE_H
+#endif // POROUSFLOWPOROSITYBASE_H

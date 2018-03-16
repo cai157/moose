@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef SOLUTIONTIMEADAPTIVEDT_H
 #define SOLUTIONTIMEADAPTIVEDT_H
@@ -21,7 +16,7 @@
 
 class SolutionTimeAdaptiveDT;
 
-template<>
+template <>
 InputParameters validParams<SolutionTimeAdaptiveDT>();
 
 /**
@@ -45,19 +40,19 @@ protected:
    * Multiplier specifying the direction the timestep is currently going.
    * Positive for up.  Negative for down.
    */
-  int _direction;
+  short _direction;
 
   /// Percentage to change the timestep by either way.
   Real _percent_change;
 
-  timeval _solve_start, _solve_end;
-
+  /// Ratios to control whether to increase or decrease the current timestep
   Real _older_sol_time_vs_dt, _old_sol_time_vs_dt, _sol_time_vs_dt;
 
+  /// Boolean to control whether a separate adapt log is written to a file
   bool _adapt_log;
 
+  /// The filehandle to hold the log
   std::ofstream _adaptive_log;
-
 };
 
 #endif /* SOLUTIONTIMEADAPTIVEDT_H */

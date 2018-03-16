@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef ELASTICENERGYMATERIAL_H
 #define ELASTICENERGYMATERIAL_H
 
@@ -14,8 +17,8 @@ class ElasticEnergyMaterial;
 class RankTwoTensor;
 class RankFourTensor;
 
-template<>
-InputParameters validParams<DerivativeFunctionMaterialBase>();
+template <>
+InputParameters validParams<ElasticEnergyMaterial>();
 
 /**
  * Material class to compute the elastic free energy and its derivatives
@@ -25,10 +28,12 @@ class ElasticEnergyMaterial : public DerivativeFunctionMaterialBase
 public:
   ElasticEnergyMaterial(const InputParameters & parameters);
 
+  virtual void initialSetup() override;
+
 protected:
-  virtual Real computeF();
-  virtual Real computeDF(unsigned int i_var);
-  virtual Real computeD2F(unsigned int i_var, unsigned int j_var);
+  virtual Real computeF() override;
+  virtual Real computeDF(unsigned int i_var) override;
+  virtual Real computeD2F(unsigned int i_var, unsigned int j_var) override;
 
   std::string _base_name;
 
@@ -40,14 +45,14 @@ protected:
   ///@{ Elasticity tensor derivatives
   const MaterialProperty<RankFourTensor> & _elasticity_tensor;
   std::vector<const MaterialProperty<RankFourTensor> *> _delasticity_tensor;
-  std::vector<std::vector<const MaterialProperty<RankFourTensor> *> > _d2elasticity_tensor;
+  std::vector<std::vector<const MaterialProperty<RankFourTensor> *>> _d2elasticity_tensor;
   ///@}
 
   ///@{ Strain and derivatives
   const MaterialProperty<RankTwoTensor> & _strain;
   std::vector<const MaterialProperty<RankTwoTensor> *> _dstrain;
-  std::vector<std::vector<const MaterialProperty<RankTwoTensor> *> > _d2strain;
+  std::vector<std::vector<const MaterialProperty<RankTwoTensor> *>> _d2strain;
   ///@}
 };
 
-#endif //ELASTICENERGYMATERIAL_H
+#endif // ELASTICENERGYMATERIAL_H

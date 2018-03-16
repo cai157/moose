@@ -1,47 +1,57 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "KKSMultiPhaseConcentration.h"
 
-template<>
-InputParameters validParams<KKSMultiPhaseConcentration>()
+template <>
+InputParameters
+validParams<KKSMultiPhaseConcentration>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addClassDescription("KKS multi-phase model kernel to enforce (c = h1*c1 + h2*c2 + h3*c3 +.. The non-linear variable of this kernel is cn, the final phase concenration in the list.");
-  params.addRequiredCoupledVar("cj", "Array of phase concentrations cj. Place in same order as hj_names!");
+  params.addClassDescription(
+      "KKS multi-phase model kernel to enforce $c = h_1c_1 + h_2c_2 + h_3c_3 + \\dots$"
+      ". The non-linear variable of this kernel is $c_n$, the final phase "
+      "concentration in the list.");
+  params.addRequiredCoupledVar(
+      "cj", "Array of phase concentrations cj. Place in same order as hj_names!");
   params.addRequiredCoupledVar("c", "Physical concentration");
   params.addCoupledVar("etas", "Order parameters for all phases");
-  params.addRequiredParam<std::vector<MaterialPropertyName> >("hj_names", "Switching Function Materials that provide h(eta_1, eta_2,...)");
+  params.addRequiredParam<std::vector<MaterialPropertyName>>(
+      "hj_names", "Switching Function Materials that provide $h(\\eta_1, \\eta_2,\\dots)$");
   return params;
 }
 
 // Phase interpolation func
-KKSMultiPhaseConcentration::KKSMultiPhaseConcentration(const InputParameters & parameters) :
-    DerivativeMaterialInterface<Kernel>(parameters),
+KKSMultiPhaseConcentration::KKSMultiPhaseConcentration(const InputParameters & parameters)
+  : DerivativeMaterialInterface<Kernel>(parameters),
     _num_j(coupledComponents("cj")),
     _cjs(_num_j),
     _cjs_var(_num_j),
     _k(-1),
     _c(coupledValue("c")),
     _c_var(coupled("c")),
-    _hj_names(getParam<std::vector<MaterialPropertyName> >("hj_names")),
+    _hj_names(getParam<std::vector<MaterialPropertyName>>("hj_names")),
     _prop_hj(_hj_names.size()),
     _eta_names(coupledComponents("etas")),
     _eta_vars(coupledComponents("etas")),
     _prop_dhjdetai(_num_j)
 {
-  //Check to make sure the the number of hj's is the same as the number of cj's
+  // Check to make sure the the number of hj's is the same as the number of cj's
   if (_num_j != _hj_names.size())
-    mooseError("Need to pass in as many hj_names as cjs in KKSMultiPhaseConcentration" << name());
-  //Check to make sure the the number of etas is the same as the number of cj's
+    paramError("hj_names", "Need to pass in as many hj_names as cjs");
+  // Check to make sure the the number of etas is the same as the number of cj's
   if (_num_j != _eta_names.size())
-    mooseError("Need to pass in as many etas as cjs in KKSMultiPhaseConcentration" << name());
+    paramError("etas", "Need to pass in as many etas as cjs");
 
   if (_num_j == 0)
-    mooseError("Need to supply at least 1 phase concentration cj in KKSMultiPhaseConcentration" << name());
+    mooseError("Need to supply at least 1 phase concentration cj in KKSMultiPhaseConcentration",
+               name());
 
   // get order parameter names and variable indices
   for (unsigned int i = 0; i < _num_j; ++i)
@@ -68,7 +78,8 @@ KKSMultiPhaseConcentration::KKSMultiPhaseConcentration(const InputParameters & p
 
   // Check to make sure the nonlinear variable is set to one of the cj's
   if (_k < 0)
-    mooseError("Need to set nonlinear variable to one of the cj's in KKSMultiPhaseConcentration" << name());
+    mooseError("Need to set nonlinear variable to one of the cj's in KKSMultiPhaseConcentration",
+               name());
 }
 
 Real

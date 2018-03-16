@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWMATERIAL_H
 #define POROUSFLOWMATERIAL_H
@@ -12,10 +14,10 @@
 #include "MaterialData.h"
 #include "PorousFlowDictator.h"
 
-//Forward Declarations
+// Forward Declarations
 class PorousFlowMaterial;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowMaterial>();
 
 class PorousFlowMaterial : public Material
@@ -54,4 +56,4 @@ protected:
   unsigned nearestQP(unsigned nodenum) const;
 };
 
-#endif //POROUSFLOWMATERIAL_H
+#endif // POROUSFLOWMATERIAL_H

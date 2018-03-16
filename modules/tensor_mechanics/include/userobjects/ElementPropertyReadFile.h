@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef ELEMENTPROPERTYREADFILE_H
 #define ELEMENTPROPERTYREADFILE_H
 
@@ -19,12 +22,12 @@
 
 class ElementPropertyReadFile;
 
-template<>
+template <>
 InputParameters validParams<ElementPropertyReadFile>();
 
 class ElementPropertyReadFile : public GeneralUserObject
 {
- public:
+public:
   ElementPropertyReadFile(const InputParameters & parameters);
   virtual ~ElementPropertyReadFile() {}
 
@@ -51,28 +54,26 @@ class ElementPropertyReadFile : public GeneralUserObject
   /**
    * This function assign property data to elements
    */
-  Real getData( const Elem * , unsigned int ) const;
+  Real getData(const Elem *, unsigned int) const;
 
   /**
    * This function assign properties to element read from file with element based properties
    */
-  Real getElementData( const Elem * , unsigned int) const;
+  Real getElementData(const Elem *, unsigned int) const;
 
   /**
    * This function assign properties to element read from file with grain  based properties
    * Grain distribution in the RVE can be Periodic or non-periodic (default)
    */
-  Real getGrainData( const Elem * , unsigned int ) const;
+  Real getGrainData(const Elem *, unsigned int) const;
 
   /**
    * This function calculates minimum distance between 2 points
    * considering periodicity of the simulation volume
    */
-  Real minPeriodicDistance( Point, Point) const;
+  Real minPeriodicDistance(Point, Point) const;
 
-
-
- protected:
+protected:
   ///Name of file containing property values
   std::string _prop_file_name;
   ///Store property values read from file
@@ -91,13 +92,12 @@ class ElementPropertyReadFile : public GeneralUserObject
   MooseMesh & _mesh;
   std::vector<Point> _center;
 
- private:
+private:
   unsigned int _nelem;
   Point _top_right;
   Point _bottom_left;
   Point _range;
   Real _max_range;
-
 };
 
 #endif

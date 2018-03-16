@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef CONSOLESTREAM_H
 #define CONSOLESTREAM_H
@@ -22,12 +17,11 @@
 // MOOSE includes
 class OutputWarehouse;
 
-
 // this is the type of s t d :: c o u t
-typedef std::basic_ostream<char, std::char_traits<char> > CoutType;
+typedef std::basic_ostream<char, std::char_traits<char>> CoutType;
 
 // this is the function signature of std::endl
-typedef CoutType& (*StandardEndLine)(CoutType&);
+typedef CoutType & (*StandardEndLine)(CoutType &);
 
 /**
  * A helper class for re-directing output streams to Console output objects form MooseObjects
@@ -35,7 +29,6 @@ typedef CoutType& (*StandardEndLine)(CoutType&);
 class ConsoleStream
 {
 public:
-
   /**
    * Constructor
    * @param output_warehouse A reference to the OutputWarehouse containing the Console outputs
@@ -53,7 +46,7 @@ public:
    * This allows any object to uses _console to write to the Console:
    *   _console << "The combination to the air lock is " << 12345 << std::endl;
    */
-  template<typename StreamType>
+  template <typename StreamType>
   const ConsoleStream & operator<<(const StreamType & s) const;
 
   /**
@@ -62,7 +55,6 @@ public:
   const ConsoleStream & operator<<(StandardEndLine manip) const;
 
 private:
-
   /// Reference to the OutputWarhouse that contains the Console output objects
   OutputWarehouse & _output_warehouse;
 
@@ -70,7 +62,7 @@ private:
   std::ostringstream & _oss;
 };
 
-template<typename StreamType>
+template <typename StreamType>
 const ConsoleStream &
 ConsoleStream::operator<<(const StreamType & s) const
 {

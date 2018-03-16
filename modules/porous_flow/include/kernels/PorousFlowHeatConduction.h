@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWHEATCONDUCTION_H
 #define POROUSFLOWHEATCONDUCTION_H
@@ -14,7 +16,7 @@
 // Forward Declarations
 class PorousFlowHeatConduction;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowHeatConduction>();
 
 /**
@@ -26,11 +28,9 @@ public:
   PorousFlowHeatConduction(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
-
-  virtual Real computeQpJacobian();
-
-  virtual Real computeQpOffDiagJacobian(unsigned int jvar);
+  virtual Real computeQpResidual() override;
+  virtual Real computeQpJacobian() override;
+  virtual Real computeQpOffDiagJacobian(unsigned int jvar) override;
 
   /// holds info on the PorousFlow variables
   const PorousFlowDictator & _dictator;
@@ -39,16 +39,16 @@ protected:
   const MaterialProperty<RealTensorValue> & _la;
 
   /// d(thermal conductivity at the quadpoints)/d(PorousFlow variable)
-  const MaterialProperty<std::vector<RealTensorValue> > & _dla_dvar;
+  const MaterialProperty<std::vector<RealTensorValue>> & _dla_dvar;
 
   /// grad(temperature)
   const MaterialProperty<RealGradient> & _grad_t;
 
   /// d(gradT)/d(PorousFlow variable)
-  const MaterialProperty<std::vector<RealGradient> > & _dgrad_t_dvar;
+  const MaterialProperty<std::vector<RealGradient>> & _dgrad_t_dvar;
 
   /// d(gradT)/d(grad PorousFlow variable)
-  const MaterialProperty<std::vector<Real> > & _dgrad_t_dgradvar;
+  const MaterialProperty<std::vector<Real>> & _dgrad_t_dgradvar;
 };
 
-#endif //POROUSFLOWHEATCONDUCTION_H
+#endif // POROUSFLOWHEATCONDUCTION_H

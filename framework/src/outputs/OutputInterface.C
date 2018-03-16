@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "OutputInterface.h"
@@ -19,33 +14,42 @@
 #include "ActionWarehouse.h"
 
 // Define input parameters
-template<>
-InputParameters validParams<OutputInterface>()
+template <>
+InputParameters
+validParams<OutputInterface>()
 {
   InputParameters params = emptyInputParameters();
-  params.addParam<std::vector<OutputName> >("outputs", "Vector of output names were you would like to restrict the output of variables(s) associated with this object");
+  params.addParam<std::vector<OutputName>>("outputs",
+                                           "Vector of output names were you would like "
+                                           "to restrict the output of variables(s) "
+                                           "associated with this object");
 
   params.addParamNamesToGroup("outputs", "Advanced");
+  std::set<std::string> reserved = {"all", "none"};
+  params.setReservedValues("outputs", reserved);
 
   return params;
 }
 
-
-OutputInterface::OutputInterface(const InputParameters & parameters, bool build_list) :
-    _oi_moose_app(*parameters.get<MooseApp *>("_moose_app")),
+OutputInterface::OutputInterface(const InputParameters & parameters, bool build_list)
+  : _oi_moose_app(*parameters.getCheckedPointerParam<MooseApp *>("_moose_app")),
     _oi_output_warehouse(_oi_moose_app.getOutputWarehouse()),
-    _oi_outputs(parameters.get<std::vector<OutputName> >("outputs").begin(),
-                parameters.get<std::vector<OutputName> >("outputs").end())
+    _oi_outputs(parameters.get<std::vector<OutputName>>("outputs").begin(),
+                parameters.get<std::vector<OutputName>>("outputs").end())
 {
 
   // By default it is assumed that the variable name associated with 'outputs' is the name
-  // of the block, this is the case for Markers, Indicators, VectorPostprocessors, and Postprocessors.
+  // of the block, this is the case for Markers, Indicators, VectorPostprocessors, and
+  // Postprocessors.
   // However, for Materials this is not the case, so the call to buildOutputHideVariableList must be
-  // disabled, the build_list allows for this behavior. The hide lists are handled by MaterialOutputAction
+  // disabled, the build_list allows for this behavior. The hide lists are handled by
+  // MaterialOutputAction
   // in this case.
   //
-  // Variables/AuxVariables also call the buildOutputHideVariableList method later, because when their actions
-  // are called the Output objects do not exist. This case is handled by the CheckOutputAction::checkVariableOutput.
+  // Variables/AuxVariables also call the buildOutputHideVariableList method later, because when
+  // their actions
+  // are called the Output objects do not exist. This case is handled by the
+  // CheckOutputAction::checkVariableOutput.
   if (build_list)
   {
     std::set<std::string> names_set;
@@ -65,7 +69,8 @@ OutputInterface::buildOutputHideVariableList(std::set<std::string> variable_name
     for (const auto & name : avail)
       _oi_output_warehouse.addInterfaceHideVariables(name, variable_names);
 
-  // Check for empty and 'all' in 'outputs' parameter; do not perform any variable restrictions in these cases
+  // Check for empty and 'all' in 'outputs' parameter; do not perform any variable restrictions in
+  // these cases
   else if (_oi_outputs.empty() || _oi_outputs.find("all") != _oi_outputs.end())
     return;
 
@@ -74,7 +79,11 @@ OutputInterface::buildOutputHideVariableList(std::set<std::string> variable_name
   {
     // Create a list of outputs where the variable should be hidden
     std::set<OutputName> hide;
-    std::set_difference(avail.begin(), avail.end(), _oi_outputs.begin(), _oi_outputs.end(), std::inserter(hide, hide.begin()));
+    std::set_difference(avail.begin(),
+                        avail.end(),
+                        _oi_outputs.begin(),
+                        _oi_outputs.end(),
+                        std::inserter(hide, hide.begin()));
 
     // If 'outputs' is specified add the object name to the list of items to hide
     for (const auto & name : hide)

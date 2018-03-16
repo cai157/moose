@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWSQUAREPULSEPOINTSOURCE_H
 #define POROUSFLOWSQUAREPULSEPOINTSOURCE_H
@@ -12,7 +14,7 @@
 
 class PorousFlowSquarePulsePointSource;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowSquarePulsePointSource>();
 
 /**
@@ -25,8 +27,8 @@ class PorousFlowSquarePulsePointSource : public DiracKernel
 public:
   PorousFlowSquarePulsePointSource(const InputParameters & parameters);
 
-  virtual void addPoints();
-  virtual Real computeQpResidual();
+  virtual void addPoints() override;
+  virtual Real computeQpResidual() override;
 
 protected:
   /// The constant mass flux (kg/s)
@@ -42,4 +44,4 @@ protected:
   const Real _end_time;
 };
 
-#endif //POROUSFLOWSQUAREPULSEPOINTSOURCE_H
+#endif // POROUSFLOWSQUAREPULSEPOINTSOURCE_H

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef NONLINEARSYSTEMBASE_H
 #define NONLINEARSYSTEMBASE_H
@@ -20,7 +15,6 @@
 #include "ConstraintWarehouse.h"
 #include "MooseObjectWarehouse.h"
 
-// libMesh includes
 #include "libmesh/transient_system.h"
 #include "libmesh/nonlinear_implicit_system.h"
 
@@ -33,7 +27,8 @@ class Predictor;
 class ElementDamper;
 class NodalDamper;
 class GeneralDamper;
-class IntegratedBC;
+class GeometricSearchData;
+class IntegratedBCBase;
 class NodalBC;
 class PresetNodalBC;
 class DGKernel;
@@ -46,8 +41,10 @@ class Split;
 // libMesh forward declarations
 namespace libMesh
 {
-template <typename T> class NumericVector;
-template <typename T> class SparseMatrix;
+template <typename T>
+class NumericVector;
+template <typename T>
+class SparseMatrix;
 }
 
 /**
@@ -55,14 +52,20 @@ template <typename T> class SparseMatrix;
  *
  * It is a part of FEProblemBase ;-)
  */
-class NonlinearSystemBase : public SystemBase,
-                            public ConsoleStreamInterface
+class NonlinearSystemBase : public SystemBase, public ConsoleStreamInterface
 {
 public:
   NonlinearSystemBase(FEProblemBase & problem, System & sys, const std::string & name);
   virtual ~NonlinearSystemBase();
 
   virtual void init() override;
+
+  /**
+   * Turn off the Jacobian (must be called before equation system initialization)
+   */
+  void turnOffJacobian();
+
+  virtual void addExtraVectors() override;
   virtual void solve() override = 0;
   virtual void restoreSolutions() override;
 
@@ -88,8 +91,11 @@ public:
   virtual void setupFiniteDifferencedPreconditioner() = 0;
   void setupFieldDecomposition();
 
-  bool haveFiniteDifferencedPreconditioner() { return _use_finite_differenced_preconditioner; }
-  bool haveFieldSplitPreconditioner() { return _use_field_split_preconditioner; }
+  bool haveFiniteDifferencedPreconditioner() const
+  {
+    return _use_finite_differenced_preconditioner;
+  }
+  bool haveFieldSplitPreconditioner() const { return _use_field_split_preconditioner; }
 
   /**
    * Returns the convergence state
@@ -103,7 +109,8 @@ public:
    * @param name The name of the integrator
    * @param parameters Integrator params
    */
-  void addTimeIntegrator(const std::string & type, const std::string & name, InputParameters parameters);
+  void
+  addTimeIntegrator(const std::string & type, const std::string & name, InputParameters parameters);
 
   /**
    * Adds a kernel
@@ -111,7 +118,10 @@ public:
    * @param name The name of the kernel
    * @param parameters Kernel parameters
    */
-  virtual void addKernel(const std::string & kernel_name, const std::string & name, InputParameters parameters);
+  virtual void
+  addKernel(const std::string & kernel_name, const std::string & name, InputParameters parameters);
+
+  virtual void addEigenKernels(std::shared_ptr<KernelBase> /*kernel*/, THREAD_ID /*tid*/){};
 
   /**
    * Adds a NodalKernel
@@ -119,7 +129,9 @@ public:
    * @param name The name of the kernel
    * @param parameters Kernel parameters
    */
-  virtual void addNodalKernel(const std::string & kernel_name, const std::string & name, InputParameters parameters);
+  virtual void addNodalKernel(const std::string & kernel_name,
+                              const std::string & name,
+                              InputParameters parameters);
 
   /**
    * Adds a scalar kernel
@@ -127,7 +139,9 @@ public:
    * @param name The name of the kernel
    * @param parameters Kernel parameters
    */
-  void addScalarKernel(const std::string & kernel_name, const std::string & name, InputParameters parameters);
+  void addScalarKernel(const std::string & kernel_name,
+                       const std::string & name,
+                       InputParameters parameters);
 
   /**
    * Adds a boundary condition
@@ -135,7 +149,9 @@ public:
    * @param name The name of the boundary condition
    * @param parameters Boundary condition parameters
    */
-  void addBoundaryCondition(const std::string & bc_name, const std::string & name, InputParameters parameters);
+  void addBoundaryCondition(const std::string & bc_name,
+                            const std::string & name,
+                            InputParameters parameters);
 
   /**
    * Adds a Constraint
@@ -143,7 +159,8 @@ public:
    * @param name The name of the constraint
    * @param parameters Constraint parameters
    */
-  void addConstraint(const std::string & c_name, const std::string & name, InputParameters parameters);
+  void
+  addConstraint(const std::string & c_name, const std::string & name, InputParameters parameters);
 
   /**
    * Adds a Dirac kernel
@@ -151,7 +168,9 @@ public:
    * @param name The name of the Dirac kernel
    * @param parameters Dirac kernel parameters
    */
-  void addDiracKernel(const std::string & kernel_name, const std::string & name, InputParameters parameters);
+  void addDiracKernel(const std::string & kernel_name,
+                      const std::string & name,
+                      InputParameters parameters);
 
   /**
    * Adds a DG kernel
@@ -159,7 +178,8 @@ public:
    * @param name The name of the DG kernel
    * @param parameters DG kernel parameters
    */
-  void addDGKernel(std::string dg_kernel_name, const std::string & name, InputParameters parameters);
+  void
+  addDGKernel(std::string dg_kernel_name, const std::string & name, InputParameters parameters);
 
   /**
    * Adds an interface kernel
@@ -167,7 +187,9 @@ public:
    * @param name The name of the interface kernel
    * @param parameters interface kernel parameters
    */
-  void addInterfaceKernel(std::string interface_kernel_name, const std::string & name, InputParameters parameters);
+  void addInterfaceKernel(std::string interface_kernel_name,
+                          const std::string & name,
+                          InputParameters parameters);
 
   /**
    * Adds a damper
@@ -175,7 +197,8 @@ public:
    * @param name The name of the damper
    * @param parameters Damper parameters
    */
-  void addDamper(const std::string & damper_name, const std::string & name, InputParameters parameters);
+  void
+  addDamper(const std::string & damper_name, const std::string & name, InputParameters parameters);
 
   /**
    * Adds a split
@@ -183,13 +206,14 @@ public:
    * @param name The name of the split
    * @param parameters Split parameters
    */
-  void addSplit(const std::string & split_name, const std::string & name, InputParameters parameters);
+  void
+  addSplit(const std::string & split_name, const std::string & name, InputParameters parameters);
 
   /**
    * Retrieves a split by name
    * @param name The name of the split
    */
-  MooseSharedPointer<Split> getSplit(const std::string & name);
+  std::shared_ptr<Split> getSplit(const std::string & name);
 
   void zeroVectorForResidual(const std::string & vector_name);
 
@@ -203,7 +227,8 @@ public:
   /**
    * Add residual contributions from Constraints
    *
-   * @param residual - reference to the residual vector where constraint contributions will be computed
+   * @param residual - reference to the residual vector where constraint contributions will be
+   * computed
    * @param displaced Controls whether to do the displaced Constraints or non-displaced
    */
   void constraintResiduals(NumericVector<Number> & residual, bool displaced);
@@ -218,14 +243,17 @@ public:
   /**
    * Finds the implicit sparsity graph between geometrically related dofs.
    */
-  void findImplicitGeometricCouplingEntries(GeometricSearchData & geom_search_data,
-                                            std::map<dof_id_type, std::vector<dof_id_type> > & graph);
+  void
+  findImplicitGeometricCouplingEntries(GeometricSearchData & geom_search_data,
+                                       std::map<dof_id_type, std::vector<dof_id_type>> & graph);
 
   /**
-   * Adds entries to the Jacobian in the correct positions for couplings coming from dofs being coupled that
+   * Adds entries to the Jacobian in the correct positions for couplings coming from dofs being
+   * coupled that
    * are related geometrically (i.e. near each other across a gap).
    */
-  void addImplicitGeometricCouplingEntries(SparseMatrix<Number> & jacobian, GeometricSearchData & geom_search_data);
+  void addImplicitGeometricCouplingEntries(SparseMatrix<Number> & jacobian,
+                                           GeometricSearchData & geom_search_data);
 
   /**
    * Add jacobian contributions from Constraints
@@ -243,10 +271,12 @@ public:
    * Computes Jacobian
    * @param jacobian Jacobian is formed in here
    */
-  void computeJacobian(SparseMatrix<Number> &  jacobian);
+  void computeJacobian(SparseMatrix<Number> & jacobian,
+                       Moose::KernelType kernel_type = Moose::KT_ALL);
 
   /**
-   * Computes several Jacobian blocks simultaneously, summing their contributions into smaller preconditioning matrices.
+   * Computes several Jacobian blocks simultaneously, summing their contributions into smaller
+   * preconditioning matrices.
    *
    * Used by Physics-based preconditioning
    *
@@ -260,8 +290,7 @@ public:
    * @param update The incremental update to the solution vector
    * @return returns The damping factor
    */
-  Real computeDamping(const NumericVector<Number> & solution,
-                      const NumericVector<Number> & update);
+  Real computeDamping(const NumericVector<Number> & solution, const NumericVector<Number> & update);
 
   /**
    * Computes the time derivative vector
@@ -282,7 +311,6 @@ public:
 
   virtual void setSolution(const NumericVector<Number> & soln);
 
-
   /**
    * Update active objects of Warehouses owned by NonlinearSystemBase
    */
@@ -291,14 +319,16 @@ public:
   /**
    * Set transient term used by residual and Jacobian evaluation.
    * @param udot transient term
-   * @note If the calling sequence for residual evaluation was changed, this could become an explicit argument.
+   * @note If the calling sequence for residual evaluation was changed, this could become an
+   * explicit argument.
    */
   virtual void setSolutionUDot(const NumericVector<Number> & udot);
 
   virtual NumericVector<Number> & solutionUDot() override;
   virtual NumericVector<Number> & residualVector(Moose::KernelType type) override;
+  virtual bool hasResidualVector(Moose::KernelType type) const override;
 
-  virtual const NumericVector<Number> * & currentSolution() override { return _current_solution; }
+  virtual const NumericVector<Number> *& currentSolution() override { return _current_solution; }
 
   virtual void serializeSolution();
   virtual NumericVector<Number> & serializedSolution() override;
@@ -316,13 +346,16 @@ public:
    * Sets a preconditioner
    * @param pc The preconditioner to be set
    */
-  void setPreconditioner(MooseSharedPointer<MoosePreconditioner> pc);
+  void setPreconditioner(std::shared_ptr<MoosePreconditioner> pc);
 
   /**
    * If called with true this system will use a finite differenced form of
    * the Jacobian as the preconditioner
    */
-  void useFiniteDifferencedPreconditioner(bool use = true) { _use_finite_differenced_preconditioner = use; }
+  void useFiniteDifferencedPreconditioner(bool use = true)
+  {
+    _use_finite_differenced_preconditioner = use;
+  }
 
   /**
    * If called with a single string, it is used as the name of a the top-level decomposition split.
@@ -337,18 +370,27 @@ public:
   void useFieldSplitPreconditioner(bool use = true) { _use_field_split_preconditioner = use; }
 
   /**
-   * If called with true this will add entries into the jacobian to link together degrees of freedom that are found to
+   * If called with true this will add entries into the jacobian to link together degrees of freedom
+   * that are found to
    * be related through the geometric search system.
    *
-   * These entries are really only used by the Finite Difference Preconditioner and the constraint system right now.
+   * These entries are really only used by the Finite Difference Preconditioner and the constraint
+   * system right now.
    */
-  void addImplicitGeometricCouplingEntriesToJacobian(bool add = true) { _add_implicit_geometric_coupling_entries_to_jacobian = add; }
+  void addImplicitGeometricCouplingEntriesToJacobian(bool add = true)
+  {
+    _add_implicit_geometric_coupling_entries_to_jacobian = add;
+  }
 
   /**
    * Indicates whether to assemble residual and Jacobian after each constraint application.
-   * When true, enables "transitive" constraint application: subsequent constraints can use prior constraints' results.
+   * When true, enables "transitive" constraint application: subsequent constraints can use prior
+   * constraints' results.
    */
-  void assembleConstraintsSeparately(bool separately = true) { _assemble_constraints_separately = separately; }
+  void assembleConstraintsSeparately(bool separately = true)
+  {
+    _assemble_constraints_separately = separately;
+  }
 
   /**
    * Setup damping stuff (called before we actually start)
@@ -366,7 +408,8 @@ public:
    * @param tid Thread ID
    * @param damped_vars Set of variables for which increment is to be computed
    */
-  void reinitIncrementAtNodeForDampers(THREAD_ID tid, const std::set<MooseVariable *> & damped_vars);
+  void reinitIncrementAtNodeForDampers(THREAD_ID tid,
+                                       const std::set<MooseVariable *> & damped_vars);
 
   ///@{
   /// System Integrity Checks
@@ -377,28 +420,28 @@ public:
   /**
    * Return the number of non-linear iterations
    */
-  unsigned int nNonlinearIterations() { return _n_iters; }
+  unsigned int nNonlinearIterations() const { return _n_iters; }
 
   /**
    * Return the number of linear iterations
    */
-  unsigned int nLinearIterations() { return _n_linear_iters; }
+  unsigned int nLinearIterations() const { return _n_linear_iters; }
 
   /**
    * Return the total number of residual evaluations done so far in this calculation
    */
-  unsigned int nResidualEvaluations() { return _n_residual_evaluations; }
+  unsigned int nResidualEvaluations() const { return _n_residual_evaluations; }
 
   /**
    * Return the final nonlinear residual
    */
-  Real finalNonlinearResidual() { return _final_residual; }
+  Real finalNonlinearResidual() const { return _final_residual; }
 
   /**
    * Return the last nonlinear norm
    * @return A Real containing the last computed residual norm
    */
-  Real nonlinearNorm() { return _last_nl_rnorm; }
+  Real nonlinearNorm() const { return _last_nl_rnorm; }
 
   /**
    * Force the printing of all variable norms after each solve.
@@ -410,7 +453,7 @@ public:
 
   unsigned int _num_residual_evaluations;
 
-  void setPredictor(MooseSharedPointer<Predictor> predictor);
+  void setPredictor(std::shared_ptr<Predictor> predictor);
   Predictor * getPredictor() { return _predictor.get(); }
 
   TimeIntegrator * getTimeIntegrator() { return _time_integrator.get(); }
@@ -418,6 +461,10 @@ public:
   void setPCSide(MooseEnum pcs);
 
   Moose::PCSideType getPCSide() { return _pc_side; }
+
+  void setMooseKSPNormType(MooseEnum kspnorm);
+
+  Moose::MooseKSPNormType getMooseKSPNormType() { return _ksp_norm; }
 
   /**
    * Indicated whether this system needs material properties on boundaries.
@@ -440,16 +487,33 @@ public:
   /**
    * Access functions to Warehouses from outside NonlinearSystemBase
    */
-  const KernelWarehouse & getKernelWarehouse() { return _kernels; }
-  const MooseObjectWarehouse<KernelBase> & getTimeKernelWarehouse() { return _time_kernels; }
-  const MooseObjectWarehouse<KernelBase> & getNonTimeKernelWarehouse() { return _non_time_kernels; }
-  const MooseObjectWarehouse<DGKernel> & getDGKernelWarehouse() { return _dg_kernels; }
-  const MooseObjectWarehouse<InterfaceKernel> & getInterfaceKernelWarehouse() { return _interface_kernels; }
-  const MooseObjectWarehouse<DiracKernel> & getDiracKernelWarehouse() { return _dirac_kernels; }
-  const MooseObjectWarehouse<NodalKernel> & getNodalKernelWarehouse(THREAD_ID tid);
-  const MooseObjectWarehouse<IntegratedBC> & getIntegratedBCWarehouse() { return _integrated_bcs; }
-  const MooseObjectWarehouse<ElementDamper> & getElementDamperWarehouse() { return _element_dampers; }
-  const MooseObjectWarehouse<NodalDamper> & getNodalDamperWarehouse() { return _nodal_dampers; }
+  const KernelWarehouse & getKernelWarehouse() const { return _kernels; }
+  const KernelWarehouse & getTimeKernelWarehouse() const { return _time_kernels; }
+  const KernelWarehouse & getNonTimeKernelWarehouse() const { return _non_time_kernels; }
+  const KernelWarehouse & getEigenKernelWarehouse() const { return _eigen_kernels; }
+  const KernelWarehouse & getNonEigenKernelWarehouse() const { return _non_eigen_kernels; }
+  const MooseObjectWarehouse<DGKernel> & getDGKernelWarehouse() const { return _dg_kernels; }
+  const MooseObjectWarehouse<InterfaceKernel> & getInterfaceKernelWarehouse() const
+  {
+    return _interface_kernels;
+  }
+  const MooseObjectWarehouse<DiracKernel> & getDiracKernelWarehouse() const
+  {
+    return _dirac_kernels;
+  }
+  const MooseObjectWarehouse<IntegratedBCBase> & getIntegratedBCWarehouse() const
+  {
+    return _integrated_bcs;
+  }
+  const MooseObjectWarehouse<ElementDamper> & getElementDamperWarehouse() const
+  {
+    return _element_dampers;
+  }
+  const MooseObjectWarehouse<NodalDamper> & getNodalDamperWarehouse() const
+  {
+    return _nodal_dampers;
+  }
+  const ConstraintWarehouse & getConstraintWarehouse() const { return _constraints; };
   //@}
 
   /**
@@ -462,14 +526,17 @@ public:
    */
   bool hasDiagSaveIn() const { return _has_diag_save_in || _has_nodalbc_diag_save_in; }
 
-  /**
-   * The relative L2 norm of the difference between solution and old solution vector.
-   */
-  virtual Real relativeSolutionDifferenceNorm();
-
   virtual NumericVector<Number> & solution() override { return *_sys.solution; }
 
   virtual System & system() override { return _sys; }
+  virtual const System & system() const override { return _sys; }
+
+  virtual NumericVector<Number> * solutionPreviousNewton() override
+  {
+    return _solution_previous_nl;
+  }
+
+  virtual void setPreviousNewtonSolution(const NumericVector<Number> & soln);
 
 public:
   FEProblemBase & _fe_problem;
@@ -495,9 +562,9 @@ protected:
    * Enforces nodal boundary conditions
    * @param residual Residual where nodal BCs are enforced (input/output)
    */
-  void computeNodalBCs(NumericVector<Number> & residual);
+  void computeNodalBCs(NumericVector<Number> & residual, Moose::KernelType type = Moose::KT_ALL);
 
-  void computeJacobianInternal(SparseMatrix<Number> &  jacobian);
+  void computeJacobianInternal(SparseMatrix<Number> & jacobian, Moose::KernelType kernel_type);
 
   void computeDiracContributions(SparseMatrix<Number> * jacobian = NULL);
 
@@ -509,28 +576,30 @@ protected:
   void enforceNodalConstraintsResidual(NumericVector<Number> & residual);
   void enforceNodalConstraintsJacobian(SparseMatrix<Number> & jacobian);
 
-
   /// solution vector from nonlinear solver
   const NumericVector<Number> * _current_solution;
   /// ghosted form of the residual
-  NumericVector<Number> & _residual_ghosted;
+  NumericVector<Number> * _residual_ghosted;
 
   /// Serialized version of the solution vector
   NumericVector<Number> & _serialized_solution;
+
+  /// Solution vector of the previous nonlinear iterate
+  NumericVector<Number> * _solution_previous_nl;
 
   /// Copy of the residual vector
   NumericVector<Number> & _residual_copy;
 
   /// Time integrator
-  MooseSharedPointer<TimeIntegrator> _time_integrator;
+  std::shared_ptr<TimeIntegrator> _time_integrator;
   /// solution vector for u^dot
-  NumericVector<Number> & _u_dot;
+  NumericVector<Number> * _u_dot;
   /// \f$ {du^dot}\over{du} \f$
   Number _du_dot_du;
   /// residual vector for time contributions
-  NumericVector<Number> & _Re_time;
+  NumericVector<Number> * _Re_time;
   /// residual vector for non-time contributions
-  NumericVector<Number> & _Re_non_time;
+  NumericVector<Number> * _Re_non_time;
 
   ///@{
   /// Kernel Storage
@@ -540,14 +609,16 @@ protected:
   MooseObjectWarehouse<ScalarKernel> _non_time_scalar_kernels;
   MooseObjectWarehouse<DGKernel> _dg_kernels;
   MooseObjectWarehouse<InterfaceKernel> _interface_kernels;
-  MooseObjectWarehouse<KernelBase> _time_kernels;
-  MooseObjectWarehouse<KernelBase> _non_time_kernels;
+  KernelWarehouse _time_kernels;
+  KernelWarehouse _non_time_kernels;
+  KernelWarehouse _eigen_kernels;
+  KernelWarehouse _non_eigen_kernels;
 
   ///@}
 
   ///@{
   /// BoundaryCondition Warhouses
-  MooseObjectWarehouse<IntegratedBC> _integrated_bcs;
+  MooseObjectWarehouse<IntegratedBCBase> _integrated_bcs;
   MooseObjectWarehouse<NodalBC> _nodal_bcs;
   MooseObjectWarehouse<PresetNodalBC> _preset_nodal_bcs;
   ///@}
@@ -573,16 +644,15 @@ protected:
   /// Constraints storage object
   ConstraintWarehouse _constraints;
 
-
 protected:
   /// increment vector
   NumericVector<Number> * _increment_vec;
-  /// The difference of current and old solutions
-  NumericVector<Number> & _sln_diff;
   /// Preconditioner
-  MooseSharedPointer<MoosePreconditioner> _preconditioner;
+  std::shared_ptr<MoosePreconditioner> _preconditioner;
   /// Preconditioning side
   Moose::PCSideType _pc_side;
+  /// KSP norm type
+  Moose::MooseKSPNormType _ksp_norm;
 
   /// Whether or not to use a finite differenced preconditioner
   bool _use_finite_differenced_preconditioner;
@@ -627,7 +697,7 @@ protected:
   Real _final_residual;
 
   /// If predictor is active, this is non-NULL
-  MooseSharedPointer<Predictor> _predictor;
+  std::shared_ptr<Predictor> _predictor;
 
   bool _computing_initial_residual;
 
@@ -645,7 +715,7 @@ protected:
   /// If there is a nodal BC having diag_save_in
   bool _has_nodalbc_diag_save_in;
 
-  void getNodeDofs(unsigned int node_id, std::vector<dof_id_type> & dofs);
+  void getNodeDofs(dof_id_type node_id, std::vector<dof_id_type> & dofs);
 
   std::vector<dof_id_type> _var_all_dof_indices;
 };

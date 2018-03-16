@@ -1,71 +1,63 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef METHANEFLUIDPROPERTIESTEST_H
 #define METHANEFLUIDPROPERTIESTEST_H
 
-//CPPUnit includes
-#include "GuardedHelperMacros.h"
+#include "gtest_include.h"
 
-class MooseMesh;
-class FEProblem;
-class MethaneFluidProperties;
+#include "FEProblem.h"
+#include "AppFactory.h"
+#include "GeneratedMesh.h"
+#include "MethaneFluidProperties.h"
+#include "MooseApp.h"
+#include "Utils.h"
 
-class MethaneFluidPropertiesTest : public CppUnit::TestFixture
+class MethaneFluidPropertiesTest : public ::testing::Test
 {
-  CPPUNIT_TEST_SUITE(MethaneFluidPropertiesTest);
+protected:
+  void SetUp()
+  {
+    const char * argv[] = {"foo", NULL};
 
-  /**
-   * Verify calculation of Henry's constant using data from
-   * Guidelines on the Henry's constant and vapour liquid distribution constant
-   * for gases in H20 and D20 at high temperatures, IAPWS (2004).
-   */
-  CPPUNIT_TEST(henry);
+    _app = AppFactory::createAppShared("MooseUnitApp", 1, (char **)argv);
+    _factory = &_app->getFactory();
+    registerObjects(*_factory);
+    buildObjects();
+  }
 
-  /**
-   * Verify calculation of thermophysical properties of methane using
-   * verification data provided in
-   * Irvine Jr, T. F. and Liley, P. E. (1984) Steam and Gas Tables with
-   * Computer Equations
-   */
-  CPPUNIT_TEST(properties);
+  void registerObjects(Factory & factory) { registerUserObject(MethaneFluidProperties); }
 
-  /**
-   * Verify calculation of the derivatives of all properties by comparing with finite
-   * differences
-   */
-  CPPUNIT_TEST(derivatives);
+  void buildObjects()
+  {
+    InputParameters mesh_params = _factory->getValidParams("GeneratedMesh");
+    mesh_params.set<MooseEnum>("dim") = "3";
+    mesh_params.set<std::string>("name") = "mesh";
+    mesh_params.set<std::string>("_object_name") = "name1";
+    _mesh = libmesh_make_unique<GeneratedMesh>(mesh_params);
 
-  CPPUNIT_TEST_SUITE_END();
+    InputParameters problem_params = _factory->getValidParams("FEProblem");
+    problem_params.set<MooseMesh *>("mesh") = _mesh.get();
+    problem_params.set<std::string>("name") = "problem";
+    problem_params.set<std::string>("_object_name") = "name2";
+    _fe_problem = libmesh_make_unique<FEProblem>(problem_params);
 
-public:
-  void registerObjects(Factory & factory);
-  void buildObjects();
+    InputParameters uo_pars = _factory->getValidParams("MethaneFluidProperties");
+    _fe_problem->addUserObject("MethaneFluidProperties", "fp", uo_pars);
+    _fp = &_fe_problem->getUserObject<MethaneFluidProperties>("fp");
+  }
 
-  void setUp();
-  void tearDown();
-
-  void henry();
-  void properties();
-  void derivatives();
-
-private:
-  MooseApp * _app;
+  std::shared_ptr<MooseApp> _app;
+  std::unique_ptr<MooseMesh> _mesh;
+  std::unique_ptr<FEProblem> _fe_problem;
   Factory * _factory;
-  MooseMesh * _mesh;
-  FEProblem * _fe_problem;
   const MethaneFluidProperties * _fp;
 };
 
-#endif  // METHANEFLUIDPROPERTIESTEST_H
+#endif // METHANEFLUIDPROPERTIESTEST_H

@@ -1,21 +1,19 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "NormalizationAux.h"
 
-template<>
-InputParameters validParams<NormalizationAux>()
+registerMooseObject("MooseApp", NormalizationAux);
+
+template <>
+InputParameters
+validParams<NormalizationAux>()
 {
   InputParameters params = validParams<AuxKernel>();
   params.addRequiredCoupledVar("source_variable", "The variable to be normalized");
@@ -24,16 +22,16 @@ InputParameters validParams<NormalizationAux>()
   return params;
 }
 
-NormalizationAux::NormalizationAux(const InputParameters & parameters) :
-    AuxKernel(parameters),
+NormalizationAux::NormalizationAux(const InputParameters & parameters)
+  : AuxKernel(parameters),
     _src(coupledValue("source_variable")),
     _pp_on_source(getPostprocessorValue("normalization")),
     _normal_factor(getParam<Real>("normal_factor"))
-{}
+{
+}
 
 Real
 NormalizationAux::computeValue()
 {
   return _src[_qp] * _normal_factor / _pp_on_source;
 }
-

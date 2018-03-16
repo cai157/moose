@@ -1,20 +1,21 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef TENSORMECHANICSPLASTICWEAKPLANETENSILE_H
 #define TENSORMECHANICSPLASTICWEAKPLANETENSILE_H
 
 #include "TensorMechanicsPlasticModel.h"
 #include "TensorMechanicsHardeningModel.h"
 
-
 class TensorMechanicsPlasticWeakPlaneTensile;
 
-
-template<>
+template <>
 InputParameters validParams<TensorMechanicsPlasticWeakPlaneTensile>();
 
 /**
@@ -23,14 +24,19 @@ InputParameters validParams<TensorMechanicsPlasticWeakPlaneTensile>();
  */
 class TensorMechanicsPlasticWeakPlaneTensile : public TensorMechanicsPlasticModel
 {
- public:
+public:
   TensorMechanicsPlasticWeakPlaneTensile(const InputParameters & parameters);
 
-  virtual void activeConstraints(const std::vector<Real> & f, const RankTwoTensor & stress, Real intnl, const RankFourTensor & Eijkl, std::vector<bool> & act, RankTwoTensor & returned_stress) const override;
+  virtual void activeConstraints(const std::vector<Real> & f,
+                                 const RankTwoTensor & stress,
+                                 Real intnl,
+                                 const RankFourTensor & Eijkl,
+                                 std::vector<bool> & act,
+                                 RankTwoTensor & returned_stress) const override;
 
   virtual std::string modelName() const override;
 
- protected:
+protected:
   /// Yield function = _a * stress_zz - _strength;
   const Real _a;
 

@@ -1,3 +1,12 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef POLYCRYSTALELASTICDRIVINGFORCEACTION_H
 #define POLYCRYSTALELASTICDRIVINGFORCEACTION_H
 
@@ -7,13 +16,13 @@
 // Forward Declarations
 class PolycrystalElasticDrivingForceAction;
 
-template<>
+template <>
 InputParameters validParams<PolycrystalElasticDrivingForceAction>();
 /**
- * Action that addes the elastic driving force for each order parameter
+ * Action that adds the elastic driving force for each order parameter
  */
-class PolycrystalElasticDrivingForceAction: public Action,
-                                  public DerivativeMaterialPropertyNameInterface
+class PolycrystalElasticDrivingForceAction : public Action,
+                                             public DerivativeMaterialPropertyNameInterface
 {
 public:
   PolycrystalElasticDrivingForceAction(const InputParameters & params);
@@ -21,9 +30,8 @@ public:
   virtual void act();
 
 private:
-
   /// Number of order parameters used in the model
-  unsigned int _op_num;
+  const unsigned int _op_num;
 
   /// Base name for the order parameters
   std::string _var_name_base;
@@ -31,4 +39,4 @@ private:
   std::string _elasticity_tensor_name;
 };
 
-#endif //POLYCRYSTALELASTICDRIVINGFORCEACTION_H
+#endif // POLYCRYSTALELASTICDRIVINGFORCEACTION_H

@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef FLUIDPROPERTIESMATERIALPT_H
 #define FLUIDPROPERTIESMATERIALPT_H
@@ -13,11 +15,11 @@
 
 class FluidPropertiesMaterialPT;
 
-template<>
+template <>
 InputParameters validParams<FluidPropertiesMaterialPT>();
 
 /**
- * Computes values of pressure and its derivatives using (pressure, temperature) formulation
+ * Computes fluid properties using (pressure, temperature) formulation
  */
 class FluidPropertiesMaterialPT : public Material
 {
@@ -30,7 +32,7 @@ protected:
 
   /// Pressure (Pa)
   const VariableValue & _pressure;
-  /// Temperature (C)
+  /// Temperature (K)
   const VariableValue & _temperature;
   /// Density (kg/m^3)
   MaterialProperty<Real> & _rho;

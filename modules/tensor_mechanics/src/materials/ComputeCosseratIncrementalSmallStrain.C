@@ -1,17 +1,22 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ComputeCosseratIncrementalSmallStrain.h"
 
-// libmesh includes
+// MOOSE includes
+#include "PermutationTensor.h"
+
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<ComputeCosseratIncrementalSmallStrain>()
+template <>
+InputParameters
+validParams<ComputeCosseratIncrementalSmallStrain>()
 {
   InputParameters params = validParams<ComputeIncrementalStrainBase>();
   params.addClassDescription("Compute incremental small Cosserat strains");
@@ -19,26 +24,28 @@ InputParameters validParams<ComputeCosseratIncrementalSmallStrain>()
   return params;
 }
 
-ComputeCosseratIncrementalSmallStrain::ComputeCosseratIncrementalSmallStrain(const InputParameters & parameters) :
-  ComputeIncrementalStrainBase(parameters),
-  _curvature(declareProperty<RankTwoTensor>("curvature")),
-  _nrots(coupledComponents("Cosserat_rotations")),
-  _wc(_nrots),
-  _wc_old(_nrots),
-  _grad_wc(_nrots),
-  _grad_wc_old(_nrots),
-  _curvature_old(declarePropertyOld<RankTwoTensor>("curvature")),
-  _curvature_increment(declareProperty<RankTwoTensor>("curvature_increment"))
+ComputeCosseratIncrementalSmallStrain::ComputeCosseratIncrementalSmallStrain(
+    const InputParameters & parameters)
+  : ComputeIncrementalStrainBase(parameters),
+    _curvature(declareProperty<RankTwoTensor>("curvature")),
+    _nrots(coupledComponents("Cosserat_rotations")),
+    _wc(_nrots),
+    _wc_old(_nrots),
+    _grad_wc(_nrots),
+    _grad_wc_old(_nrots),
+    _curvature_old(getMaterialPropertyOld<RankTwoTensor>("curvature")),
+    _curvature_increment(declareProperty<RankTwoTensor>("curvature_increment"))
 {
   if (_nrots != 3)
-    mooseError("ComputeCosseratSmallStrain: This Material is only defined for 3-dimensional simulations so 3 Cosserat rotation variables are needed");
+    mooseError("ComputeCosseratSmallStrain: This Material is only defined for 3-dimensional "
+               "simulations so 3 Cosserat rotation variables are needed");
   for (unsigned i = 0; i < _nrots; ++i)
-    {
-      _wc[i] = &coupledValue("Cosserat_rotations", i);
-      _wc_old[i] = &coupledValueOld("Cosserat_rotations", i);
-      _grad_wc[i] = &coupledGradient("Cosserat_rotations", i);
-      _grad_wc_old[i] = &coupledGradientOld("Cosserat_rotations", i);
-    }
+  {
+    _wc[i] = &coupledValue("Cosserat_rotations", i);
+    _wc_old[i] = &coupledValueOld("Cosserat_rotations", i);
+    _grad_wc[i] = &coupledGradient("Cosserat_rotations", i);
+    _grad_wc_old[i] = &coupledGradientOld("Cosserat_rotations", i);
+  }
 }
 
 void
@@ -53,17 +60,18 @@ void
 ComputeCosseratIncrementalSmallStrain::computeQpProperties()
 {
   RankTwoTensor strain((*_grad_disp[0])[_qp], (*_grad_disp[1])[_qp], (*_grad_disp[2])[_qp]);
-  RankTwoTensor strain_old((*_grad_disp_old[0])[_qp], (*_grad_disp_old[1])[_qp], (*_grad_disp_old[2])[_qp]);
+  RankTwoTensor strain_old(
+      (*_grad_disp_old[0])[_qp], (*_grad_disp_old[1])[_qp], (*_grad_disp_old[2])[_qp]);
   RealVectorValue wc_vector((*_wc[0])[_qp], (*_wc[1])[_qp], (*_wc[2])[_qp]);
   RealVectorValue wc_vector_old((*_wc_old[0])[_qp], (*_wc_old[1])[_qp], (*_wc_old[2])[_qp]);
 
   for (unsigned i = 0; i < LIBMESH_DIM; ++i)
     for (unsigned j = 0; j < LIBMESH_DIM; ++j)
       for (unsigned k = 0; k < LIBMESH_DIM; ++k)
-        {
-          strain(i, j) += PermutationTensor::eps(i, j, k) * wc_vector(k);
-          strain_old(i, j) += PermutationTensor::eps(i, j, k) * wc_vector_old(k);
-        }
+      {
+        strain(i, j) += PermutationTensor::eps(i, j, k) * wc_vector(k);
+        strain_old(i, j) += PermutationTensor::eps(i, j, k) * wc_vector_old(k);
+      }
 
   _deformation_gradient[_qp] = strain;
   _deformation_gradient[_qp].addIa(1.0); // Gauss point deformation gradient
@@ -72,10 +80,10 @@ ComputeCosseratIncrementalSmallStrain::computeQpProperties()
 
   _strain_increment[_qp] = total_strain_increment;
 
-  //Remove the eigenstrain increment
+  // Remove the eigenstrain increment
   subtractEigenstrainIncrementFromStrain(_strain_increment[_qp]);
 
-  _strain_rate[_qp] = _strain_increment[_qp]/_dt;
+  _strain_rate[_qp] = _strain_increment[_qp] / _dt;
 
   _total_strain[_qp] = _total_strain_old[_qp] + total_strain_increment;
   _mechanical_strain[_qp] = _mechanical_strain_old[_qp] + _strain_increment[_qp];

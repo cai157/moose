@@ -1,13 +1,17 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "HeatCapacityConductionTimeDerivative.h"
 
-template<>
-InputParameters validParams<HeatCapacityConductionTimeDerivative>()
+template <>
+InputParameters
+validParams<HeatCapacityConductionTimeDerivative>()
 {
   InputParameters params = validParams<TimeDerivative>();
   params.addClassDescription("Time derivative term $C_p \\frac{\\partial T}{\\partial t}$ of "
@@ -17,14 +21,15 @@ InputParameters validParams<HeatCapacityConductionTimeDerivative>()
   // over current volume by setting the use_displaced_mesh flag.
   params.set<bool>("use_displaced_mesh") = true;
 
-  params.addParam<MaterialPropertyName>("heat_capacity", "heat_capacity", "Property name of the heat capacity material property");
+  params.addParam<MaterialPropertyName>(
+      "heat_capacity", "heat_capacity", "Property name of the heat capacity material property");
   params.addCoupledVar("args", "Vector of additional arguments of the heat capacity");
   return params;
 }
 
-
-HeatCapacityConductionTimeDerivative::HeatCapacityConductionTimeDerivative(const InputParameters & parameters) :
-    DerivativeMaterialInterface<JvarMapKernelInterface<TimeDerivative>>(parameters),
+HeatCapacityConductionTimeDerivative::HeatCapacityConductionTimeDerivative(
+    const InputParameters & parameters)
+  : DerivativeMaterialInterface<JvarMapKernelInterface<TimeDerivative>>(parameters),
     _heat_capacity(getMaterialProperty<Real>("heat_capacity")),
     _d_heat_capacity_dT(getMaterialPropertyDerivative<Real>("heat_capacity", _var.name()))
 {
@@ -36,7 +41,8 @@ HeatCapacityConductionTimeDerivative::HeatCapacityConductionTimeDerivative(const
 
   // iterate over all coupled variables
   for (unsigned int i = 0; i < nvar; ++i)
-    _d_heat_capacity_dargs[i] = &getMaterialPropertyDerivative<Real>("heat_capacity", _coupled_moose_vars[i]->name());
+    _d_heat_capacity_dargs[i] =
+        &getMaterialPropertyDerivative<Real>("heat_capacity", _coupled_moose_vars[i]->name());
 }
 
 Real
@@ -49,8 +55,8 @@ Real
 HeatCapacityConductionTimeDerivative::computeQpJacobian()
 {
   // on-diagonal Jacobian with all terms that may depend on the kernel variable
-  return   _heat_capacity[_qp] * TimeDerivative::computeQpJacobian()
-         + _d_heat_capacity_dT[_qp] * _phi[_j][_qp] * TimeDerivative::computeQpResidual();
+  return _heat_capacity[_qp] * TimeDerivative::computeQpJacobian() +
+         _d_heat_capacity_dT[_qp] * _phi[_j][_qp] * TimeDerivative::computeQpResidual();
 }
 
 Real

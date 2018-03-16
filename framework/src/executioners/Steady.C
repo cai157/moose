@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "Steady.h"
@@ -19,18 +14,19 @@
 #include "MooseApp.h"
 #include "NonlinearSystem.h"
 
-// libMesh includes
 #include "libmesh/equation_systems.h"
 
-template<>
-InputParameters validParams<Steady>()
+registerMooseObject("MooseApp", Steady);
+
+template <>
+InputParameters
+validParams<Steady>()
 {
   return validParams<Executioner>();
 }
 
-
-Steady::Steady(const InputParameters & parameters) :
-    Executioner(parameters),
+Steady::Steady(const InputParameters & parameters)
+  : Executioner(parameters),
     _problem(_fe_problem),
     _time_step(_problem.timeStep()),
     _time(_problem.time())
@@ -39,12 +35,6 @@ Steady::Steady(const InputParameters & parameters) :
 
   if (!_restart_file_base.empty())
     _problem.setRestartFile(_restart_file_base);
-
-  {
-    std::string ti_str = "SteadyState";
-    InputParameters params = _app.getFactory().getValidParams(ti_str);
-    _problem.addTimeIntegrator(ti_str, "ti", params);
-  }
 }
 
 void
@@ -74,15 +64,15 @@ Steady::execute()
 
   // first step in any steady state solve is always 1 (preserving backwards compatibility)
   _time_step = 1;
-  _time = _time_step;                 // need to keep _time in sync with _time_step to get correct output
+  _time = _time_step; // need to keep _time in sync with _time_step to get correct output
 
 #ifdef LIBMESH_ENABLE_AMR
 
   // Define the refinement loop
   unsigned int steps = _problem.adaptivity().getSteps();
-  for (unsigned int r_step=0; r_step<=steps; r_step++)
+  for (unsigned int r_step = 0; r_step <= steps; r_step++)
   {
-#endif //LIBMESH_ENABLE_AMR
+#endif // LIBMESH_ENABLE_AMR
     preSolve();
     _problem.timestepSetup();
     _problem.execute(EXEC_TIMESTEP_BEGIN);
@@ -115,9 +105,11 @@ Steady::execute()
     }
 
     _time_step++;
-    _time = _time_step;                 // need to keep _time in sync with _time_step to get correct output
+    _time = _time_step; // need to keep _time in sync with _time_step to get correct output
   }
 #endif
+
+  _problem.execute(EXEC_FINAL);
 
   postExecute();
 }

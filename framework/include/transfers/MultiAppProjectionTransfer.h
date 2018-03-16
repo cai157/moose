@@ -1,25 +1,26 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef MULTIAPPPROJECTIONTRANSFER_H
 #define MULTIAPPPROJECTIONTRANSFER_H
 
 #include "MultiAppTransfer.h"
-#include "libmesh/linear_implicit_system.h"
+
+// Forward declarations
+namespace libMesh
+{
+class LinearImplicitSystem;
+}
 
 class MultiAppProjectionTransfer;
 
-template<>
+template <>
 InputParameters validParams<MultiAppProjectionTransfer>();
 
 /**
@@ -59,10 +60,8 @@ protected:
   // These variables allow us to cache qps for fixed meshes.
   bool _fixed_meshes;
   bool _qps_cached;
-  std::vector<std::vector<Point> > _cached_qps;
-  std::vector<std::map<std::pair<unsigned int, unsigned int>, unsigned int> > _cached_index_map;
-
+  std::vector<std::vector<Point>> _cached_qps;
+  std::vector<std::map<std::pair<unsigned int, unsigned int>, unsigned int>> _cached_index_map;
 };
-
 
 #endif /* MULTIAPPPROJECTIONTRANSFER_H */

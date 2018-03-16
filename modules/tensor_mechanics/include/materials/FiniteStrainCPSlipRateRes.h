@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef FINITESTRAINCPSLIPRATERES_H
 #define FINITESTRAINCPSLIPRATERES_H
@@ -12,16 +14,15 @@
 
 class FiniteStrainCPSlipRateRes;
 
-template<>
+template <>
 InputParameters validParams<FiniteStrainCPSlipRateRes>();
 
-class FiniteStrainCPSlipRateRes: public FiniteStrainCrystalPlasticity
+class FiniteStrainCPSlipRateRes : public FiniteStrainCrystalPlasticity
 {
 public:
   FiniteStrainCPSlipRateRes(const InputParameters & parameters);
 
 protected:
-
   /**
    * This function solves internal variables.
    */
@@ -58,12 +59,14 @@ protected:
   virtual void getSlipIncrements();
 
   /**
-   * This function calculates partial derivative of resolved shear stress with respect to split rate.
+   * This function calculates partial derivative of resolved shear stress with respect to split
+   * rate.
    */
   virtual void calcDtauDsliprate();
 
   /**
-   * This function calculates partial derivative of slip system resistances with respect to split rate.
+   * This function calculates partial derivative of slip system resistances with respect to split
+   * rate.
    */
   virtual void calcDgssDsliprate();
 
@@ -80,7 +83,7 @@ protected:
   /**
    * This function performs the line search update.
    */
-  bool lineSearchUpdateSlipRate(const Real, const DenseVector<Real> & );
+  bool lineSearchUpdateSlipRate(const Real, const DenseVector<Real> &);
 
   /**
    * This function calculates the dot product of residual and update
@@ -94,4 +97,4 @@ protected:
   DenseMatrix<Real> _dsliprate_dsliprate;
 };
 
-#endif //FINITESTRAINCPSLIPRATERES_H
+#endif // FINITESTRAINCPSLIPRATERES_H

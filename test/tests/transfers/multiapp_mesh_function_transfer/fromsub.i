@@ -46,7 +46,6 @@
   num_steps = 1
   dt = 1
 
-  # Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 
   petsc_options_iname = '-pc_type -pc_hypre_type'
@@ -68,16 +67,9 @@
 
 [Transfers]
   [./from_sub]
-    source_variable = sub_u
+    source_variable = 'sub_u sub_u'
     direction = from_multiapp
-    variable = transferred_u
-    type = MultiAppMeshFunctionTransfer
-    multi_app = sub
-  [../]
-  [./elemental_from_sub]
-    source_variable = sub_u
-    direction = from_multiapp
-    variable = elemental_transferred_u
+    variable = 'transferred_u elemental_transferred_u'
     type = MultiAppMeshFunctionTransfer
     multi_app = sub
   [../]

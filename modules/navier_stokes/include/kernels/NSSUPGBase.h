@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef NSSUPGBASE_H
 #define NSSUPGBASE_H
 
@@ -12,7 +15,7 @@
 // Forward Declarations
 class NSSUPGBase;
 
-template<>
+template <>
 InputParameters validParams<NSSUPGBase>();
 
 /**
@@ -36,16 +39,16 @@ protected:
   const MaterialProperty<Real> & _tauc;
   const MaterialProperty<Real> & _taum;
   const MaterialProperty<Real> & _taue;
-  const MaterialProperty<std::vector<Real> > & _strong_residuals;
+  const MaterialProperty<std::vector<Real>> & _strong_residuals;
 
   // Momentum equation inviscid flux matrices
-  const MaterialProperty<std::vector<RealTensorValue> >& _calA;
+  const MaterialProperty<std::vector<RealTensorValue>> & _calA;
 
   // "velocity column" matrices
-  const MaterialProperty<std::vector<RealTensorValue> >& _calC;
+  const MaterialProperty<std::vector<RealTensorValue>> & _calC;
 
   // Energy equation inviscid flux matrices
-  const MaterialProperty<std::vector<std::vector<RealTensorValue> > >& _calE;
+  const MaterialProperty<std::vector<std::vector<RealTensorValue>>> & _calE;
 
   // "Old" (from previous timestep) coupled variable values.
   // const VariableValue & _rho_old;
@@ -69,4 +72,4 @@ protected:
   const VariableValue & _enthalpy;
 };
 
-#endif //NSSUPGBASE_H
+#endif // NSSUPGBASE_H

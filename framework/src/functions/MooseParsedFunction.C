@@ -1,41 +1,37 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "MooseError.h"
+
+// MOOSE includes
+#include "InputParameters.h"
 #include "MooseParsedFunction.h"
 #include "MooseParsedFunctionWrapper.h"
 
-template<>
-InputParameters validParams<MooseParsedFunction>()
+registerMooseObjectAliased("MooseApp", MooseParsedFunction, "ParsedFunction");
+
+template <>
+InputParameters
+validParams<MooseParsedFunction>()
 {
   InputParameters params = validParams<Function>();
   params += validParams<MooseParsedFunctionBase>();
-  params.addRequiredParam<std::string>("value", "The user defined function.");
+  params.addRequiredCustomTypeParam<std::string>(
+      "value", "FunctionExpression", "The user defined function.");
   return params;
 }
 
-MooseParsedFunction::MooseParsedFunction(const InputParameters & parameters) :
-    Function(parameters),
+MooseParsedFunction::MooseParsedFunction(const InputParameters & parameters)
+  : Function(parameters),
     MooseParsedFunctionBase(parameters),
-    _value(verifyFunction(getParam<std::string>("value"))),
-    _function_ptr(NULL)
+    _value(verifyFunction(getParam<std::string>("value")))
 {
-}
-
-MooseParsedFunction::~MooseParsedFunction()
-{
-  delete _function_ptr;
 }
 
 Real
@@ -65,13 +61,13 @@ MooseParsedFunction::vectorValue(Real /*t*/, const Point & /*p*/)
 void
 MooseParsedFunction::initialSetup()
 {
-  if (_function_ptr == NULL)
+  if (!_function_ptr)
   {
     THREAD_ID tid = 0;
     if (isParamValid("_tid"))
       tid = getParam<THREAD_ID>("_tid");
 
-    _function_ptr = new MooseParsedFunctionWrapper(_pfb_feproblem, _value, _vars, _vals, tid);
+    _function_ptr =
+        libmesh_make_unique<MooseParsedFunctionWrapper>(_pfb_feproblem, _value, _vars, _vals, tid);
   }
 }
-

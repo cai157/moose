@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef CONSOLE_H
 #define CONSOLE_H
@@ -21,17 +16,15 @@
 // Forward declarations
 class Console;
 
-template<>
+template <>
 InputParameters validParams<Console>();
 
 /**
  * An output object for writing to the console (screen)
  */
-class Console :
-  public TableOutput
+class Console : public TableOutput
 {
 public:
-
   /**
    * Class constructor
    */
@@ -55,7 +48,8 @@ public:
    *
    * This method explicitly re-implements portions of AdvancedOutput::output, which is generally not
    * recommended. This is done here to get the output ordering desired. If additional output types
-   * (e.g., elemental or nodal) are required in the future this calls will need to be explicitly added
+   * (e.g., elemental or nodal) are required in the future this calls will need to be explicitly
+   * added
    * as well.
    */
   virtual void output(const ExecFlagType & type) override;
@@ -81,14 +75,14 @@ public:
    * Return system information flags
    */
   MultiMooseEnum & systemInfoFlags()
-    {
-      if (!_allow_changing_sysinfo_flag)
-        mooseError("accessing console system information flags is not allowed after console initial setup");
-      return _system_info_flags;
-    }
+  {
+    if (!_allow_changing_sysinfo_flag)
+      mooseError(
+          "accessing console system information flags is not allowed after console initial setup");
+    return _system_info_flags;
+  }
 
 protected:
-
   /**
    * Adds the printing of system information to the init() method
    */
@@ -112,7 +106,10 @@ protected:
   /**
    * Not implemented.
    */
-  virtual void outputVectorPostprocessors() override { mooseError("Can't currently output VectorPostprocessors to the screen"); };
+  virtual void outputVectorPostprocessors() override
+  {
+    mooseError("Can't currently output VectorPostprocessors to the screen");
+  };
 
   /**
    * Print system information
@@ -183,16 +180,8 @@ protected:
   /// State for solve performance log
   bool _solve_log;
 
-  /// State for setup performance log
-  bool _setup_log;
-
-#ifdef LIBMESH_ENABLE_PERFORMANCE_LOGGING
   /// Control the display libMesh performance log
   bool _libmesh_log;
-#endif
-
-  /// State for early setup log printing
-  bool _setup_log_early;
 
   /// State for the performance log header information
   bool _perf_header;
@@ -210,7 +199,6 @@ protected:
   unsigned int _precision;
 
 private:
-
   /**
    * Add a message to the output streams
    * @param message The message to add to the output streams
@@ -222,9 +210,6 @@ private:
    * output stream buffer is cleaned up correctly. Thus, it is a private method.
    */
   void mooseConsole(const std::string & message);
-
-  /// State of the --timing command line argument from MooseApp
-  bool _timing;
 
   /// Reference to cached messages from calls to _console
   const std::ostringstream & _console_buffer;

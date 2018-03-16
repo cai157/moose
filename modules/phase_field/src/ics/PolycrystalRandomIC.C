@@ -1,41 +1,48 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "PolycrystalRandomIC.h"
 #include "MooseRandom.h"
 
-template<>
-InputParameters validParams<PolycrystalRandomIC>()
+template <>
+InputParameters
+validParams<PolycrystalRandomIC>()
 {
   InputParameters params = validParams<InitialCondition>();
+  params.addClassDescription("Random initial condition for a polycrystalline material");
   params.addRequiredParam<unsigned int>("op_num", "Number of order parameters");
   params.addRequiredParam<unsigned int>("op_index", "The index for the current order parameter");
-  params.addRequiredParam<unsigned int>("typ", "Type of random grain structure"); //TODO: this should be called "type"!
+  params.addRequiredParam<unsigned int>("random_type",
+                                        "Type of random grain structure (formerly called 'typ')");
   return params;
 }
 
-PolycrystalRandomIC::PolycrystalRandomIC(const InputParameters & parameters) :
-    InitialCondition(parameters),
+PolycrystalRandomIC::PolycrystalRandomIC(const InputParameters & parameters)
+  : InitialCondition(parameters),
     _op_num(getParam<unsigned int>("op_num")),
     _op_index(getParam<unsigned int>("op_index")),
-    _typ(getParam<unsigned int>("typ"))
-{}
+    _random_type(getParam<unsigned int>("random_type"))
+{
+}
 
-Real PolycrystalRandomIC::value(const Point & p)
+Real
+PolycrystalRandomIC::value(const Point & p)
 {
   Point cur_pos = p;
-  Real val =  MooseRandom::rand();
+  Real val = MooseRandom::rand();
 
-  switch (_typ)
+  switch (_random_type)
   {
-    case 0: //Continuously random
+    case 0: // Continuously random
       return val;
 
-    case 1: //Discretely random
+    case 1: // Discretely random
     {
       unsigned int rndind = _op_num * val;
 
@@ -46,5 +53,5 @@ Real PolycrystalRandomIC::value(const Point & p)
     }
   }
 
-  mooseError("Bad case passed in PolycrystalRandomIC");
+  paramError("random_type", "Bad type passed in PolycrystalRandomIC");
 }

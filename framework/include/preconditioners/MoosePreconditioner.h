@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOOSEPRECONDITIONER_H
 #define MOOSEPRECONDITIONER_H
@@ -26,18 +21,17 @@ class MoosePreconditioner;
 namespace libMesh
 {
 class MeshBase;
-template <typename T> class NumericVector;
+template <typename T>
+class NumericVector;
 }
 
-template<>
+template <>
 InputParameters validParams<MoosePreconditioner>();
 
 /**
  * Base class for MOOSE preconditioners.
  */
-class MoosePreconditioner :
-  public MooseObject,
-  public Restartable
+class MoosePreconditioner : public MooseObject, public Restartable
 {
 public:
   MoosePreconditioner(const InputParameters & params);
@@ -48,8 +42,12 @@ public:
    * vectors from two different systems.
    */
   static void copyVarValues(MeshBase & mesh,
-                            const unsigned int from_system, const unsigned int from_var, const NumericVector<Number> & from_vector,
-                            const unsigned int to_system, const unsigned int to_var, NumericVector<Number> & to_vector);
+                            const unsigned int from_system,
+                            const unsigned int from_var,
+                            const NumericVector<Number> & from_vector,
+                            const unsigned int to_system,
+                            const unsigned int to_var,
+                            NumericVector<Number> & to_vector);
 
 protected:
   /// Subproblem this preconditioner is part of

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef OUTPUT_H
 #define OUTPUT_H
@@ -31,7 +26,7 @@ namespace libMesh
 class EquationSystems;
 }
 
-template<>
+template <>
 InputParameters validParams<Output>();
 
 /**
@@ -42,14 +37,12 @@ InputParameters validParams<Output>();
  *
  * @see Exodus Console CSV
  */
-class Output :
-  public MooseObject,
-  public Restartable,
-  public MeshChangedInterface,
-  public SetupInterface
+class Output : public MooseObject,
+               public Restartable,
+               public MeshChangedInterface,
+               public SetupInterface
 {
 public:
-
   /**
    * Class constructor
    *
@@ -64,16 +57,17 @@ public:
    * Get the output time.
    * @return The output time, which may be different than the simulation time
    *
-   * When the Executioner is steady this utilizes the time_step and when Transient the actual time is used.
+   * When the Executioner is steady this utilizes the time_step and when Transient the actual time
+   * is used.
    */
   virtual Real time();
 
-   /**
-   * Get the old output time.
-   * @return The old output time, which may be different than the simulation time
-   *
-   * @see time()
-   */
+  /**
+  * Get the old output time.
+  * @return The old output time, which may be different than the simulation time
+  *
+  * @see time()
+  */
   virtual Real timeOld();
 
   /**
@@ -114,10 +108,15 @@ public:
   virtual const OutputOnWarehouse & advancedExecuteOn() const;
 
   /**
-   * Return the support output execution times
+   * (DEPRECATED) Return the support output execution times
    * @param default_type The default MultiMooseEnum option
    */
   static MultiMooseEnum getExecuteOptions(std::string default_type = "");
+
+  /**
+   * Return an ExecFlagEnum object with the available execution flags for Output objects.
+   */
+  static ExecFlagEnum getDefaultExecFlagEnum();
 
   /**
    * Method for controlling the allow output state
@@ -130,16 +129,19 @@ public:
    */
   static void addDeprecatedInputParameters(InputParameters & params);
 
-
-protected:
-
   /**
    * A single call to this function should output all the necessary data for a single timestep.
    * @param type The type execution flag (see Moose.h)
    *
    * @see outputNodalVariables outputElementalVariables outputScalarVariables outputPostprocessors
    */
-  virtual void outputStep(const ExecFlagType & type) = 0;
+  virtual void outputStep(const ExecFlagType & type);
+
+protected:
+  /**
+   * Overload this function with the desired output activities
+   */
+  virtual void output(const ExecFlagType & type) = 0;
 
   /**
    * A method called just prior to the solve, this is used by PetscOutput to perform the necessary
@@ -151,13 +153,13 @@ protected:
    * Handles logic for determining if a step should be output
    * @return True if a call if output should be preformed
    */
-  bool shouldOutput(const ExecFlagType & type);
+  virtual bool shouldOutput(const ExecFlagType & type);
 
   /**
    * Returns true if the output interval is satisfied
    * \todo{Implement additional types of intervals (e.g., simulation time and real time)}
    */
-  bool onInterval();
+  virtual bool onInterval();
 
   /**
    * Initialization method.
@@ -181,7 +183,7 @@ protected:
   bool _sequence;
 
   /// The common Execution types; this is used as the default execution type for everything except system information and input
-  MultiMooseEnum _execute_on;
+  ExecFlagEnum _execute_on;
 
   /// The current time for output purposes
   Real & _time;
@@ -212,6 +214,12 @@ protected:
 
   /// End outputting time
   Real _end_time;
+
+  /// Start outputting at this time step
+  int _start_step;
+
+  /// End outputting at this time step
+  int _end_step;
 
   /// Time checking tolerance
   Real _t_tol;

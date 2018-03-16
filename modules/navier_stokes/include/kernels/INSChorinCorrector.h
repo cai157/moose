@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef INSCHORINCORRECTOR_H
 #define INSCHORINCORRECTOR_H
 
@@ -12,7 +15,7 @@
 // Forward Declarations
 class INSChorinCorrector;
 
-template<>
+template <>
 InputParameters validParams<INSChorinCorrector>();
 
 /**
@@ -24,7 +27,7 @@ class INSChorinCorrector : public Kernel
 public:
   INSChorinCorrector(const InputParameters & parameters);
 
-  virtual ~INSChorinCorrector(){}
+  virtual ~INSChorinCorrector() {}
 
 protected:
   virtual Real computeQpResidual();
@@ -45,12 +48,11 @@ protected:
   unsigned _w_vel_star_var_number;
   unsigned _p_var_number;
 
-  // Material properties
-  Real _rho;
-
   // Parameters
   unsigned _component;
-};
 
+  // Material properties
+  const MaterialProperty<Real> & _rho;
+};
 
 #endif // INSCHORINCORRECTOR_H

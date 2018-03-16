@@ -4,6 +4,8 @@
   nx = 10
   ny = 10
   nz = 10
+  # Our CSV diffs here depend on a fixed element id numbering
+  allow_renumbering = false
 []
 
 [Variables]
@@ -42,7 +44,6 @@
 []
 
 [Executioner]
-  # Preconditioned JFNK (default)
   type = Steady
   solve_type = PJFNK
   petsc_options_iname = '-pc_type -pc_hypre_type'

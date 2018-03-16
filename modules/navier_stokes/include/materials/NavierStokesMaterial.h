@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef NAVIERSTOKESMATERIAL_H
 #define NAVIERSTOKESMATERIAL_H
 
@@ -13,7 +16,7 @@
 class NavierStokesMaterial;
 class IdealGasFluidProperties;
 
-template<>
+template <>
 InputParameters validParams<NavierStokesMaterial>();
 
 /**
@@ -49,23 +52,23 @@ protected:
   const VariableGradient & _grad_w;
 
   MaterialProperty<RealTensorValue> & _viscous_stress_tensor;
-  MaterialProperty<Real> &            _thermal_conductivity;
-  MaterialProperty<Real> &            _dynamic_viscosity;
+  MaterialProperty<Real> & _thermal_conductivity;
+  MaterialProperty<Real> & _dynamic_viscosity;
 
   // Also store the "cal A" matrices at each quadrature point as material
   // poperties.  These are defined in the compns notes and are needed for
   // computing strong and weak residual values and Jacobian entries, so it's
   // good if we reuse them...
-  MaterialProperty<std::vector<RealTensorValue> > & _calA;
+  MaterialProperty<std::vector<RealTensorValue>> & _calA;
 
   // The "velocity column" matrices.  _calC[_qp][k] is a tensor with the
   // velocity vector in the k'th column.  See notes for additional details.
-  MaterialProperty<std::vector<RealTensorValue> > & _calC;
+  MaterialProperty<std::vector<RealTensorValue>> & _calC;
 
   // The energy equation inviscid flux matrix components.  There are n_vars of
   // these for each dimension, so in 3D, 3*5=15 different matrices.
   // See notes for additional details.
-  MaterialProperty<std::vector<std::vector<RealTensorValue> > > & _calE;
+  MaterialProperty<std::vector<std::vector<RealTensorValue>>> & _calE;
 
   // Convenient storage for all of the velocity gradient components so
   // we can refer to them in a loop.
@@ -113,7 +116,7 @@ protected:
 
   // The (vector-valued) material property which is the strong-form
   // residual at each quadrature point.
-  MaterialProperty<std::vector<Real> > & _strong_residuals;
+  MaterialProperty<std::vector<Real>> & _strong_residuals;
 
   // Fluid properties
   const IdealGasFluidProperties & _fp;
@@ -129,4 +132,4 @@ private:
   void computeStrongResiduals(unsigned int qp);
 };
 
-#endif //NAVIERSTOKESMATERIAL_H
+#endif // NAVIERSTOKESMATERIAL_H

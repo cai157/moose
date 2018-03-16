@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef CRYSTALPLASTICITYSTATEVARIABLE_H
 #define CRYSTALPLASTICITYSTATEVARIABLE_H
 
@@ -11,7 +14,7 @@
 
 class CrystalPlasticityStateVariable;
 
-template<>
+template <>
 InputParameters validParams<CrystalPlasticityStateVariable>();
 
 /**
@@ -23,19 +26,22 @@ public:
   CrystalPlasticityStateVariable(const InputParameters & parameters);
 
   virtual bool updateStateVariable(unsigned int qp, Real dt, std::vector<Real> & val) const;
-  virtual void initSlipSysProps(std::vector<Real> & val) const;
+  virtual void initSlipSysProps(std::vector<Real> & val, const Point & q_point) const;
 
 protected:
   virtual void readInitialValueFromFile(std::vector<Real> & val) const;
 
   virtual void readInitialValueFromInline(std::vector<Real> & val) const;
 
+  virtual void provideInitialValueByUser(std::vector<Real> & /*val*/,
+                                         const Point & /*q_point*/) const;
+
   unsigned int _num_mat_state_var_evol_rate_comps;
 
-  std::vector<const MaterialProperty<std::vector<Real> > * > _mat_prop_state_var_evol_rate_comps;
+  std::vector<const MaterialProperty<std::vector<Real>> *> _mat_prop_state_var_evol_rate_comps;
 
-  const MaterialProperty<std::vector<Real> > &  _mat_prop_state_var;
-  const MaterialProperty<std::vector<Real> > &  _mat_prop_state_var_old;
+  const MaterialProperty<std::vector<Real>> & _mat_prop_state_var;
+  const MaterialProperty<std::vector<Real>> & _mat_prop_state_var_old;
 
   /// File should contain initial values of the state variable.
   FileName _state_variable_file_name;
@@ -43,7 +49,8 @@ protected:
   /// Read from options for initial values of internal variables
   MooseEnum _intvar_read_type;
 
-  /** The _groups variable is used to group slip systems and assign the initial values to each group.
+  /** The _groups variable is used to group slip systems and assign the initial values to each
+   * group.
    *  The format is taken as [start end)
    *  i.e. _groups = '0 4 8 11', it means three groups 0-3, 4-7 and 8-11
    */

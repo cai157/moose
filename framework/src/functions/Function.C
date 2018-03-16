@@ -1,21 +1,17 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "Function.h"
 
-template<>
-InputParameters validParams<Function>()
+template <>
+InputParameters
+validParams<Function>()
 {
   InputParameters params = validParams<MooseObject>();
 
@@ -24,21 +20,19 @@ InputParameters validParams<Function>()
   return params;
 }
 
-Function::Function(const InputParameters & parameters) :
-    MooseObject(parameters),
+Function::Function(const InputParameters & parameters)
+  : MooseObject(parameters),
     SetupInterface(this),
     TransientInterface(this),
     PostprocessorInterface(this),
     UserObjectInterface(this),
-    Restartable(parameters, "Functions"),
+    Restartable(this, "Functions"),
     MeshChangedInterface(parameters),
     ScalarCoupleable(this)
 {
 }
 
-Function::~Function()
-{
-}
+Function::~Function() {}
 
 Real
 Function::value(Real /*t*/, const Point & /*p*/)
@@ -55,7 +49,7 @@ Function::gradient(Real /*t*/, const Point & /*p*/)
 Real
 Function::timeDerivative(Real /*t*/, const Point & /*p*/)
 {
-  mooseError("timeDerivative method not defined for function " << name());
+  mooseError("timeDerivative method not defined for function ", name());
   return 0;
 }
 
@@ -68,13 +62,13 @@ Function::vectorValue(Real /*t*/, const Point & /*p*/)
 Real
 Function::integral()
 {
-  mooseError("Integral method not defined for function " << name());
+  mooseError("Integral method not defined for function ", name());
   return 0;
 }
 
 Real
 Function::average()
 {
-  mooseError("Average method not defined for function " << name());
+  mooseError("Average method not defined for function ", name());
   return 0;
 }

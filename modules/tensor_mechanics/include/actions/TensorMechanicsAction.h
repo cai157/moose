@@ -1,20 +1,23 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef TENSORMECHANICSACTION_H
 #define TENSORMECHANICSACTION_H
 
-#include "Action.h"
+#include "TensorMechanicsActionBase.h"
 
 class TensorMechanicsAction;
 
 template <>
 InputParameters validParams<TensorMechanicsAction>();
 
-class TensorMechanicsAction : public Action
+class TensorMechanicsAction : public TensorMechanicsActionBase
 {
 public:
   TensorMechanicsAction(const InputParameters & params);
@@ -71,26 +74,16 @@ protected:
   enum class PlanarFormulation
   {
     None,
-    PlaneStress,
     PlaneStrain,
-    GeneralizedPlaneStrain
+    GeneralizedPlaneStrain,
+    /* PlaneStress */
   } _planar_formulation;
 
   /// use displaced mesh (true unless _strain is SMALL)
   bool _use_displaced_mesh;
 
-  /// names of properties containing eigenstrain tensors to be applied in strain model
-  const std::vector<MaterialPropertyName> _eigenstrain_names;
-
   /// output aux variables to generate for sclar stress/strain tensor quantities
   std::vector<std::string> _generate_output;
-
-public:
-  ///@{ table data for output generation
-  static const std::map<std::string, std::string> _ranktwoaux_table;
-  static const std::vector<char> _component_table;
-  static const std::map<std::string, std::pair<std::string, std::vector<std::string>>> _ranktwoscalaraux_table;
-  ///@}
 };
 
-#endif //TENSORMECHANICSACTION_H
+#endif // TENSORMECHANICSACTION_H

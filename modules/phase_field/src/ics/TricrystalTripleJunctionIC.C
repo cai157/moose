@@ -1,49 +1,46 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "TricrystalTripleJunctionIC.h"
 #include "MooseRandom.h"
 #include "MooseMesh.h"
 #include "MathUtils.h"
 
-template<>
-InputParameters validParams<TricrystalTripleJunctionIC>()
+template <>
+InputParameters
+validParams<TricrystalTripleJunctionIC>()
 {
   InputParameters params = validParams<InitialCondition>();
   params.addClassDescription("Tricrystal with a triple junction");
-  params.addRequiredParam<unsigned int>("op_num","Number of grain order parameters");
+  params.addRequiredParam<unsigned int>("op_num", "Number of grain order parameters");
   params.addRequiredParam<unsigned int>("op_index", "Index for the current grain order parameter");
   params.addParam<Real>("theta1", 135.0, "Angle of first grain at triple junction in degrees");
   params.addParam<Real>("theta2", 135.0, "Angle of second grain at triple junction in degrees");
-  params.addParam<Point>("junction", "The point where the triple junction is located. Default is the center of the mesh");
+  params.addParam<Point>(
+      "junction",
+      "The point where the triple junction is located. Default is the center of the mesh");
   return params;
 }
 
-TricrystalTripleJunctionIC::TricrystalTripleJunctionIC(const InputParameters & parameters) :
-    InitialCondition(parameters),
+TricrystalTripleJunctionIC::TricrystalTripleJunctionIC(const InputParameters & parameters)
+  : InitialCondition(parameters),
     _mesh(_fe_problem.mesh()),
-    _nl(_fe_problem.getNonlinearSystemBase()),
     _op_num(getParam<unsigned int>("op_num")),
     _op_index(getParam<unsigned int>("op_index")),
     _theta1(getParam<Real>("theta1")),
     _theta2(getParam<Real>("theta2"))
 {
   if (_op_num != 3)
-    mooseError("Tricrystal ICs must have op_num = 3");
+    paramError("op_num", "Tricrystal ICs must have op_num = 3");
 
   if (_theta1 + _theta2 >= 360.0)
-    mooseError("Sum of the angles must total less than 360 degrees");
-
-  // Make sure that _junction is in the domain
-  for (unsigned int i = 0; i < LIBMESH_DIM; ++i)
-  {
-    if ((_mesh.getMinInDimension(i) > _junction(i)) || (_mesh.getMaxInDimension(i) < _junction(i)))
-      mooseError("Triple junction out of bounds");
-  }
+    paramError("theta1", "Sum of the angles theta1 and theta2 must total less than 360 degrees");
 
   // Default junction point is the center
   if (!parameters.isParamValid("junction"))
@@ -54,6 +51,12 @@ TricrystalTripleJunctionIC::TricrystalTripleJunctionIC(const InputParameters & p
   else
     _junction = getParam<Point>("junction");
 
+  // Make sure that _junction is in the domain
+  for (unsigned int i = 0; i < LIBMESH_DIM; ++i)
+  {
+    if ((_mesh.getMinInDimension(i) > _junction(i)) || (_mesh.getMaxInDimension(i) < _junction(i)))
+      paramError("junction", "Triple junction out of bounds");
+  }
 
   // Convert the angles to radians
   _theta1 = _theta1 * libMesh::pi / 180.0;
@@ -76,7 +79,7 @@ TricrystalTripleJunctionIC::value(const Point & p)
   /*
    * This does all the work to create a triple junction that looks like the letter Y
    */
-  Real dist_left; // The distance from the point to the line specified by _theta1
+  Real dist_left;  // The distance from the point to the line specified by _theta1
   Real dist_right; // The distance from the point to the line specified by _theta2
 
   // Check if the point is above or below the left-most line
@@ -91,12 +94,12 @@ TricrystalTripleJunctionIC::value(const Point & p)
   if (_theta2 == 0) // Handle tan(0) classes
     dist_right = p(1) - _junction(1);
   else
-    dist_right = p(1) - (_junction(1)  + (p(0) - _junction(0)) * _tan_theta2);
+    dist_right = p(1) - (_junction(1) + (p(0) - _junction(0)) * _tan_theta2);
 
   // Check if the point is to the left or right of the middle line
   Real dist_center = p(0) - _junction(0); // Negative value if the point is to the left
 
-  if (_tan_theta1 > 0 && _theta1 <= libMesh::pi/2.0) // Case for large left grain
+  if (_tan_theta1 > 0 && _theta1 <= libMesh::pi / 2.0) // Case for large left grain
   {
     /*
      * There's a lot going on here.  The first statement tells MOOSE to check and
@@ -116,7 +119,7 @@ TricrystalTripleJunctionIC::value(const Point & p)
   }
 
   // This does a similar thing as the above case, but switches it for the right and left grains
-  else if (_tan_theta2 < 0 && _theta2 >= libMesh::pi/2.0) // Case for large right grain
+  else if (_tan_theta2 < 0 && _theta2 >= libMesh::pi / 2.0) // Case for large right grain
   {
     if ((dist_left <= 0 && dist_center <= 0 && _op_index == 1) ||
         (((dist_right >= 0 && dist_center <= 0) || (dist_center > 0)) && _op_index == 2) ||
@@ -130,9 +133,10 @@ TricrystalTripleJunctionIC::value(const Point & p)
   {
     if ((dist_left <= 0 && dist_center <= 0 && _op_index == 1) || // First grain
         (dist_right <= 0 && dist_center > 0 && _op_index == 2) || // Second grain
-        (((dist_left > 0 && dist_center < 0) || (dist_right > 0 && dist_center >= 0)) && _op_index == 3)) // Third grain
-       return 1.0;
+        (((dist_left > 0 && dist_center < 0) || (dist_right > 0 && dist_center >= 0)) &&
+         _op_index == 3)) // Third grain
+      return 1.0;
     else
-       return 0.0;
+      return 0.0;
   }
 }

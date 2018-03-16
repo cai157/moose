@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "AddLotsOfAuxVariablesAction.h"
@@ -22,7 +17,6 @@
 #include "Conversion.h"
 #include "MooseMesh.h"
 
-// libMesh includes
 #include "libmesh/libmesh.h"
 #include "libmesh/exodusII_io.h"
 #include "libmesh/equation_systems.h"
@@ -38,25 +32,30 @@
 // class static initialization
 const Real AddLotsOfAuxVariablesAction::_abs_zero_tol = 1e-12;
 
-template<>
-InputParameters validParams<AddLotsOfAuxVariablesAction>()
+registerMooseAction("MooseTestApp", AddLotsOfAuxVariablesAction, "meta_action");
+
+template <>
+InputParameters
+validParams<AddLotsOfAuxVariablesAction>()
 {
   MooseEnum families(AddVariableAction::getNonlinearVariableFamilies());
   MooseEnum orders(AddVariableAction::getNonlinearVariableOrders());
 
   InputParameters params = validParams<Action>();
   params.addRequiredParam<unsigned int>("number", "The number of variables to add");
-  params.addParam<MooseEnum>("family", families, "Specifies the family of FE shape functions to use for this variable");
-  params.addParam<MooseEnum>("order", orders,  "Specifies the order of the FE shape function to use for this variable");
-  params.addParam<Real>("initial_condition", 0.0, "Specifies the initial condition for this variable");
-  params.addParam<std::vector<SubdomainName> >("block", "The block id where this variable lives");
+  params.addParam<MooseEnum>(
+      "family", families, "Specifies the family of FE shape functions to use for this variable");
+  params.addParam<MooseEnum>(
+      "order", orders, "Specifies the order of the FE shape function to use for this variable");
+  params.addParam<Real>(
+      "initial_condition", 0.0, "Specifies the initial condition for this variable");
+  params.addParam<std::vector<SubdomainName>>("block", "The block id where this variable lives");
 
   return params;
 }
 
-
-AddLotsOfAuxVariablesAction::AddLotsOfAuxVariablesAction(const InputParameters & parameters) :
-    Action(parameters)
+AddLotsOfAuxVariablesAction::AddLotsOfAuxVariablesAction(const InputParameters & parameters)
+  : Action(parameters)
 {
 }
 
@@ -72,14 +71,15 @@ AddLotsOfAuxVariablesAction::act()
                    Utility::string_to_enum<FEFamily>(getParam<MooseEnum>("family")));
 
     std::set<SubdomainID> blocks;
-    std::vector<SubdomainName> block_param = getParam<std::vector<SubdomainName> >("block");
-    for (std::vector<SubdomainName>::iterator it = block_param.begin(); it != block_param.end(); ++it)
+    std::vector<SubdomainName> block_param = getParam<std::vector<SubdomainName>>("block");
+    for (std::vector<SubdomainName>::iterator it = block_param.begin(); it != block_param.end();
+         ++it)
     {
       SubdomainID blk_id = _problem->mesh().getSubdomainID(*it);
       blocks.insert(blk_id);
     }
 
-    bool scalar_var = false;                              // true if adding scalar variable
+    bool scalar_var = false; // true if adding scalar variable
 
     if (fe_type.family == SCALAR)
     {

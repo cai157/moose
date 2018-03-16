@@ -1,24 +1,22 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "ElementsAlongPlane.h"
 #include "ElementsIntersectedByPlane.h"
 #include "MooseMesh.h"
 
-template<>
-InputParameters validParams<ElementsAlongPlane>()
+registerMooseObject("MooseApp", ElementsAlongPlane);
+
+template <>
+InputParameters
+validParams<ElementsAlongPlane>()
 {
   InputParameters params = validParams<GeneralVectorPostprocessor>();
 
@@ -27,8 +25,8 @@ InputParameters validParams<ElementsAlongPlane>()
   return params;
 }
 
-ElementsAlongPlane::ElementsAlongPlane(const InputParameters & parameters) :
-    GeneralVectorPostprocessor(parameters),
+ElementsAlongPlane::ElementsAlongPlane(const InputParameters & parameters)
+  : GeneralVectorPostprocessor(parameters),
     _p0(getParam<Point>("point")),
     _normal(getParam<Point>("normal")),
     _elem_ids(declareVector("elem_ids"))
@@ -52,6 +50,6 @@ ElementsAlongPlane::execute()
 
   _elem_ids.resize(num_elems);
 
-  for (unsigned int i=0; i<num_elems; i++)
+  for (unsigned int i = 0; i < num_elems; i++)
     _elem_ids[i] = intersected_elems[i]->id();
 }

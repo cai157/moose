@@ -1,39 +1,43 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
+#include "MultiAppVariableValueSamplePostprocessorTransfer.h"
 
 // MOOSE includes
-#include "MultiAppVariableValueSamplePostprocessorTransfer.h"
-#include "MooseTypes.h"
 #include "FEProblem.h"
-#include "MultiApp.h"
 #include "MooseMesh.h"
+#include "MooseTypes.h"
+#include "MooseVariableField.h"
+#include "MultiApp.h"
+#include "SystemBase.h"
 
-// libMesh includes
 #include "libmesh/meshfree_interpolation.h"
 #include "libmesh/system.h"
 
-template<>
-InputParameters validParams<MultiAppVariableValueSamplePostprocessorTransfer>()
+registerMooseObject("MooseApp", MultiAppVariableValueSamplePostprocessorTransfer);
+
+template <>
+InputParameters
+validParams<MultiAppVariableValueSamplePostprocessorTransfer>()
 {
   InputParameters params = validParams<MultiAppTransfer>();
-  params.addRequiredParam<PostprocessorName>("postprocessor", "The name of the postprocessor in the MultiApp to transfer the value to.  This should most likely be a Reporter Postprocessor.");
+  params.addRequiredParam<PostprocessorName>(
+      "postprocessor",
+      "The name of the postprocessor in the MultiApp to transfer the value to.  "
+      "This should most likely be a Reporter Postprocessor.");
   params.addRequiredParam<VariableName>("source_variable", "The variable to transfer from.");
   return params;
 }
 
-MultiAppVariableValueSamplePostprocessorTransfer::MultiAppVariableValueSamplePostprocessorTransfer(const InputParameters & parameters) :
-    MultiAppTransfer(parameters),
+MultiAppVariableValueSamplePostprocessorTransfer::MultiAppVariableValueSamplePostprocessorTransfer(
+    const InputParameters & parameters)
+  : MultiAppTransfer(parameters),
     _postprocessor_name(getParam<PostprocessorName>("postprocessor")),
     _from_var_name(getParam<VariableName>("source_variable"))
 {
@@ -49,7 +53,7 @@ MultiAppVariableValueSamplePostprocessorTransfer::execute()
     case TO_MULTIAPP:
     {
       FEProblemBase & from_problem = _multi_app->problemBase();
-      MooseVariable & from_var = from_problem.getVariable(0, _from_var_name);
+      MooseVariable & from_var = from_problem.getStandardVariable(0, _from_var_name);
       SystemBase & from_system_base = from_var.sys();
       SubProblem & from_sub_problem = from_system_base.subproblem();
 
@@ -57,7 +61,9 @@ MultiAppVariableValueSamplePostprocessorTransfer::execute()
 
       std::unique_ptr<PointLocatorBase> pl = from_mesh.getPointLocator();
 
-      for (unsigned int i=0; i<_multi_app->numGlobalApps(); i++)
+      pl->enable_out_of_mesh_mode();
+
+      for (unsigned int i = 0; i < _multi_app->numGlobalApps(); i++)
       {
         Real value = -std::numeric_limits<Real>::max();
 
@@ -89,7 +95,8 @@ MultiAppVariableValueSamplePostprocessorTransfer::execute()
     }
     case FROM_MULTIAPP:
     {
-      mooseError("Can't transfer a variable value from a MultiApp to a Postprocessor in the Master.");
+      mooseError(
+          "Can't transfer a variable value from a MultiApp to a Postprocessor in the Master.");
       break;
     }
   }

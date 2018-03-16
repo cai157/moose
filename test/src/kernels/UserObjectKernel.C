@@ -1,40 +1,37 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "UserObjectKernel.h"
 
-template<>
-InputParameters validParams<UserObjectKernel>()
+registerMooseObject("MooseTestApp", UserObjectKernel);
+
+template <>
+InputParameters
+validParams<UserObjectKernel>()
 {
   InputParameters params = validParams<Kernel>();
   params.addRequiredParam<UserObjectName>("user_object", "The name of user data object to use.");
   return params;
 }
 
-UserObjectKernel::UserObjectKernel(const InputParameters & params) :
-    Kernel(params),
-    _mutley(getUserObject<MTUserObject>("user_object"))   // get user-data object and cast it down so we can use it
+UserObjectKernel::UserObjectKernel(const InputParameters & params)
+  : Kernel(params),
+    _mutley(getUserObject<MTUserObject>(
+        "user_object")) // get user-data object and cast it down so we can use it
 {
 }
 
-UserObjectKernel::~UserObjectKernel()
-{
-}
+UserObjectKernel::~UserObjectKernel() {}
 
 Real
 UserObjectKernel::computeQpResidual()
 {
-  Real val = _mutley.doSomething();     // let Mutley do something
+  Real val = _mutley.doSomething(); // let Mutley do something
   return -_test[_i][_qp] * val;
 }

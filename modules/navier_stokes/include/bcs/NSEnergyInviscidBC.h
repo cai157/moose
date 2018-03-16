@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef NSENERGYINVISCIDBC_H
 #define NSENERGYINVISCIDBC_H
 
@@ -13,7 +16,7 @@
 // Forward Declarations
 class NSEnergyInviscidBC;
 
-template<>
+template <>
 InputParameters validParams<NSEnergyInviscidBC>();
 
 /**
@@ -92,7 +95,8 @@ protected:
   // Each of these terms, when differentiated, leads to
   // multiple terms due to the product rule:
   // (1) d/dX (rho*cv*T*(u.n))      = cv * (d(rho)/dX*T*(u.n) + rho*d(T)/dX*(u.n) + rho*T*d(u.n)/dX)
-  // (2) d/dX (rho*0.5*|u|^2*(u.n)) = 0.5 * (d(rho)/dX*|u|^2*(u.n) + rho*d(|u|^2)/dX*(u.n) + rho*|u|^2*d(u.n)/dX)
+  // (2) d/dX (rho*0.5*|u|^2*(u.n)) = 0.5 * (d(rho)/dX*|u|^2*(u.n) + rho*d(|u|^2)/dX*(u.n) +
+  // rho*|u|^2*d(u.n)/dX)
   // (3) d/dX (p*(u.n)) = d(p)/dx*(u.n) + p*d(u.n)/dX
 };
 

@@ -1,82 +1,33 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef RANKTWOTENSORTEST_H
 #define RANKTWOTENSORTEST_H
 
-//CPPUnit includes
-#include "GuardedHelperMacros.h"
+#include "gtest_include.h"
 
 // Moose includes
 #include "RankTwoTensor.h"
 
-class RankTwoTensorTest : public CppUnit::TestFixture
+class RankTwoTensorTest : public ::testing::Test
 {
+protected:
+  void SetUp()
+  {
+    _m0 = RankTwoTensor(0, 0, 0, 0, 0, 0, 0, 0, 0);
+    _m1 = RankTwoTensor(1, 0, 0, 0, 1, 0, 0, 0, 1);
+    _m2 = RankTwoTensor(1, 0, 0, 0, 2, 0, 0, 0, 3);
+    _m3 = RankTwoTensor(1, 2, 3, 2, -5, -6, 3, -6, 9);
+    _unsymmetric0 = RankTwoTensor(1, 2, 3, -4, -5, -6, 7, 8, 9);
+    _unsymmetric1 = RankTwoTensor(1, 2, 3, -4, -5, -6, 7, 8, 10);
+  }
 
-  CPPUNIT_TEST_SUITE( RankTwoTensorTest );
-
-  CPPUNIT_TEST( L2normTest );
-  CPPUNIT_TEST( addIaTest );
-  CPPUNIT_TEST( transposeTest );
-  CPPUNIT_TEST( doubleContractionTest );
-  CPPUNIT_TEST( rotateTest );
-  CPPUNIT_TEST( deviatoricTest );
-  CPPUNIT_TEST( traceTest );
-  CPPUNIT_TEST( dtraceTest );
-  CPPUNIT_TEST( secondInvariantTest );
-  CPPUNIT_TEST( dsecondInvariantTest );
-  CPPUNIT_TEST( d2secondInvariantTest );
-  CPPUNIT_TEST( thirdInvariantTest );
-  CPPUNIT_TEST( dthirdInvariantTest );
-  CPPUNIT_TEST( d2thirdInvariantTest );
-  CPPUNIT_TEST( sin3LodeTest );
-  CPPUNIT_TEST( dsin3LodeTest );
-  CPPUNIT_TEST( d2sin3LodeTest );
-  CPPUNIT_TEST( detTest );
-  CPPUNIT_TEST( ddetTest );
-  CPPUNIT_TEST( inverseTest );
-  CPPUNIT_TEST( initialContractionTest );
-
-  CPPUNIT_TEST_SUITE_END();
-
-public:
-  RankTwoTensorTest();
-  ~RankTwoTensorTest();
-
-  void L2normTest();
-  void addIaTest();
-  void transposeTest();
-  void doubleContractionTest();
-  void rotateTest();
-  void deviatoricTest();
-  void traceTest();
-  void dtraceTest();
-  void secondInvariantTest();
-  void dsecondInvariantTest();
-  void d2secondInvariantTest();
-  void thirdInvariantTest();
-  void dthirdInvariantTest();
-  void d2thirdInvariantTest();
-  void sin3LodeTest();
-  void dsin3LodeTest();
-  void d2sin3LodeTest();
-  void detTest();
-  void ddetTest();
-  void inverseTest();
-  void initialContractionTest();
-
- private:
   RankTwoTensor _m0;
   RankTwoTensor _m1;
   RankTwoTensor _m2;
@@ -85,4 +36,4 @@ public:
   RankTwoTensor _unsymmetric1;
 };
 
-#endif  // RANKTWOTENSORTEST_H
+#endif // RANKTWOTENSORTEST_H

@@ -1,29 +1,28 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "DiffTensorKernel.h"
 
-template<>
-InputParameters validParams<DiffTensorKernel>()
+registerMooseObject("MooseTestApp", DiffTensorKernel);
+
+template <>
+InputParameters
+validParams<DiffTensorKernel>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addRequiredParam<FunctionName>("conductivity", "the name of the thermal conductivity function to utilize");
+  params.addRequiredParam<FunctionName>("conductivity",
+                                        "the name of the thermal conductivity function to utilize");
   return params;
 }
 
-DiffTensorKernel::DiffTensorKernel(const InputParameters & parameters) :
-    Kernel(parameters),
-    _k_comp(getFunction("conductivity"))
+DiffTensorKernel::DiffTensorKernel(const InputParameters & parameters)
+  : Kernel(parameters), _k_comp(getFunction("conductivity"))
 {
 }
 
@@ -49,13 +48,13 @@ DiffTensorKernel::computeConductivity(Real /*t*/, const Point & /*pt*/)
 
   // Build tensor for thermal conductivity
   RealTensorValue tensor;
-  tensor(0,0) = vector(0);
+  tensor(0, 0) = vector(0);
 
 #if LIBMESH_DIM > 1
-  tensor(1,1) = vector(1);
+  tensor(1, 1) = vector(1);
 #endif
 #if LIBMESH_DIM > 2
-  tensor(2,2) = vector(2);
+  tensor(2, 2) = vector(2);
 #endif
   return tensor;
 }

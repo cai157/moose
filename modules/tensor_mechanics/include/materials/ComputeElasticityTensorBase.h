@@ -1,19 +1,30 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef COMPUTEELASTICITYTENSORBASE_H
 #define COMPUTEELASTICITYTENSORBASE_H
 
+#include "DerivativeMaterialInterface.h"
 #include "Material.h"
 #include "RankFourTensor.h"
+#include "GuaranteeProvider.h"
+
+class ComputeElasticityTensorBase;
+
+template <>
+InputParameters validParams<ComputeElasticityTensorBase>();
 
 /**
  * ComputeElasticityTensorBase the base class for computing elasticity tensors
  */
-class ComputeElasticityTensorBase : public DerivativeMaterialInterface<Material>
+class ComputeElasticityTensorBase : public DerivativeMaterialInterface<Material>,
+                                    public GuaranteeProvider
 {
 public:
   ComputeElasticityTensorBase(const InputParameters & parameters);
@@ -31,4 +42,4 @@ protected:
   Function * const _prefactor_function;
 };
 
-#endif //COMPUTEELASTICITYTENSORBASE_H
+#endif // COMPUTEELASTICITYTENSORBASE_H

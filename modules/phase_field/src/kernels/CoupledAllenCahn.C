@@ -1,23 +1,29 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "CoupledAllenCahn.h"
 
-template<>
-InputParameters validParams<CoupledAllenCahn>()
+template <>
+InputParameters
+validParams<CoupledAllenCahn>()
 {
   InputParameters params = ACBulk<Real>::validParams();
-  params.addClassDescription("Coupled Allen-Cahn Kernel that uses a DerivativeMaterial Free Energy");
+  params.addClassDescription(
+      "Coupled Allen-Cahn Kernel that uses a DerivativeMaterial Free Energy");
   params.addRequiredCoupledVar("v", "Coupled variable");
-  params.addRequiredParam<MaterialPropertyName>("f_name", "Base name of the free energy function F defined in a DerivativeParsedMaterial");
+  params.addRequiredParam<MaterialPropertyName>(
+      "f_name", "Base name of the free energy function F defined in a DerivativeParsedMaterial");
   return params;
 }
 
-CoupledAllenCahn::CoupledAllenCahn(const InputParameters & parameters) :
-    ACBulk<Real>(parameters),
+CoupledAllenCahn::CoupledAllenCahn(const InputParameters & parameters)
+  : ACBulk<Real>(parameters),
     _v_name(getVar("v", 0)->name()),
     _nvar(_coupled_moose_vars.size()),
     _dFdV(getMaterialPropertyDerivative<Real>("f_name", _v_name)),
@@ -26,7 +32,8 @@ CoupledAllenCahn::CoupledAllenCahn(const InputParameters & parameters) :
 {
   // Iterate over all coupled variables
   for (unsigned int i = 0; i < _nvar; ++i)
-    _d2FdVdarg[i] = &getMaterialPropertyDerivative<Real>("f_name", _v_name, _coupled_moose_vars[i]->name());
+    _d2FdVdarg[i] =
+        &getMaterialPropertyDerivative<Real>("f_name", _v_name, _coupled_moose_vars[i]->name());
 }
 
 void

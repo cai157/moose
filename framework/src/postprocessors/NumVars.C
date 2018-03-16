@@ -1,37 +1,38 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "NumVars.h"
-#include "SubProblem.h"
-#include "NonlinearSystemBase.h"
 
-template<>
-InputParameters validParams<NumVars>()
+#include "AuxiliarySystem.h"
+#include "NonlinearSystemBase.h"
+#include "SubProblem.h"
+
+registerMooseObject("MooseApp", NumVars);
+
+template <>
+InputParameters
+validParams<NumVars>()
 {
   InputParameters params = validParams<GeneralPostprocessor>();
 
   MooseEnum system_options("nonlinear auxiliary", "nonlinear");
-  params.addParam<MooseEnum>("system", system_options, "The system for which you want to print the number of variables.");
+  params.addParam<MooseEnum>(
+      "system", system_options, "The system for which you want to print the number of variables.");
 
   return params;
 }
 
-NumVars::NumVars(const InputParameters & parameters) :
-    GeneralPostprocessor(parameters),
-    _system(getParam<MooseEnum>("system"))
-{}
+NumVars::NumVars(const InputParameters & parameters)
+  : GeneralPostprocessor(parameters), _system(getParam<MooseEnum>("system"))
+{
+}
 
 Real
 NumVars::getValue()

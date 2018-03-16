@@ -1,21 +1,16 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef DIRACKERNEL_H
 #define DIRACKERNEL_H
 
-//MOOSE includes
+// MOOSE includes
 #include "DiracKernelInfo.h"
 #include "MooseObject.h"
 #include "SetupInterface.h"
@@ -26,18 +21,18 @@
 #include "TransientInterface.h"
 #include "PostprocessorInterface.h"
 #include "GeometricSearchInterface.h"
-#include "MooseVariable.h"
+#include "MooseVariableField.h"
 #include "Restartable.h"
-#include "ZeroInterface.h"
 #include "MeshChangedInterface.h"
+#include "MooseVariableInterface.h"
 
-//Forward Declarations
+// Forward Declarations
 class Assembly;
 class DiracKernel;
 class SubProblem;
 class MooseMesh;
 
-template<>
+template <>
 InputParameters validParams<DiracKernel>();
 
 /**
@@ -47,19 +42,18 @@ InputParameters validParams<DiracKernel>();
  *
  * This is common in point sources / sinks and various other algorithms.
  */
-class DiracKernel :
-  public MooseObject,
-  public SetupInterface,
-  public CoupleableMooseVariableDependencyIntermediateInterface,
-  public FunctionInterface,
-  public UserObjectInterface,
-  public TransientInterface,
-  public MaterialPropertyInterface,
-  public PostprocessorInterface,
-  protected GeometricSearchInterface,
-  public Restartable,
-  public ZeroInterface,
-  public MeshChangedInterface
+class DiracKernel : public MooseObject,
+                    public SetupInterface,
+                    public CoupleableMooseVariableDependencyIntermediateInterface,
+                    public MooseVariableInterface<Real>,
+                    public FunctionInterface,
+                    public UserObjectInterface,
+                    public TransientInterface,
+                    public MaterialPropertyInterface,
+                    public PostprocessorInterface,
+                    protected GeometricSearchInterface,
+                    public Restartable,
+                    public MeshChangedInterface
 {
 public:
   DiracKernel(const InputParameters & parameters);
@@ -116,6 +110,13 @@ public:
    */
   void clearPoints();
 
+  /**
+   * Clear point cache when the mesh changes, so that element
+   * coarsening, element deletion, and distributed mesh repartitioning
+   * don't leave this with an invalid cache.
+   */
+  virtual void meshChanged() override;
+
 protected:
   /**
    * This is the virtual that derived classes should override for computing the residual.
@@ -131,7 +132,7 @@ protected:
    * Add the physical x,y,z point located in the element "elem" to the list of points
    * this DiracKernel will be asked to evaluate a value at.
    */
-  void addPoint(const Elem * elem, Point p, unsigned id=libMesh::invalid_uint);
+  void addPoint(const Elem * elem, Point p, unsigned id = libMesh::invalid_uint);
 
   /**
    * This is a highly inefficient way to add a point where this DiracKernel needs to be
@@ -139,7 +140,7 @@ protected:
    *
    * This spawns a search for the element containing that point!
    */
-  const Elem * addPoint(Point p, unsigned id=libMesh::invalid_uint);
+  const Elem * addPoint(Point p, unsigned id = libMesh::invalid_uint);
 
   /**
    * Returns the user-assigned ID of the current Dirac point if it
@@ -176,16 +177,16 @@ protected:
   Point _current_point;
 
   ///< Current element
-  const Elem * & _current_elem;
+  const Elem *& _current_elem;
 
   /// Quadrature point index
   unsigned int _qp;
   /// Quadrature points
-  const MooseArray< Point > & _q_point;
+  const MooseArray<Point> & _q_point;
   /// Physical points
-  const MooseArray< Point > & _physical_point;
+  const MooseArray<Point> & _physical_point;
   /// Quadrature rule
-  QBase * & _qrule;
+  QBase *& _qrule;
   /// Transformed Jacobian weights
   const MooseArray<Real> & _JxW;
 
@@ -222,13 +223,13 @@ protected:
 private:
   /// Data structure for caching user-defined IDs which can be mapped to
   /// specific std::pair<const Elem*, Point> and avoid the PointLocator Elem lookup.
-  typedef std::map<unsigned, std::pair<const Elem*, Point> > point_cache_t;
+  typedef std::map<unsigned, std::pair<const Elem *, Point>> point_cache_t;
   point_cache_t _point_cache;
 
   /// Map from Elem* to a list of (Dirac point, id) pairs which can be used
   /// in a user's computeQpResidual() routine to determine the user-defined ID for
   /// the current Dirac point, if one exists.
-  typedef std::map<const Elem*, std::vector<std::pair<Point, unsigned> > > reverse_cache_t;
+  typedef std::map<const Elem *, std::vector<std::pair<Point, unsigned>>> reverse_cache_t;
   reverse_cache_t _reverse_point_cache;
 
   /// This function is used internally when the Elem for a
@@ -236,10 +237,7 @@ private:
   /// pointer to the old_elem whose data is to be updated, the
   /// new_elem to which the Point belongs, and the Point and id
   /// information.
-  void updateCaches(const Elem* old_elem,
-                    const Elem* new_elem,
-                    Point p,
-                    unsigned id);
+  void updateCaches(const Elem * old_elem, const Elem * new_elem, Point p, unsigned id);
 
   /// A helper function for addPoint(Point, id) for when
   /// id != invalid_uint.

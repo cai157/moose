@@ -1,21 +1,19 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ScalarDirichletBC.h"
 
-template<>
-InputParameters validParams<ScalarDirichletBC>()
+registerMooseObject("ExampleApp", ScalarDirichletBC);
+
+template <>
+InputParameters
+validParams<ScalarDirichletBC>()
 {
   InputParameters params = validParams<NodalBC>();
   // Here we are adding a parameter that will be extracted from the input file by the Parser
@@ -23,18 +21,20 @@ InputParameters validParams<ScalarDirichletBC>()
   return params;
 }
 
-ScalarDirichletBC::ScalarDirichletBC(const InputParameters & parameters) :
-    NodalBC(parameters),
+ScalarDirichletBC::ScalarDirichletBC(const InputParameters & parameters)
+  : NodalBC(parameters),
 
     /**
      * Get a reference to the coupled variable's values.
      */
     _scalar_val(coupledScalarValue("scalar_var"))
-{}
+{
+}
 
 Real
 ScalarDirichletBC::computeQpResidual()
 {
-  // We coupled in a first order scalar variable, thus there is only one value in _scalar_val (and it is - big surprise - on index 0)
+  // We coupled in a first order scalar variable, thus there is only one value in _scalar_val (and
+  // it is - big surprise - on index 0)
   return _u[_qp] - _scalar_val[0];
 }

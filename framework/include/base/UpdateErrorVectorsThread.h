@@ -1,23 +1,17 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef UPDATEERRORVECTORSTHREAD_H
 #define UPDATEERRORVECTORSTHREAD_H
 
 #include "ThreadedElementLoop.h"
 
-// libMesh includes
 #include "libmesh/elem_range.h"
 
 class AuxiliarySystem;
@@ -26,8 +20,9 @@ class Adaptivity;
 class UpdateErrorVectorsThread : public ThreadedElementLoop<ConstElemRange>
 {
 public:
-  UpdateErrorVectorsThread(FEProblemBase & fe_problem,
-                           const std::map<std::string, std::unique_ptr<ErrorVector> > & indicator_field_to_error_vector);
+  UpdateErrorVectorsThread(
+      FEProblemBase & fe_problem,
+      const std::map<std::string, std::unique_ptr<ErrorVector>> & indicator_field_to_error_vector);
 
   // Splitting Constructor
   UpdateErrorVectorsThread(UpdateErrorVectorsThread & x, Threads::split split);
@@ -37,7 +32,7 @@ public:
   void join(const UpdateErrorVectorsThread & /*y*/);
 
 protected:
-  const std::map<std::string, std::unique_ptr<ErrorVector> > & _indicator_field_to_error_vector;
+  const std::map<std::string, std::unique_ptr<ErrorVector>> & _indicator_field_to_error_vector;
   AuxiliarySystem & _aux_sys;
   unsigned int _system_number;
   Adaptivity & _adaptivity;
@@ -46,4 +41,4 @@ protected:
   std::map<unsigned int, ErrorVector *> _indicator_field_number_to_error_vector;
 };
 
-#endif //UPDATEERRORVECTORSTHREAD_H
+#endif // UPDATEERRORVECTORSTHREAD_H

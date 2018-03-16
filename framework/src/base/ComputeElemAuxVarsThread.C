@@ -1,29 +1,26 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ComputeElemAuxVarsThread.h"
+
+// MOOSE includes
 #include "AuxiliarySystem.h"
 #include "AuxKernel.h"
 #include "SwapBackSentinel.h"
 #include "FEProblem.h"
 
-// libmesh includes
 #include "libmesh/threads.h"
 
-
-ComputeElemAuxVarsThread::ComputeElemAuxVarsThread(FEProblemBase & problem, const MooseObjectWarehouse<AuxKernel> & storage, bool need_materials) :
-    ThreadedElementLoop<ConstElemRange>(problem),
+ComputeElemAuxVarsThread::ComputeElemAuxVarsThread(FEProblemBase & problem,
+                                                   const MooseObjectWarehouse<AuxKernel> & storage,
+                                                   bool need_materials)
+  : ThreadedElementLoop<ConstElemRange>(problem),
     _aux_sys(problem.getAuxiliarySystem()),
     _aux_kernels(storage),
     _need_materials(need_materials)
@@ -31,21 +28,22 @@ ComputeElemAuxVarsThread::ComputeElemAuxVarsThread(FEProblemBase & problem, cons
 }
 
 // Splitting Constructor
-ComputeElemAuxVarsThread::ComputeElemAuxVarsThread(ComputeElemAuxVarsThread & x, Threads::split /*split*/) :
-    ThreadedElementLoop<ConstElemRange>(x._fe_problem),
+ComputeElemAuxVarsThread::ComputeElemAuxVarsThread(ComputeElemAuxVarsThread & x,
+                                                   Threads::split /*split*/)
+  : ThreadedElementLoop<ConstElemRange>(x._fe_problem),
     _aux_sys(x._aux_sys),
     _aux_kernels(x._aux_kernels),
     _need_materials(x._need_materials)
 {
 }
 
-ComputeElemAuxVarsThread::~ComputeElemAuxVarsThread()
-{
-}
+ComputeElemAuxVarsThread::~ComputeElemAuxVarsThread() {}
 
 void
 ComputeElemAuxVarsThread::subdomainChanged()
 {
+  _fe_problem.subdomainSetup(_subdomain, _tid);
+
   // prepare variables
   for (const auto & it : _aux_sys._elem_vars[_tid])
   {
@@ -53,20 +51,25 @@ ComputeElemAuxVarsThread::subdomainChanged()
     var->prepareAux();
   }
 
-  std::set<MooseVariable *> needed_moose_vars;
+  std::set<MooseVariableFE *> needed_moose_vars;
+  std::set<unsigned int> needed_mat_props;
 
   if (_aux_kernels.hasActiveBlockObjects(_subdomain, _tid))
   {
-    const std::vector<MooseSharedPointer<AuxKernel> > & kernels = _aux_kernels.getActiveBlockObjects(_subdomain, _tid);
+    const std::vector<std::shared_ptr<AuxKernel>> & kernels =
+        _aux_kernels.getActiveBlockObjects(_subdomain, _tid);
     for (const auto & aux : kernels)
     {
       aux->subdomainSetup();
-      const std::set<MooseVariable *> & mv_deps = aux->getMooseVariableDependencies();
+      const std::set<MooseVariableFE *> & mv_deps = aux->getMooseVariableDependencies();
+      const std::set<unsigned int> & mp_deps = aux->getMatPropDependencies();
       needed_moose_vars.insert(mv_deps.begin(), mv_deps.end());
+      needed_mat_props.insert(mp_deps.begin(), mp_deps.end());
     }
   }
 
   _fe_problem.setActiveElementalMooseVariables(needed_moose_vars, _tid);
+  _fe_problem.setActiveMaterialProperties(needed_mat_props, _tid);
   _fe_problem.prepareMaterials(_subdomain, _tid);
 }
 
@@ -75,7 +78,8 @@ ComputeElemAuxVarsThread::onElement(const Elem * elem)
 {
   if (_aux_kernels.hasActiveBlockObjects(_subdomain, _tid))
   {
-    const std::vector<MooseSharedPointer<AuxKernel> > & kernels = _aux_kernels.getActiveBlockObjects(_subdomain, _tid);
+    const std::vector<std::shared_ptr<AuxKernel>> & kernels =
+        _aux_kernels.getActiveBlockObjects(_subdomain, _tid);
     _fe_problem.prepare(elem, _tid);
     _fe_problem.reinitElem(elem, _tid);
 
@@ -105,6 +109,7 @@ void
 ComputeElemAuxVarsThread::post()
 {
   _fe_problem.clearActiveElementalMooseVariables(_tid);
+  _fe_problem.clearActiveMaterialProperties(_tid);
 }
 
 void

@@ -1,39 +1,34 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef BOUNDSAUX_H
 #define BOUNDSAUX_H
 
 #include "AuxKernel.h"
 
-
-//Forward Declarations
+// Forward Declarations
 class BoundsAux;
 
-template<>
+template <>
 InputParameters validParams<BoundsAux>();
 
 /**
- * Fills in the "bounds vectors" to provide an upper and lower bound for the variable that is coupled in.
- * Doesn't actually calculate an auxiliary value although it must take an auxiliary variable as input.
+ * Fills in the "bounds vectors" to provide an upper and lower bound for the variable that is
+ * coupled in.
+ * Doesn't actually calculate an auxiliary value although it must take an auxiliary variable as
+ * input.
  *
  * This MUST be run on a Nodal Auxiliary Variable!
  */
 class BoundsAux : public AuxKernel
 {
 public:
-
   /**
    * Factory constructor.
    */
@@ -51,4 +46,4 @@ protected:
   Real _lower;
 };
 
-#endif //BOUNDSAUX_H
+#endif // BOUNDSAUX_H

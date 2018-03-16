@@ -1,3 +1,11 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 #ifndef POLYNOMIALFREEENERGY_H
 #define POLYNOMIALFREEENERGY_H
 
@@ -7,14 +15,14 @@
 // Forward Declarations
 class PolynomialFreeEnergy;
 
-template<>
+template <>
 InputParameters validParams<PolynomialFreeEnergy>();
 
 /**
- * Derivative free energy material defining polynomial free energies for single component materials, with derivatives from ExpressionBuilder
+ * Derivative free energy material defining polynomial free energies for single component materials,
+ * with derivatives from ExpressionBuilder
  */
-class PolynomialFreeEnergy : public DerivativeParsedMaterialHelper,
-                             public ExpressionBuilder
+class PolynomialFreeEnergy : public DerivativeParsedMaterialHelper, public ExpressionBuilder
 {
 public:
   PolynomialFreeEnergy(const InputParameters & parameters);
@@ -33,4 +41,4 @@ protected:
   MooseEnum _order;
 };
 
-#endif //POLYNOMIALFREEENERGY_H
+#endif // POLYNOMIALFREEENERGY_H

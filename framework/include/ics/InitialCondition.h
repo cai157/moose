@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef INITIALCONDITION_H
 #define INITIALCONDITION_H
@@ -19,41 +14,41 @@
 #include "Coupleable.h"
 #include "FunctionInterface.h"
 #include "UserObjectInterface.h"
-#include "ParallelUniqueId.h"
 #include "Restartable.h"
 #include "BlockRestrictable.h"
 #include "DependencyResolverInterface.h"
 #include "BoundaryRestrictable.h"
-#include "ZeroInterface.h"
+#include "MooseTypes.h"
 
 // libMesh
 #include "libmesh/point.h"
 #include "libmesh/vector_value.h"
 #include "libmesh/elem.h"
 
-//forward declarations
+// forward declarations
 class InitialCondition;
 class FEProblemBase;
 class SystemBase;
 class Assembly;
-class MooseVariable;
+template <typename>
+class MooseVariableField;
+typedef MooseVariableField<Real> MooseVariable;
+typedef MooseVariableField<VectorValue<Real>> VectorMooseVariable;
 
-template<>
+template <>
 InputParameters validParams<InitialCondition>();
 
 /**
  * InitialConditions are objects that set the initial value of variables.
  */
-class InitialCondition :
-  public MooseObject,
-  public Coupleable,
-  public FunctionInterface,
-  public UserObjectInterface,
-  public BlockRestrictable,
-  public BoundaryRestrictable,
-  public DependencyResolverInterface,
-  public Restartable,
-  public ZeroInterface
+class InitialCondition : public MooseObject,
+                         public BlockRestrictable,
+                         public Coupleable,
+                         public FunctionInterface,
+                         public UserObjectInterface,
+                         public BoundaryRestrictable,
+                         public DependencyResolverInterface,
+                         public Restartable
 {
 public:
   /**
@@ -66,6 +61,8 @@ public:
   virtual ~InitialCondition();
 
   MooseVariable & variable() { return _var; }
+
+  const std::set<std::string> & getDependObjects() const { return _depend_uo; }
 
   virtual void compute();
 
@@ -96,6 +93,13 @@ public:
 
   virtual const std::set<std::string> & getSuppliedItems() override;
 
+  template <typename T>
+  const T & getUserObject(const std::string & name);
+  template <typename T>
+  const T & getUserObjectByName(const UserObjectName & name);
+
+  const UserObject & getUserObjectBase(const std::string & name);
+
 protected:
   FEProblemBase & _fe_problem;
   SystemBase & _sys;
@@ -113,10 +117,11 @@ protected:
   MooseVariable & _var;
 
   /**
-   * The current element we are on will retrieving values at specific points in the domain. Note that this _IS_
+   * The current element we are on will retrieving values at specific points in the domain. Note
+   * that this _IS_
    * valid even for nodes shared among several elements.
    */
-  const Elem * & _current_elem;
+  const Elem *& _current_elem;
 
   /**
    * The current node if the point we are evaluating at also happens to be a node.
@@ -129,6 +134,30 @@ protected:
 
   std::set<std::string> _depend_vars;
   std::set<std::string> _supplied_vars;
+
+  /// Depend UserObjects
+  std::set<std::string> _depend_uo;
+
+  /// If set, UOs retrieved by this IC will not be executed before this IC
+  const bool _ignore_uo_dependency;
 };
 
-#endif //INITIALCONDITION_H
+template <typename T>
+const T &
+InitialCondition::getUserObject(const std::string & name)
+{
+  if (!_ignore_uo_dependency)
+    _depend_uo.insert(_pars.get<UserObjectName>(name));
+  return UserObjectInterface::getUserObject<T>(name);
+}
+
+template <typename T>
+const T &
+InitialCondition::getUserObjectByName(const UserObjectName & name)
+{
+  if (!_ignore_uo_dependency)
+    _depend_uo.insert(name);
+  return UserObjectInterface::getUserObjectByName<T>(name);
+}
+
+#endif // INITIALCONDITION_H

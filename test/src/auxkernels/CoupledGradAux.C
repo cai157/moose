@@ -1,21 +1,19 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "CoupledGradAux.h"
 
-template<>
-InputParameters validParams<CoupledGradAux>()
+registerMooseObject("MooseTestApp", CoupledGradAux);
+
+template <>
+InputParameters
+validParams<CoupledGradAux>()
 {
   InputParameters params = validParams<AuxKernel>();
 
@@ -26,20 +24,18 @@ InputParameters validParams<CoupledGradAux>()
   return params;
 }
 
-CoupledGradAux::CoupledGradAux(const InputParameters & parameters) :
-    AuxKernel(parameters),
+CoupledGradAux::CoupledGradAux(const InputParameters & parameters)
+  : AuxKernel(parameters),
     _grad(getParam<RealGradient>("grad")),
     _coupled(coupled("coupled")),
     _coupled_grad(coupledGradient("coupled"))
 {
 }
 
-CoupledGradAux::~CoupledGradAux()
-{
-}
+CoupledGradAux::~CoupledGradAux() {}
 
 Real
 CoupledGradAux::computeValue()
 {
-  return _coupled_grad[_qp]*_grad;
+  return _coupled_grad[_qp] * _grad;
 }

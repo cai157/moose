@@ -1,28 +1,29 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ComputeBoundaryInitialConditionThread.h"
-#include "InitialCondition.h"
-#include "Assembly.h"
 
-ComputeBoundaryInitialConditionThread::ComputeBoundaryInitialConditionThread(FEProblemBase & fe_problem) :
-    ThreadedNodeLoop<ConstBndNodeRange, ConstBndNodeRange::const_iterator>(fe_problem)
+// MOOSE includes
+#include "Assembly.h"
+#include "InitialCondition.h"
+#include "MooseVariableField.h"
+#include "SystemBase.h"
+
+ComputeBoundaryInitialConditionThread::ComputeBoundaryInitialConditionThread(
+    FEProblemBase & fe_problem)
+  : ThreadedNodeLoop<ConstBndNodeRange, ConstBndNodeRange::const_iterator>(fe_problem)
 {
 }
 
-ComputeBoundaryInitialConditionThread::ComputeBoundaryInitialConditionThread(ComputeBoundaryInitialConditionThread & x, Threads::split split) :
-    ThreadedNodeLoop<ConstBndNodeRange, ConstBndNodeRange::const_iterator>(x, split)
+ComputeBoundaryInitialConditionThread::ComputeBoundaryInitialConditionThread(
+    ComputeBoundaryInitialConditionThread & x, Threads::split split)
+  : ThreadedNodeLoop<ConstBndNodeRange, ConstBndNodeRange::const_iterator>(x, split)
 {
 }
 
@@ -40,17 +41,19 @@ ComputeBoundaryInitialConditionThread::onNode(ConstBndNodeRange::const_iterator 
 
   if (warehouse.hasActiveBoundaryObjects(boundary_id, _tid))
   {
-    const std::vector<MooseSharedPointer<InitialCondition> > & ics = warehouse.getActiveBoundaryObjects(boundary_id, _tid);
+    const std::vector<std::shared_ptr<InitialCondition>> & ics =
+        warehouse.getActiveBoundaryObjects(boundary_id, _tid);
     for (const auto & ic : ics)
     {
       if (node->processor_id() == _fe_problem.processor_id())
       {
         MooseVariable & var = ic->variable();
         var.reinitNode();
-        var.computeNodalValues();                   // has to call this to resize the internal array
+        var.computeNodalValues(); // has to call this to resize the internal array
         Real value = ic->value(*node);
 
-        var.setNodalValue(value);                  // update variable data, which is referenced by others, so the value is up-to-date
+        var.setNodalValue(value); // update variable data, which is referenced by others, so the
+                                  // value is up-to-date
 
         // We are done, so update the solution vector
         {

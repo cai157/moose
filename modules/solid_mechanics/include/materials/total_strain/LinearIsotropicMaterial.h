@@ -1,19 +1,22 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef LINEARISOTROPICMATERIAL_H
 #define LINEARISOTROPICMATERIAL_H
 
 #include "SolidMechanicsMaterial.h"
 
-//Forward Declarations
+// Forward Declarations
 class LinearIsotropicMaterial;
 class SymmElasticityTensor;
 
-template<>
+template <>
 InputParameters validParams<LinearIsotropicMaterial>();
 
 /**
@@ -29,8 +32,7 @@ public:
 protected:
   virtual void computeProperties();
 
-  virtual void computeStress(const SymmTensor & strain,
-                             SymmTensor & stress);
+  virtual void computeStress(const SymmTensor & strain, SymmTensor & stress);
 
   /**
    * Will always be passed to full symmetric strain tensor.
@@ -50,7 +52,6 @@ protected:
 
   Real _pi;
   Real _tol;
-
 };
 
-#endif //LINEARISOTROPICMATERIAL_H
+#endif // LINEARISOTROPICMATERIAL_H

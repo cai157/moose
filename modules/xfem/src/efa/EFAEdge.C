@@ -1,21 +1,23 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "EFAEdge.h"
 
 #include "EFANode.h"
 #include "EFAError.h"
+#include "XFEMFuncs.h"
 
-EFAEdge::EFAEdge(EFANode * node1, EFANode * node2) :
-    _edge_node1(node1),
-    _edge_node2(node2)
+EFAEdge::EFAEdge(EFANode * node1, EFANode * node2) : _edge_node1(node1), _edge_node2(node2)
 {
   _embedded_nodes.clear();
   _intersection_x.clear();
+  _edge_interior_node = NULL;
   consistencyCheck();
 }
 
@@ -29,19 +31,25 @@ EFAEdge::EFAEdge(const EFAEdge & other_edge)
 }
 
 EFAEdge::~EFAEdge() // do not delete edge node - they will be deleted
-{                  // in EFAelement's destructor
+{                   // in EFAelement's destructor
 }
 
 bool
 EFAEdge::equivalent(const EFAEdge & other) const
 {
   bool isEqual = false;
-  if (other._edge_node1 == _edge_node1 &&
-      other._edge_node2 == _edge_node2)
+  if (other._edge_node1 == _edge_node1 && other._edge_node2 == _edge_node2)
     isEqual = true;
-  else if (other._edge_node2 == _edge_node1 &&
-           other._edge_node1 == _edge_node2)
+  else if (other._edge_node2 == _edge_node1 && other._edge_node1 == _edge_node2)
     isEqual = true;
+
+  // For cut along the edge case
+  if (isEqual)
+  {
+    if (_edge_node1->category() == EFANode::N_CATEGORY_EMBEDDED_PERMANENT &&
+        _edge_node2->category() == EFANode::N_CATEGORY_EMBEDDED_PERMANENT)
+      isEqual = false;
+  }
   return isEqual;
 }
 
@@ -58,8 +66,9 @@ EFAEdge::containsEdge(const EFAEdge & other) const
 }
 
 bool
-EFAEdge::getNodeMasters(EFANode* node, std::vector<EFANode*> &master_nodes,
-                        std::vector<double> &master_weights) const
+EFAEdge::getNodeMasters(EFANode * node,
+                        std::vector<EFANode *> & master_nodes,
+                        std::vector<double> & master_weights) const
 {
   master_nodes.clear();
   master_weights.clear();
@@ -78,7 +87,7 @@ EFAEdge::getNodeMasters(EFANode* node, std::vector<EFANode*> &master_nodes,
       {
         master_nodes.push_back(_edge_node1);
         master_nodes.push_back(_edge_node2);
-        master_weights.push_back(1.0-_intersection_x[i]);
+        master_weights.push_back(1.0 - _intersection_x[i]);
         master_weights.push_back(_intersection_x[i]);
         masters_found = true;
         break;
@@ -89,8 +98,8 @@ EFAEdge::getNodeMasters(EFANode* node, std::vector<EFANode*> &master_nodes,
 }
 
 // TODO: Saving because I don't want to throw it away, but it needs more work to be used.
-//bool
-//EFAEdge::operator < (const edge_t & other) const
+// bool
+// EFAEdge::operator < (const edge_t & other) const
 //{
 //  node_t * this_min_node;
 //  node_t * this_max_node;
@@ -188,13 +197,19 @@ EFAEdge::reverseNodes()
 bool
 EFAEdge::hasIntersection() const
 {
-  return _embedded_nodes.size() > 0;
+  bool has = false;
+  if (_edge_node1->parent() != NULL)
+    has = has || _edge_node1->parent()->category() == EFANode::N_CATEGORY_EMBEDDED_PERMANENT;
+
+  if (_edge_node2->parent() != NULL)
+    has = has || _edge_node2->parent()->category() == EFANode::N_CATEGORY_EMBEDDED_PERMANENT;
+
+  return has || _embedded_nodes.size() > 0;
 }
 
 bool
 EFAEdge::hasIntersectionAtPosition(double position, EFANode * from_node) const
 {
-  double tol = 1.e-4;
   bool has_int = false;
   if (hasIntersection())
   {
@@ -208,7 +223,7 @@ EFAEdge::hasIntersectionAtPosition(double position, EFANode * from_node) const
 
     for (unsigned int i = 0; i < _embedded_nodes.size(); ++i)
     {
-      if (std::abs(tmp_intersection_x - _intersection_x[i]) < tol)
+      if (std::abs(tmp_intersection_x - _intersection_x[i]) < Xfem::tol)
       {
         has_int = true;
         break;
@@ -282,11 +297,10 @@ EFAEdge::getEmbeddedNodeIndex(EFANode * node) const
 }
 
 unsigned int
-EFAEdge::getEmbeddedNodeIndex(double position, EFANode* from_node) const
+EFAEdge::getEmbeddedNodeIndex(double position, EFANode * from_node) const
 {
   bool have_index = false;
   unsigned int index;
-  const double tol = 1.e-4;
   if (hasIntersection())
   {
     double tmp_intersection_x = -1.0; // dist from edge_node1
@@ -299,7 +313,7 @@ EFAEdge::getEmbeddedNodeIndex(double position, EFANode* from_node) const
 
     for (unsigned int i = 0; i < _embedded_nodes.size(); ++i)
     {
-      if (std::abs(tmp_intersection_x - _intersection_x[i]) < tol)
+      if (std::abs(tmp_intersection_x - _intersection_x[i]) < Xfem::tol)
       {
         have_index = true;
         index = i;
@@ -333,11 +347,11 @@ EFAEdge::consistencyCheck()
   bool consistent = true;
   if ((_edge_node1->category() == EFANode::N_CATEGORY_PERMANENT ||
        _edge_node1->category() == EFANode::N_CATEGORY_TEMP) &&
-       _edge_node2->category() == EFANode::N_CATEGORY_LOCAL_INDEX)
+      _edge_node2->category() == EFANode::N_CATEGORY_LOCAL_INDEX)
     consistent = false;
   else if ((_edge_node2->category() == EFANode::N_CATEGORY_PERMANENT ||
             _edge_node2->category() == EFANode::N_CATEGORY_TEMP) &&
-            _edge_node1->category() == EFANode::N_CATEGORY_LOCAL_INDEX)
+           _edge_node1->category() == EFANode::N_CATEGORY_LOCAL_INDEX)
     consistent = false;
   if (!consistent)
     EFAError("In consistencyCheck nodes on edge are not consistent");
@@ -346,7 +360,7 @@ EFAEdge::consistencyCheck()
 }
 
 void
-EFAEdge::switchNode(EFANode *new_node, EFANode *old_node)
+EFAEdge::switchNode(EFANode * new_node, EFANode * old_node)
 {
   if (_edge_node1 == old_node)
     _edge_node1 = new_node;
@@ -360,11 +374,9 @@ EFAEdge::switchNode(EFANode *new_node, EFANode *old_node)
 }
 
 bool
-EFAEdge::containsNode(const EFANode *node) const
+EFAEdge::containsNode(const EFANode * node) const
 {
-  return _edge_node1 == node ||
-         _edge_node2 == node ||
-         isEmbeddedNode(node);
+  return _edge_node1 == node || _edge_node2 == node || isEmbeddedNode(node);
 }
 
 void

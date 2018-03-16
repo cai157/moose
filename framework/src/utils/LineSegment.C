@@ -1,35 +1,26 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "LineSegment.h"
 
-// libMesh includes
 #include "libmesh/plane.h"
 #include "libmesh/vector_value.h"
 
-LineSegment::LineSegment (const Point & p0, const Point & p1) :
-    _p0(p0),
-    _p1(p1)
-{}
+LineSegment::LineSegment(const Point & p0, const Point & p1) : _p0(p0), _p1(p1) {}
 
 bool
-LineSegment::closest_point (const Point & p, bool clamp_to_segment, Point & closest_p) const
+LineSegment::closest_point(const Point & p, bool clamp_to_segment, Point & closest_p) const
 {
-  Point p0_p  = p - _p0;
+  Point p0_p = p - _p0;
   Point p0_p1 = _p1 - _p0;
   Real p0_p1_2 = p0_p1.norm_sq();
-  Real perp = p0_p(0)*p0_p1(0) + p0_p(1)*p0_p1(1) + p0_p(2)*p0_p1(2);
+  Real perp = p0_p(0) * p0_p1(0) + p0_p(1) * p0_p1(1) + p0_p(2) * p0_p1(2);
   Real t = perp / p0_p1_2;
   bool on_segment = true;
 
@@ -38,8 +29,10 @@ LineSegment::closest_point (const Point & p, bool clamp_to_segment, Point & clos
 
   if (clamp_to_segment)
   {
-    if (t < 0.0) t = 0.0;
-    else if (t > 1.0) t = 1.0;
+    if (t < 0.0)
+      t = 0.0;
+    else if (t > 1.0)
+      t = 1.0;
   }
 
   closest_p = _p0 + p0_p1 * t;
@@ -47,7 +40,7 @@ LineSegment::closest_point (const Point & p, bool clamp_to_segment, Point & clos
 }
 
 Point
-LineSegment::closest_point (const Point & p) const
+LineSegment::closest_point(const Point & p) const
 {
   Point closest_p;
   closest_point(p, true, closest_p);
@@ -55,20 +48,20 @@ LineSegment::closest_point (const Point & p) const
 }
 
 bool
-LineSegment::closest_normal_point (const Point & p, Point & closest_p) const
+LineSegment::closest_normal_point(const Point & p, Point & closest_p) const
 {
   return closest_point(p, false, closest_p);
 }
 
 bool
-LineSegment::contains_point (const Point & p) const
+LineSegment::contains_point(const Point & p) const
 {
   Point closest_p;
-  return closest_point(p, false, closest_p) && closest_p == p;
+  return closest_point(p, false, closest_p) && closest_p.absolute_fuzzy_equals(p);
 }
 
 bool
-LineSegment::intersect (const Plane & pl, Point & intersect_p) const
+LineSegment::intersect(const Plane & pl, Point & intersect_p) const
 {
   /**
    * There are three cases in 3D for intersection of a line and a plane
@@ -86,10 +79,10 @@ LineSegment::intersect (const Plane & pl, Point & intersect_p) const
 
   Point pl0 = pl.get_planar_point();
   RealVectorValue N = pl.unit_normal(_p0);
-  RealVectorValue I = (_p1-_p0).unit();
+  RealVectorValue I = (_p1 - _p0).unit();
 
-  Real numerator = (pl0-_p0)*N;
-  Real denominator = I*N;
+  Real numerator = (pl0 - _p0) * N;
+  Real denominator = I * N;
 
   // The Line is parallel to the plane
   if (std::abs(denominator) < 1.e-10)
@@ -107,16 +100,16 @@ LineSegment::intersect (const Plane & pl, Point & intersect_p) const
   Real d = numerator / denominator;
 
   // Make sure we haven't moved off the line segment!
-  if (d + libMesh::TOLERANCE < 0 || d - libMesh::TOLERANCE > (_p1-_p0).norm())
+  if (d + libMesh::TOLERANCE < 0 || d - libMesh::TOLERANCE > (_p1 - _p0).norm())
     return false;
 
-  intersect_p = d*I + _p0;
+  intersect_p = d * I + _p0;
 
   return true;
 }
 
 bool
-LineSegment::intersect (const LineSegment & l, Point & intersect_p) const
+LineSegment::intersect(const LineSegment & l, Point & intersect_p) const
 {
   /**
    * First check for concurance:
@@ -159,8 +152,8 @@ LineSegment::intersect (const LineSegment & l, Point & intersect_p) const
   if (std::abs(concur) > 1.e-10)
     return false;
 
-  Real s = (c.cross(b) * v) / (v*v);
-  Real t = (c.cross(a) * v) / (v*v);
+  Real s = (c.cross(b) * v) / (v * v);
+  Real t = (c.cross(a) * v) / (v * v);
 
   // if s and t are between 0 and 1 then the Line Segments intersect
   // TODO: We could handle other case of clamping to the end of Line
@@ -168,7 +161,7 @@ LineSegment::intersect (const LineSegment & l, Point & intersect_p) const
 
   if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
   {
-    intersect_p = _p0 + s*a;
+    intersect_p = _p0 + s * a;
     return true;
   }
   return false;

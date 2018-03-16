@@ -1,23 +1,31 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "CompositeElasticityTensor.h"
 
-template<>
-InputParameters validParams<CompositeElasticityTensor>()
+template <>
+InputParameters
+validParams<CompositeElasticityTensor>()
 {
   InputParameters params = CompositeTensorBase<RankFourTensor, Material>::validParams();
-  params.addClassDescription("Assemble an elasticity tensor from multiple tensor contributions weighted by material properties");
-  params.addParam<std::string>("base_name", "Optional parameter that allows the user to define multiple mechanics material systems on the same block, i.e. for multiple phases");
+  params.addClassDescription("Assemble an elasticity tensor from multiple tensor contributions "
+                             "weighted by material properties");
+  params.addParam<std::string>("base_name",
+                               "Optional parameter that allows the user to define "
+                               "multiple mechanics material systems on the same "
+                               "block, i.e. for multiple phases");
   return params;
 }
 
-CompositeElasticityTensor::CompositeElasticityTensor(const InputParameters & parameters) :
-    CompositeTensorBase<RankFourTensor, Material>(parameters),
-    _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : "" ),
+CompositeElasticityTensor::CompositeElasticityTensor(const InputParameters & parameters)
+  : CompositeTensorBase<RankFourTensor, Material>(parameters),
+    _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _M_name(_base_name + "elasticity_tensor"),
     _M(declareProperty<RankFourTensor>(_M_name))
 {

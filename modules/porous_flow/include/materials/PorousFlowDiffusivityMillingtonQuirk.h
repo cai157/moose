@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWDIFFUSIVITYMILLINGTONQUIRK_H
 #define POROUSFLOWDIFFUSIVITYMILLINGTONQUIRK_H
@@ -12,7 +14,7 @@
 
 class PorousFlowDiffusivityMillingtonQuirk;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowDiffusivityMillingtonQuirk>();
 
 /**
@@ -32,11 +34,11 @@ protected:
   /// Porosity at the qps
   const MaterialProperty<Real> & _porosity_qp;
   /// Derivative of porosity wrt PorousFlow variables (at the qps)
-  const MaterialProperty<std::vector<Real> > & _dporosity_qp_dvar;
+  const MaterialProperty<std::vector<Real>> & _dporosity_qp_dvar;
   /// Saturation of each phase at the qps
-  const MaterialProperty<std::vector<Real> > & _saturation_qp;
+  const MaterialProperty<std::vector<Real>> & _saturation_qp;
   /// Derivative of saturation of each phase wrt PorousFlow variables (at the qps)
-  const MaterialProperty<std::vector<std::vector<Real> > > & _dsaturation_qp_dvar;
+  const MaterialProperty<std::vector<std::vector<Real>>> & _dsaturation_qp_dvar;
 };
 
-#endif //POROUSFLOWDIFFUSIVITYMILLINGTONQUIRK_H
+#endif // POROUSFLOWDIFFUSIVITYMILLINGTONQUIRK_H

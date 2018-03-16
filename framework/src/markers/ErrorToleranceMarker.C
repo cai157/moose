@@ -1,35 +1,34 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ErrorToleranceMarker.h"
 
-// libMesh includes
 #include "libmesh/error_vector.h"
 
-template<>
-InputParameters validParams<ErrorToleranceMarker>()
+registerMooseObject("MooseApp", ErrorToleranceMarker);
+
+template <>
+InputParameters
+validParams<ErrorToleranceMarker>()
 {
   InputParameters params = validParams<IndicatorMarker>();
   params.addParam<Real>("coarsen", 0, "Elements with error less than this will be coarsened.");
-  params.addParam<Real>("refine", std::numeric_limits<Real>::max(), "Elements with error more than this will be refined.");
-  params.addClassDescription("Coarsen or refine elements based on an absolute tolerance allowed from the supplied indicator.");
+  params.addParam<Real>("refine",
+                        std::numeric_limits<Real>::max(),
+                        "Elements with error more than this will be refined.");
+  params.addClassDescription("Coarsen or refine elements based on an absolute tolerance allowed "
+                             "from the supplied indicator.");
   return params;
 }
 
-
-ErrorToleranceMarker::ErrorToleranceMarker(const InputParameters & parameters) :
-    IndicatorMarker(parameters),
+ErrorToleranceMarker::ErrorToleranceMarker(const InputParameters & parameters)
+  : IndicatorMarker(parameters),
     _coarsen(parameters.get<Real>("coarsen")),
     _refine(parameters.get<Real>("refine"))
 {

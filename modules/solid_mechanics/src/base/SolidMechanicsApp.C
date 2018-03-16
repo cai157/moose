@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "SolidMechanicsApp.h"
 #include "TensorMechanicsApp.h"
 #include "Moose.h"
@@ -27,25 +30,16 @@
 #include "LinearIsotropicMaterial.h"
 #include "LinearStrainHardening.h"
 #include "MacroElastic.h"
-#include "JIntegral.h"
-#include "CrackFrontData.h"
-#include "CrackFrontDefinition.h"
-#include "InteractionIntegral.h"
-#include "InteractionIntegralAuxFields.h"
+#include "InteractionIntegralSM.h"
 #include "MixedModeEquivalentK.h"
 #include "MaterialSymmElasticityTensorAux.h"
 #include "MaterialTensorAux.h"
-#include "DomainIntegralQFunction.h"
-#include "DomainIntegralTopologicalQFunction.h"
 #include "PLC_LSH.h"
 #include "PowerLawCreep.h"
 #include "PowerLawCreepModel.h"
-#include "InteractionIntegralBenchmarkBC.h"
 #include "MaterialTensorIntegralSM.h"
-#include "CrackDataSampler.h"
 #include "LineMaterialSymmTensorSampler.h"
 #include "SolidMechanicsAction.h"
-#include "DomainIntegralAction.h"
 #include "SolidMechImplicitEuler.h"
 #include "SolidModel.h"
 #include "StressDivergence.h"
@@ -55,51 +49,59 @@
 #include "RateDepSmearCrackModel.h"
 #include "RateDepSmearIsoCrackModel.h"
 
-
-template<>
-InputParameters validParams<SolidMechanicsApp>()
+template <>
+InputParameters
+validParams<SolidMechanicsApp>()
 {
   InputParameters params = validParams<MooseApp>();
-  params.set<bool>("use_legacy_uo_initialization") = false;
-  params.set<bool>("use_legacy_uo_aux_computation") = false;
   return params;
 }
 
-SolidMechanicsApp::SolidMechanicsApp(const InputParameters & parameters) :
-    MooseApp(parameters)
+SolidMechanicsApp::SolidMechanicsApp(const InputParameters & parameters) : MooseApp(parameters)
 {
   Moose::registerObjects(_factory);
-  TensorMechanicsApp::registerObjects(_factory);
+  SolidMechanicsApp::registerObjectDepends(_factory);
   SolidMechanicsApp::registerObjects(_factory);
 
   Moose::associateSyntax(_syntax, _action_factory);
-  TensorMechanicsApp::associateSyntax(_syntax, _action_factory);
+  SolidMechanicsApp::associateSyntaxDepends(_syntax, _action_factory);
   SolidMechanicsApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  SolidMechanicsApp::registerExecFlags(_factory);
 }
 
-SolidMechanicsApp::~SolidMechanicsApp()
-{
-}
+SolidMechanicsApp::~SolidMechanicsApp() {}
 
 // External entry point for dynamic application loading
-extern "C" void SolidMechanicsApp__registerApps() { SolidMechanicsApp::registerApps(); }
+extern "C" void
+SolidMechanicsApp__registerApps()
+{
+  SolidMechanicsApp::registerApps();
+}
 void
 SolidMechanicsApp::registerApps()
 {
   registerApp(SolidMechanicsApp);
 }
 
+void
+SolidMechanicsApp::registerObjectDepends(Factory & factory)
+{
+  TensorMechanicsApp::registerObjects(factory);
+}
+
 // External entry point for dynamic object registration
-extern "C" void SolidMechanicsApp__registerObjects(Factory & factory) { SolidMechanicsApp::registerObjects(factory); }
+extern "C" void
+SolidMechanicsApp__registerObjects(Factory & factory)
+{
+  TensorMechanicsApp::registerObjects(factory);
+}
 void
 SolidMechanicsApp::registerObjects(Factory & factory)
 {
   registerAux(MaterialSymmElasticityTensorAux);
   registerAux(MaterialTensorAux);
-  registerAux(DomainIntegralQFunction);
-  registerAux(DomainIntegralTopologicalQFunction);
-
-  registerBoundaryCondition(InteractionIntegralBenchmarkBC);
 
   registerMaterial(AbaqusCreepMaterial);
   registerMaterial(AbaqusUmatMaterial);
@@ -108,7 +110,6 @@ SolidMechanicsApp::registerObjects(Factory & factory)
   registerMaterial(CombinedCreepPlasticity);
   registerMaterial(Elastic);
   registerMaterial(ElasticModel);
-  registerMaterial(InteractionIntegralAuxFields);
   registerMaterial(IsotropicPlasticity);
   registerMaterial(IsotropicPowerLawHardening);
   registerMaterial(IsotropicTempDepHardening);
@@ -132,36 +133,39 @@ SolidMechanicsApp::registerObjects(Factory & factory)
   registerKernel(StressDivergenceRSpherical);
 
   registerPostprocessor(HomogenizedElasticConstants);
-  registerPostprocessor(JIntegral);
-  registerPostprocessor(CrackFrontData);
-  registerPostprocessor(InteractionIntegral);
+  registerPostprocessor(InteractionIntegralSM);
   registerPostprocessor(MaterialTensorIntegralSM);
-  registerPostprocessor(MixedModeEquivalentK);
 
-  registerVectorPostprocessor(CrackDataSampler);
   registerVectorPostprocessor(LineMaterialSymmTensorSampler);
+}
 
-  registerUserObject(CrackFrontDefinition);
+void
+SolidMechanicsApp::associateSyntaxDepends(Syntax & syntax, ActionFactory & action_factory)
+{
+  TensorMechanicsApp::associateSyntax(syntax, action_factory);
 }
 
 // External entry point for dynamic syntax association
-extern "C" void SolidMechanicsApp__associateSyntax(Syntax & syntax, ActionFactory & action_factory) { SolidMechanicsApp::associateSyntax(syntax, action_factory); }
+extern "C" void
+SolidMechanicsApp__associateSyntax(Syntax & syntax, ActionFactory & action_factory)
+{
+  SolidMechanicsApp::associateSyntax(syntax, action_factory);
+}
 void
 SolidMechanicsApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
 {
-  syntax.registerActionSyntax("SolidMechanicsAction", "SolidMechanics/*");
-
-  syntax.registerActionSyntax("DomainIntegralAction", "DomainIntegral","add_user_object");
-  syntax.registerActionSyntax("DomainIntegralAction", "DomainIntegral","add_aux_variable");
-  syntax.registerActionSyntax("DomainIntegralAction", "DomainIntegral","add_aux_kernel");
-  syntax.registerActionSyntax("DomainIntegralAction", "DomainIntegral","add_postprocessor");
-  syntax.registerActionSyntax("DomainIntegralAction", "DomainIntegral","add_vector_postprocessor");
-  syntax.registerActionSyntax("DomainIntegralAction", "DomainIntegral","add_material");
+  registerSyntax("SolidMechanicsAction", "SolidMechanics/*");
 
   registerAction(SolidMechanicsAction, "add_kernel");
-  registerAction(DomainIntegralAction, "add_user_object");
-  registerAction(DomainIntegralAction, "add_aux_variable");
-  registerAction(DomainIntegralAction, "add_aux_kernel");
-  registerAction(DomainIntegralAction, "add_postprocessor");
-  registerAction(DomainIntegralAction, "add_material");
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+SolidMechanicsApp__registerExecFlags(Factory & factory)
+{
+  SolidMechanicsApp::registerExecFlags(factory);
+}
+void
+SolidMechanicsApp::registerExecFlags(Factory & /*factory*/)
+{
 }

@@ -1,39 +1,43 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef TENSORMECHANICSPLASTICTENSILE_H
 #define TENSORMECHANICSPLASTICTENSILE_H
 
 #include "TensorMechanicsPlasticModel.h"
 #include "TensorMechanicsHardeningModel.h"
 
-
 class TensorMechanicsPlasticTensile;
 
-
-template<>
+template <>
 InputParameters validParams<TensorMechanicsPlasticTensile>();
 
 /**
  * FiniteStrainTensile implements rate-independent associative tensile failure
  * with hardening/softening in the finite-strain framework.
  * For 'hyperbolic' smoothing, the smoothing of the tip of the yield-surface cone is described in
- * Zienkiewicz and Prande "Some useful forms of isotropic yield surfaces for soil and rock mechanics" (1977) In G Gudehus (editor) "Finite Elements in Geomechanics" Wile, Chichester, pp 179-190.
+ * Zienkiewicz and Prande "Some useful forms of isotropic yield surfaces for soil and rock
+ * mechanics" (1977) In G Gudehus (editor) "Finite Elements in Geomechanics" Wile, Chichester, pp
+ * 179-190.
  * For 'cap' smoothing, additional smoothing is performed.
  * The smoothing of the edges of the cone is described in
- * AJ Abbo, AV Lyamin, SW Sloan, JP Hambleton "A C2 continuous approximation to the Mohr-Coulomb yield surface" International Journal of Solids and Structures 48 (2011) 3001-3010
+ * AJ Abbo, AV Lyamin, SW Sloan, JP Hambleton "A C2 continuous approximation to the Mohr-Coulomb
+ * yield surface" International Journal of Solids and Structures 48 (2011) 3001-3010
  */
 class TensorMechanicsPlasticTensile : public TensorMechanicsPlasticModel
 {
- public:
+public:
   TensorMechanicsPlasticTensile(const InputParameters & parameters);
 
   virtual std::string modelName() const override;
 
- protected:
+protected:
   Real yieldFunction(const RankTwoTensor & stress, Real intnl) const override;
 
   RankTwoTensor dyieldFunction_dstress(const RankTwoTensor & stress, Real intnl) const override;
@@ -99,8 +103,6 @@ class TensorMechanicsPlasticTensile : public TensorMechanicsPlasticModel
 
   /// d(tensile strength)/d(internal_param) as a function of residual value, rate, and internal_param
   virtual Real dtensile_strength(const Real internal_param) const;
-
-
 };
 
 #endif // TENSORMECHANICSPLASTICTENSILE_H

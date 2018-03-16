@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef FINITESTRAINUOBASEDCP_H
 #define FINITESTRAINUOBASEDCP_H
 
@@ -16,18 +19,20 @@
 
 class FiniteStrainUObasedCP;
 
-template<>
+template <>
 InputParameters validParams<FiniteStrainUObasedCP>();
 
 /**
  * FiniteStrainUObasedCP uses the multiplicative decomposition of deformation gradient
- * and solves the PK2 stress residual equation at the intermediate configuration to evolve the material state.
+ * and solves the PK2 stress residual equation at the intermediate configuration to evolve the
+ * material state.
  * The internal variables are updated using an interative predictor-corrector algorithm.
  * Backward Euler integration rule is used for the rate equations.
  *
  * Involves 4 different types of user objects that calculates:
  * State variables - update state variable (derive from CrystalPlasticityStateVariable)
- * State variable evolution compoment - individual component of state variable incremental rate (derive from CrystalPlasticityStateVariableEvolutionRateComponent)
+ * State variable evolution compoment - individual component of state variable incremental rate
+ * (derive from CrystalPlasticityStateVariableEvolutionRateComponent)
  * Slip resistance - calcuate slip resistances (derive from CrystalPlasticitySlipResistances)
  * Slip rates - calcuate flow direction and slip rates (derive from CrystalPlasticitySlipRates)
  */
@@ -161,19 +166,19 @@ protected:
   std::vector<const CrystalPlasticityStateVarRateComponent *> _uo_state_var_evol_rate_comps;
 
   /// Slip rates material property
-  std::vector<MaterialProperty<std::vector<Real> > *> _mat_prop_slip_rates;
+  std::vector<MaterialProperty<std::vector<Real>> *> _mat_prop_slip_rates;
 
   /// Slip resistance material property
-  std::vector<MaterialProperty<std::vector<Real> > *> _mat_prop_slip_resistances;
+  std::vector<MaterialProperty<std::vector<Real>> *> _mat_prop_slip_resistances;
 
   /// State variable material property
-  std::vector<MaterialProperty<std::vector<Real> > *> _mat_prop_state_vars;
+  std::vector<MaterialProperty<std::vector<Real>> *> _mat_prop_state_vars;
 
   /// Old state variable material property
-  std::vector<MaterialProperty<std::vector<Real> > *> _mat_prop_state_vars_old;
+  std::vector<const MaterialProperty<std::vector<Real>> *> _mat_prop_state_vars_old;
 
   /// State variable evolution rate component material property
-  std::vector<MaterialProperty<std::vector<Real> > *> _mat_prop_state_var_evol_rate_comps;
+  std::vector<MaterialProperty<std::vector<Real>> *> _mat_prop_state_var_evol_rate_comps;
 
   /// Number of slip rate user objects
   unsigned int _num_uo_slip_rates;
@@ -188,10 +193,10 @@ protected:
   unsigned int _num_uo_state_var_evol_rate_comps;
 
   /// Local state variable
-  std::vector<std::vector<Real> > _state_vars_old;
+  std::vector<std::vector<Real>> _state_vars_old;
 
   /// Local old state variable
-  std::vector<std::vector<Real> > _state_vars_prev;
+  std::vector<std::vector<Real>> _state_vars_prev;
 
   /// Stress residual equation relative tolerance
   Real _rtol;
@@ -235,12 +240,12 @@ protected:
   MooseEnum _lsrch_method;
 
   MaterialProperty<RankTwoTensor> & _fp;
-  MaterialProperty<RankTwoTensor> & _fp_old;
+  const MaterialProperty<RankTwoTensor> & _fp_old;
   MaterialProperty<RankTwoTensor> & _pk2;
-  MaterialProperty<RankTwoTensor> & _pk2_old;
+  const MaterialProperty<RankTwoTensor> & _pk2_old;
   MaterialProperty<RankTwoTensor> & _lag_e;
   MaterialProperty<RankTwoTensor> & _update_rot;
-  MaterialProperty<RankTwoTensor> & _update_rot_old;
+  const MaterialProperty<RankTwoTensor> & _update_rot_old;
 
   const MaterialProperty<RankTwoTensor> & _deformation_gradient;
   const MaterialProperty<RankTwoTensor> & _deformation_gradient_old;
@@ -251,7 +256,7 @@ protected:
   RankTwoTensor _dfgrd_tmp;
   RankTwoTensor _fe, _fp_old_inv, _fp_inv;
   DenseVector<Real> _tau;
-  std::vector<MaterialProperty<std::vector<RankTwoTensor> > * > _flow_direction;
+  std::vector<MaterialProperty<std::vector<RankTwoTensor>> *> _flow_direction;
 
   /// Flag to check whether convergence is achieved
   bool _err_tol;
@@ -262,4 +267,4 @@ protected:
   Real _dfgrd_scale_factor;
 };
 
-#endif //FINITESTRAINUOBASEDCP_H
+#endif // FINITESTRAINUOBASEDCP_H

@@ -1,38 +1,52 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "RandomCorrosion.h"
 #include "MooseMesh.h"
 
-// libMesh includes
 #include "libmesh/mesh_tools.h"
 
-template<>
-InputParameters validParams<RandomCorrosion>()
+registerMooseObject("DarcyThermoMechApp", RandomCorrosion);
+
+template <>
+InputParameters
+validParams<RandomCorrosion>()
 {
   InputParameters params = validParams<AuxKernel>();
-  params.addParam<Real>("tolerance", 1e-3, "When acting as a nodal AuxKernel determine if the random point to apply corrosion is located at the current node.");
-  params.addParam<unsigned int>("num_points", 10, "The number of random points to apply artificial corrosion. The number of points is increased by a factor as the supplied temperatures diverge.");
-  params.addParam<Real>("reference_temperature", 273.15, "Temperature at which corrosion begins, the greater the 'temperature' drifts from this the greater the amount of corrision locations that occurs.");
-  params.addParam<PostprocessorName>("temperature", 274.15, "The temperature value to used for computing the temperature multiplication factor for the number of corrosion locations.");
+  params.addParam<Real>("tolerance",
+                        1e-3,
+                        "When acting as a nodal AuxKernel determine if the "
+                        "random point to apply corrosion is located at the "
+                        "current node.");
+  params.addParam<unsigned int>("num_points",
+                                10,
+                                "The number of random points to apply artificial "
+                                "corrosion. The number of points is increased by "
+                                "a factor as the supplied temperatures diverge.");
+  params.addParam<Real>("reference_temperature",
+                        273.15,
+                        "Temperature at which corrosion begins, "
+                        "the greater the 'temperature' drifts "
+                        "from this the greater the amount of "
+                        "corrision locations that occurs.");
+  params.addParam<PostprocessorName>(
+      "temperature",
+      274.15,
+      "The temperature value to used for computing the temperature "
+      "multiplication factor for the number of corrosion locations.");
   return params;
 }
 
-RandomCorrosion::RandomCorrosion(const InputParameters & parameters) :
-    AuxKernel(parameters),
-    _box(MeshTools::bounding_box(_mesh)),
+RandomCorrosion::RandomCorrosion(const InputParameters & parameters)
+  : AuxKernel(parameters),
+    _box(MeshTools::create_bounding_box(_mesh)),
     _nodal_tol(getParam<Real>("tolerance")),
     _num_points(getParam<unsigned int>("num_points")),
     _ref_temperature(getParam<Real>("reference_temperature")),
@@ -46,7 +60,6 @@ RandomCorrosion::RandomCorrosion(const InputParameters & parameters) :
   setRandomResetFrequency(EXEC_TIMESTEP_BEGIN);
 }
 
-
 void
 RandomCorrosion::timestepSetup()
 {
@@ -59,7 +72,6 @@ RandomCorrosion::timestepSetup()
   _points.clear();
   for (unsigned int i = 0; i < _num_points * factor; ++i)
     _points.push_back(getRandomPoint());
-
 }
 
 Real
@@ -74,7 +86,6 @@ RandomCorrosion::computeValue()
   // Do nothing to the phase variable if not at a "corrosion" point
   return _u[_qp];
 }
-
 
 Point
 RandomCorrosion::getRandomPoint()

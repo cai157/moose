@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef FINITESTRAINHYPERELASTICVISCOPLASTIC_H
 #define FINITESTRAINHYPERELASTICVISCOPLASTIC_H
 
@@ -15,7 +18,7 @@
 
 class FiniteStrainHyperElasticViscoPlastic;
 
-template<>
+template <>
 InputParameters validParams<FiniteStrainHyperElasticViscoPlastic>();
 
 /**
@@ -31,7 +34,7 @@ InputParameters validParams<FiniteStrainHyperElasticViscoPlastic>();
 class FiniteStrainHyperElasticViscoPlastic : public ComputeStressBase
 {
 public:
-  FiniteStrainHyperElasticViscoPlastic (const InputParameters & parameters);
+  FiniteStrainHyperElasticViscoPlastic(const InputParameters & parameters);
 
 protected:
   /**
@@ -46,14 +49,17 @@ protected:
 
   /// This function initializes properties for each user object
   template <typename T>
-  void initProp(const std::vector<UserObjectName> &, unsigned int, std::vector<MaterialProperty<T> *> &);
+  void
+  initProp(const std::vector<UserObjectName> &, unsigned int, std::vector<MaterialProperty<T> *> &);
 
   /**
    * This function initializes old for stateful properties associated with user object
    * Only user objects that update internal variables have an associated old property
    **/
   template <typename T>
-  void initPropOld(const std::vector<UserObjectName> &, unsigned int, std::vector<MaterialProperty<T> *> &);
+  void initPropOld(const std::vector<UserObjectName> &,
+                   unsigned int,
+                   std::vector<const MaterialProperty<T> *> &);
 
   /// This function initializes user objects
   template <typename T>
@@ -188,18 +194,18 @@ protected:
   std::string _pk2_prop_name;
   MaterialProperty<RankTwoTensor> & _pk2;
   MaterialProperty<RankTwoTensor> & _fp;
-  MaterialProperty<RankTwoTensor> & _fp_old;
+  const MaterialProperty<RankTwoTensor> & _fp_old;
   MaterialProperty<RankTwoTensor> & _ce;
 
   const MaterialProperty<RankTwoTensor> & _deformation_gradient;
   const MaterialProperty<RankTwoTensor> & _deformation_gradient_old;
   const MaterialProperty<RankTwoTensor> & _rotation_increment;
 
-  std::vector< MaterialProperty<Real> * > _flow_rate_prop;
-  std::vector< MaterialProperty<Real> * > _strength_prop;
-  std::vector< MaterialProperty<Real> * > _int_var_stateful_prop;
-  std::vector< MaterialProperty<Real> * > _int_var_stateful_prop_old;
-  std::vector< MaterialProperty<Real> * > _int_var_rate_prop;
+  std::vector<MaterialProperty<Real> *> _flow_rate_prop;
+  std::vector<MaterialProperty<Real> *> _strength_prop;
+  std::vector<MaterialProperty<Real> *> _int_var_stateful_prop;
+  std::vector<const MaterialProperty<Real> *> _int_var_stateful_prop_old;
+  std::vector<MaterialProperty<Real> *> _int_var_rate_prop;
   std::vector<Real> _int_var_old;
 
   RankTwoTensor _dfgrd_tmp;
@@ -220,8 +226,8 @@ protected:
   DenseVector<Real> _resid;
 
   /// Jacobian variables
-  std::vector< DenseVector<Real> > _dintvarrate_dflowrate;
-  std::vector< DenseVector<Real> > _dintvar_dflowrate_tmp;
+  std::vector<DenseVector<Real>> _dintvarrate_dflowrate;
+  std::vector<DenseVector<Real>> _dintvar_dflowrate_tmp;
 
   DenseMatrix<Real> _dintvarrate_dintvar;
   DenseMatrix<Real> _dintvar_dintvarrate;
@@ -235,4 +241,4 @@ protected:
   Real _dt_substep;
 };
 
-#endif //FINITESTRAINHYPERELASTICVISCOPLASTIC_H
+#endif // FINITESTRAINHYPERELASTICVISCOPLASTIC_H

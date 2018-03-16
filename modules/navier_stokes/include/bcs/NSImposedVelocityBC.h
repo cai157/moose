@@ -1,21 +1,23 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef NSIMPOSEDVELOCITYBC_H
 #define NSIMPOSEDVELOCITYBC_H
 
 // The base class definition (part of MOOSE)
 #include "NodalBC.h"
 
-//Forward Declarations
+// Forward Declarations
 class NSImposedVelocityBC;
 
-
 // Specialization required of all user-level Moose objects
-template<>
+template <>
 InputParameters validParams<NSImposedVelocityBC>();
 
 class NSImposedVelocityBC : public NodalBC
@@ -24,7 +26,6 @@ public:
   NSImposedVelocityBC(const InputParameters & parameters);
 
 protected:
-
   // NodalBC's can (currently) only override the computeQpResidual function,
   // the computeQpJacobian() function automatically assembles a "1" onto the main
   // diagonal for this DoF.

@@ -1,25 +1,22 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "BlockAverageValue.h"
 #include "MooseMesh.h"
 
-// libmesh includes
 #include "libmesh/mesh_tools.h"
 
-template<>
-InputParameters validParams<BlockAverageValue>()
+registerMooseObject("ExampleApp", BlockAverageValue);
+
+template <>
+InputParameters
+validParams<BlockAverageValue>()
 {
   InputParameters params = validParams<ElementIntegralVariablePostprocessor>();
 
@@ -30,8 +27,8 @@ InputParameters validParams<BlockAverageValue>()
   return params;
 }
 
-BlockAverageValue::BlockAverageValue(const InputParameters & parameters) :
-    ElementIntegralVariablePostprocessor(parameters)
+BlockAverageValue::BlockAverageValue(const InputParameters & parameters)
+  : ElementIntegralVariablePostprocessor(parameters)
 {
 }
 
@@ -56,9 +53,7 @@ BlockAverageValue::initialize()
   // Set averages to 0 for each block
   const std::set<SubdomainID> & blocks = _subproblem.mesh().meshSubdomains();
 
-  for (std::set<SubdomainID>::const_iterator it = blocks.begin();
-      it != blocks.end();
-      ++it)
+  for (std::set<SubdomainID>::const_iterator it = blocks.begin(); it != blocks.end(); ++it)
   {
     _integral_values[*it] = 0;
     _volume_values[*it] = 0;
@@ -88,18 +83,18 @@ BlockAverageValue::threadJoin(const UserObject & y)
   const BlockAverageValue & bav = dynamic_cast<const BlockAverageValue &>(y);
 
   for (std::map<SubdomainID, Real>::const_iterator it = bav._integral_values.begin();
-      it != bav._integral_values.end();
-      ++it)
+       it != bav._integral_values.end();
+       ++it)
     _integral_values[it->first] += it->second;
 
   for (std::map<SubdomainID, Real>::const_iterator it = bav._volume_values.begin();
-      it != bav._volume_values.end();
-      ++it)
+       it != bav._volume_values.end();
+       ++it)
     _volume_values[it->first] += it->second;
 
   for (std::map<SubdomainID, Real>::const_iterator it = bav._average_values.begin();
-      it != bav._average_values.end();
-      ++it)
+       it != bav._average_values.end();
+       ++it)
     _average_values[it->first] += it->second;
 }
 
@@ -108,20 +103,20 @@ BlockAverageValue::finalize()
 {
   // Loop over the integral values and sum them up over the processors
   for (std::map<SubdomainID, Real>::iterator it = _integral_values.begin();
-      it != _integral_values.end();
-      ++it)
+       it != _integral_values.end();
+       ++it)
     gatherSum(it->second);
 
   // Loop over the volumes and sum them up over the processors
   for (std::map<SubdomainID, Real>::iterator it = _volume_values.begin();
-      it != _volume_values.end();
-      ++it)
+       it != _volume_values.end();
+       ++it)
     gatherSum(it->second);
 
   // Now everyone has the correct data so everyone can compute the averages properly:
   for (std::map<SubdomainID, Real>::iterator it = _average_values.begin();
-      it != _average_values.end();
-      ++it)
+       it != _average_values.end();
+       ++it)
   {
     SubdomainID id = it->first;
     _average_values[id] = _integral_values[id] / _volume_values[id];

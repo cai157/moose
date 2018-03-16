@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "VariableResidualNormsDebugOutput.h"
@@ -19,22 +14,25 @@
 #include "Material.h"
 #include "NonlinearSystemBase.h"
 
-// libMesh includes
 #include "libmesh/transient_system.h"
 
-template<>
-InputParameters validParams<VariableResidualNormsDebugOutput>()
+registerMooseObject("MooseApp", VariableResidualNormsDebugOutput);
+
+template <>
+InputParameters
+validParams<VariableResidualNormsDebugOutput>()
 {
-  InputParameters params = validParams<BasicOutput<PetscOutput> >();
+  InputParameters params = validParams<PetscOutput>();
 
   // By default this outputs on every nonlinear iteration
-  params.set<MultiMooseEnum>("execute_on") = "nonlinear";
+  params.set<ExecFlagEnum>("execute_on") = EXEC_NONLINEAR;
+  params.suppressParameter<ExecFlagEnum>("execute_on");
   return params;
 }
 
-VariableResidualNormsDebugOutput::VariableResidualNormsDebugOutput(const InputParameters & parameters) :
-    BasicOutput<PetscOutput>(parameters),
-    _sys(_problem_ptr->getNonlinearSystemBase().system())
+VariableResidualNormsDebugOutput::VariableResidualNormsDebugOutput(
+    const InputParameters & parameters)
+  : PetscOutput(parameters), _sys(_problem_ptr->getNonlinearSystemBase().system())
 {
 }
 
@@ -57,8 +55,10 @@ VariableResidualNormsDebugOutput::output(const ExecFlagType & /*type*/)
   oss << "    |residual|_2 of individual variables:\n";
   for (unsigned int var_num = 0; var_num < _sys.n_vars(); var_num++)
   {
-    Real var_res_id = _sys.calculate_norm(_problem_ptr->getNonlinearSystemBase().RHS(), var_num, DISCRETE_L2);
-    oss << std::setw(27-max_name_size) << " " << std::setw(max_name_size+2) //match position of overall NL residual
+    Real var_res_id =
+        _sys.calculate_norm(_problem_ptr->getNonlinearSystemBase().RHS(), var_num, DISCRETE_L2);
+    oss << std::setw(27 - max_name_size) << " "
+        << std::setw(max_name_size + 2) // match position of overall NL residual
         << std::left << _sys.variable_name(var_num) + ":" << var_res_id << "\n";
   }
 

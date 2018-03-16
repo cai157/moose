@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef COMPUTEJACOBIANBLOCKSTHREAD_H
 #define COMPUTEJACOBIANBLOCKSTHREAD_H
@@ -26,12 +21,13 @@ class FEProblemBase;
 class JacobianBlock
 {
 public:
-  JacobianBlock(libMesh::System & precond_system, SparseMatrix<Number> & jacobian, unsigned int ivar, unsigned int jvar) :
-      _precond_system(precond_system),
-      _jacobian(jacobian),
-      _ivar(ivar),
-      _jvar(jvar)
-    {}
+  JacobianBlock(libMesh::System & precond_system,
+                SparseMatrix<Number> & jacobian,
+                unsigned int ivar,
+                unsigned int jvar)
+    : _precond_system(precond_system), _jacobian(jacobian), _ivar(ivar), _jvar(jvar)
+  {
+  }
 
   libMesh::System & _precond_system;
   SparseMatrix<Number> & _jacobian;
@@ -44,20 +40,19 @@ public:
 class ComputeJacobianBlocksThread : public ComputeFullJacobianThread
 {
 public:
-  ComputeJacobianBlocksThread(FEProblemBase & fe_problem, std::vector<JacobianBlock*> & blocks);
+  ComputeJacobianBlocksThread(FEProblemBase & fe_problem, std::vector<JacobianBlock *> & blocks);
 
   // Splitting Constructor
   ComputeJacobianBlocksThread(ComputeJacobianBlocksThread & x, Threads::split split);
 
   virtual ~ComputeJacobianBlocksThread();
 
-  void join(const ComputeJacobianThread & /*y*/)
-  {}
+  void join(const ComputeJacobianThread & /*y*/) {}
 
 protected:
   virtual void postElement(const Elem * elem) override;
 
-  std::vector<JacobianBlock*> _blocks;
+  std::vector<JacobianBlock *> _blocks;
 };
 
-#endif //COMPUTEJACOBIANBLOCKSTHREAD_H
+#endif // COMPUTEJACOBIANBLOCKSTHREAD_H

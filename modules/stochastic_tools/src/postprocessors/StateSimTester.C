@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "StateSimTester.h"
 #include "StateSimTester.h"
@@ -18,7 +20,8 @@ validParams<StateSimTester>()
   InputParameters params = validParams<GeneralPostprocessor>();
   params.addRequiredParam<UserObjectName>("state_sim_runner", "The StateSimRunner to test.");
   MooseEnum system_enum("SYNCTIMES", "SYNCTIMES");
-  params.addParam<MooseEnum>("test_type", system_enum, "The value for testing (SYNCTIMES). Default == SYNCTIMES");
+  params.addParam<MooseEnum>(
+      "test_type", system_enum, "The value for testing (SYNCTIMES). Default == SYNCTIMES");
   return params;
 }
 
@@ -27,6 +30,7 @@ StateSimTester::StateSimTester(const InputParameters & parameters)
     _state_sim_runner_ptr(getUserObject<StateSimRunner>("state_sim_runner")),
     _test_val_enum(parameters.get<MooseEnum>("test_type").getEnum<SystemEnum>())
 {
+  mooseDeprecated("The StateSimTester will be removed.");
 }
 
 Real

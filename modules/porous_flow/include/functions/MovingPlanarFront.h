@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOVINGPLANARFRONT_H
 #define MOVINGPLANARFRONT_H
@@ -14,7 +16,7 @@
 // Forward Declarations
 class MovingPlanarFront;
 
-template<>
+template <>
 InputParameters validParams<MovingPlanarFront>();
 
 /**
@@ -25,8 +27,7 @@ InputParameters validParams<MovingPlanarFront>();
  * This Function may be used to define the geometry of an underground excavation,
  * probably in conjunction with a predefined sideset.
  */
-class MovingPlanarFront : public Function,
-                          protected FunctionInterface
+class MovingPlanarFront : public Function, protected FunctionInterface
 {
 public:
   MovingPlanarFront(const InputParameters & parameters);
@@ -62,4 +63,4 @@ protected:
   RealVectorValue _front_normal;
 };
 
-#endif //MOVINGPLANARFRONT_H
+#endif // MOVINGPLANARFRONT_H

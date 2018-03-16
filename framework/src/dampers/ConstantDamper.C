@@ -1,30 +1,28 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ConstantDamper.h"
 
-template<>
-InputParameters validParams<ConstantDamper>()
+registerMooseObject("MooseApp", ConstantDamper);
+
+template <>
+InputParameters
+validParams<ConstantDamper>()
 {
   InputParameters params = validParams<GeneralDamper>();
-  params.addRequiredParam<Real>("damping", "The percentage (between 0 and 1) of the newton update to take.");
+  params.addRequiredParam<Real>("damping",
+                                "The percentage (between 0 and 1) of the newton update to take.");
   return params;
 }
 
-ConstantDamper::ConstantDamper(const InputParameters & parameters) :
-    GeneralDamper(parameters),
-    _damping(getParam<Real>("damping"))
+ConstantDamper::ConstantDamper(const InputParameters & parameters)
+  : GeneralDamper(parameters), _damping(getParam<Real>("damping"))
 {
 }
 

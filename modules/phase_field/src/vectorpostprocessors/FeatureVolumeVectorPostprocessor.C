@@ -1,38 +1,49 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "FeatureVolumeVectorPostprocessor.h"
+
+// MOOSE includes
+#include "Assembly.h"
 #include "FeatureFloodCount.h"
 #include "GrainTrackerInterface.h"
 #include "MooseMesh.h"
-#include "Assembly.h"
+#include "MooseVariable.h"
 
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<FeatureVolumeVectorPostprocessor>()
+template <>
+InputParameters
+validParams<FeatureVolumeVectorPostprocessor>()
 {
   InputParameters params = validParams<GeneralVectorPostprocessor>();
 
-  params.addRequiredParam<UserObjectName>("flood_counter", "The FeatureFloodCount UserObject to get values from.");
-  params.addParam<bool>("single_feature_per_element", false, "Set this Boolean if you wish to use an element based volume where"
-                        " the dominant order parameter determines the feature that accumulates the entire element volume");
+  params.addRequiredParam<UserObjectName>("flood_counter",
+                                          "The FeatureFloodCount UserObject to get values from.");
+  params.addParam<bool>("single_feature_per_element",
+                        false,
+                        "Set this Boolean if you wish to use an element based volume where"
+                        " the dominant order parameter determines the feature that accumulates the "
+                        "entire element volume");
   return params;
 }
 
-FeatureVolumeVectorPostprocessor::FeatureVolumeVectorPostprocessor(const InputParameters & parameters) :
-    GeneralVectorPostprocessor(parameters),
+FeatureVolumeVectorPostprocessor::FeatureVolumeVectorPostprocessor(
+    const InputParameters & parameters)
+  : GeneralVectorPostprocessor(parameters),
     MooseVariableDependencyInterface(),
     _single_feature_per_elem(getParam<bool>("single_feature_per_element")),
     _feature_counter(getUserObject<FeatureFloodCount>("flood_counter")),
     _var_num(declareVector("var_num")),
     _feature_volumes(declareVector("feature_volumes")),
     _intersects_bounds(declareVector("intersects_bounds")),
-    _vars(_feature_counter.getCoupledVars()),
+    _vars(_feature_counter.getFECoupledVars()),
     _mesh(_subproblem.mesh()),
     _assembly(_subproblem.assembly(_tid)),
     _q_point(_assembly.qPoints()),
@@ -43,7 +54,7 @@ FeatureVolumeVectorPostprocessor::FeatureVolumeVectorPostprocessor(const InputPa
   addMooseVariableDependency(_vars);
 
   _coupled_sln.reserve(_vars.size());
-  for (auto & var : _vars)
+  for (auto & var : _feature_counter.getCoupledVars())
     _coupled_sln.push_back(&var->sln());
 }
 
@@ -58,7 +69,7 @@ FeatureVolumeVectorPostprocessor::execute()
   const auto num_features = _feature_counter.getTotalFeatureCount();
 
   // Reset the variable index and intersect bounds vectors
-  _var_num.assign(num_features, -1); // Invalid
+  _var_num.assign(num_features, -1);           // Invalid
   _intersects_bounds.assign(num_features, -1); // Invalid
   for (auto feature_num = beginIndex(_var_num); feature_num < num_features; ++feature_num)
   {
@@ -66,7 +77,8 @@ FeatureVolumeVectorPostprocessor::execute()
     if (var_num != FeatureFloodCount::invalid_id)
       _var_num[feature_num] = var_num;
 
-    _intersects_bounds[feature_num] = static_cast<unsigned int>(_feature_counter.doesFeatureIntersectBoundary(feature_num));
+    _intersects_bounds[feature_num] =
+        static_cast<unsigned int>(_feature_counter.doesFeatureIntersectBoundary(feature_num));
   }
 
   // Reset the volume vector
@@ -105,12 +117,16 @@ FeatureVolumeVectorPostprocessor::getFeatureVolume(unsigned int feature_id) cons
 }
 
 void
-FeatureVolumeVectorPostprocessor::accumulateVolumes(const Elem * elem, const std::vector<unsigned int> & var_to_features, std::size_t libmesh_dbg_var(num_features))
+FeatureVolumeVectorPostprocessor::accumulateVolumes(
+    const Elem * elem,
+    const std::vector<unsigned int> & var_to_features,
+    std::size_t libmesh_dbg_var(num_features))
 {
   unsigned int dominant_feature_id = FeatureFloodCount::invalid_id;
   Real max_var_value = std::numeric_limits<Real>::lowest();
 
-  for (auto var_index = beginIndex(var_to_features); var_index < var_to_features.size(); ++var_index)
+  for (auto var_index = beginIndex(var_to_features); var_index < var_to_features.size();
+       ++var_index)
   {
     // Only sample "active" variables
     if (var_to_features[var_index] != FeatureFloodCount::invalid_id)

@@ -1,19 +1,21 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWMASSFRACTION_H
 #define POROUSFLOWMASSFRACTION_H
 
 #include "PorousFlowMaterialVectorBase.h"
 
-//Forward Declarations
+// Forward Declarations
 class PorousFlowMassFraction;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowMassFraction>();
 
 /**
@@ -27,16 +29,13 @@ public:
 
 protected:
   /// Mass fraction matrix at quadpoint or nodes
-  MaterialProperty<std::vector<std::vector<Real> > > & _mass_frac;
-
-  /// Old value of mass fraction matrix
-  MaterialProperty<std::vector<std::vector<Real> > > * const _mass_frac_old;
+  MaterialProperty<std::vector<std::vector<Real>>> & _mass_frac;
 
   /// Gradient of the mass fraction matrix at the quad points
-  MaterialProperty<std::vector<std::vector<RealGradient> > > * const _grad_mass_frac;
+  MaterialProperty<std::vector<std::vector<RealGradient>>> * const _grad_mass_frac;
 
   /// Derivative of the mass fraction matrix with respect to the porous flow variables
-  MaterialProperty<std::vector<std::vector<std::vector<Real> > > > & _dmass_frac_dvar;
+  MaterialProperty<std::vector<std::vector<std::vector<Real>>>> & _dmass_frac_dvar;
 
   virtual void initQpStatefulProperties() override;
   virtual void computeQpProperties() override;
@@ -65,4 +64,4 @@ protected:
   std::vector<const VariableGradient *> _grad_mf_vars;
 };
 
-#endif //POROUSFLOWMASSFRACTION_H
+#endif // POROUSFLOWMASSFRACTION_H

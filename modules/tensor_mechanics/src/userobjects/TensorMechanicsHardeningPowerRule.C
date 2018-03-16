@@ -1,27 +1,35 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "TensorMechanicsHardeningPowerRule.h"
 
-template<>
-InputParameters validParams<TensorMechanicsHardeningPowerRule>()
+template <>
+InputParameters
+validParams<TensorMechanicsHardeningPowerRule>()
 {
   InputParameters params = validParams<TensorMechanicsHardeningModel>();
   params.addRequiredParam<Real>("value_0", "The yield strength when internal variable = 0");
   params.addParam<Real>("epsilon0", 1.0, "The reference strain");
-  params.addParam<Real>("exponent", 0.0, "Let p = internal_parameter.  Then value = value_0 * (p / epsilon0 + 1)^{exponent})");
+  params.addParam<Real>(
+      "exponent",
+      0.0,
+      "Let p = internal_parameter.  Then value = value_0 * (p / epsilon0 + 1)^{exponent})");
   params.addClassDescription("Hardening defined by power rule");
   return params;
 }
 
-TensorMechanicsHardeningPowerRule::TensorMechanicsHardeningPowerRule(const InputParameters & parameters) :
-  TensorMechanicsHardeningModel(parameters),
-  _value_0(getParam<Real>("value_0")),
-  _epsilon0(getParam<Real>("epsilon0")),
-  _exponent(getParam<Real>("exponent"))
+TensorMechanicsHardeningPowerRule::TensorMechanicsHardeningPowerRule(
+    const InputParameters & parameters)
+  : TensorMechanicsHardeningModel(parameters),
+    _value_0(getParam<Real>("value_0")),
+    _epsilon0(getParam<Real>("epsilon0")),
+    _exponent(getParam<Real>("exponent"))
 {
 }
 

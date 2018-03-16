@@ -1,19 +1,21 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWPERMEABILITYBASE_H
 #define POROUSFLOWPERMEABILITYBASE_H
 
 #include "PorousFlowMaterialVectorBase.h"
 
-//Forward Declarations
+// Forward Declarations
 class PorousFlowPermeabilityBase;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowPermeabilityBase>();
 
 /**
@@ -29,10 +31,10 @@ protected:
   MaterialProperty<RealTensorValue> & _permeability_qp;
 
   /// d(quadpoint permeability)/d(PorousFlow variable)
-  MaterialProperty<std::vector<RealTensorValue> > & _dpermeability_qp_dvar;
+  MaterialProperty<std::vector<RealTensorValue>> & _dpermeability_qp_dvar;
 
   /// d(quadpoint permeability)/d(grad(PorousFlow variable))
-  MaterialProperty<std::vector<std::vector<RealTensorValue> > > & _dpermeability_qp_dgradvar;
+  MaterialProperty<std::vector<std::vector<RealTensorValue>>> & _dpermeability_qp_dgradvar;
 };
 
-#endif //POROUSFLOWPERMEABILITYBASE_H
+#endif // POROUSFLOWPERMEABILITYBASE_H

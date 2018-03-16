@@ -1,76 +1,98 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SetupMeshAction.h"
 #include "MooseApp.h"
 #include "MooseMesh.h"
+#include "FileMesh.h"
 #include "FEProblem.h"
 #include "ActionWarehouse.h"
 #include "Factory.h"
 
-template<>
-InputParameters validParams<SetupMeshAction>()
+registerMooseAction("MooseApp", SetupMeshAction, "setup_mesh");
+
+registerMooseAction("MooseApp", SetupMeshAction, "init_mesh");
+
+template <>
+InputParameters
+validParams<SetupMeshAction>()
 {
   InputParameters params = validParams<MooseObjectAction>();
   params.set<std::string>("type") = "FileMesh";
 
-  params.addParam<bool>("second_order", false, "Converts a first order mesh to a second order mesh.  Note: This is NOT needed if you are reading an actual first order mesh.");
+  params.addParam<bool>("second_order",
+                        false,
+                        "Converts a first order mesh to a second order "
+                        "mesh.  Note: This is NOT needed if you are reading "
+                        "an actual first order mesh.");
 
-  params.addParam<std::vector<SubdomainID> >("block_id", "IDs of the block id/name pairs");
-  params.addParam<std::vector<SubdomainName> >("block_name", "Names of the block id/name pairs (must correspond with \"block_id\"");
+  params.addParam<std::vector<SubdomainID>>("block_id", "IDs of the block id/name pairs");
+  params.addParam<std::vector<SubdomainName>>(
+      "block_name", "Names of the block id/name pairs (must correspond with \"block_id\"");
 
-  params.addParam<std::vector<BoundaryID> >("boundary_id", "IDs of the boundary id/name pairs");
-  params.addParam<std::vector<BoundaryName> >("boundary_name", "Names of the boundary id/name pairs (must correspond with \"boundary_id\"");
+  params.addParam<std::vector<BoundaryID>>("boundary_id", "IDs of the boundary id/name pairs");
+  params.addParam<std::vector<BoundaryName>>(
+      "boundary_name", "Names of the boundary id/name pairs (must correspond with \"boundary_id\"");
 
-  params.addParam<bool>("construct_side_list_from_node_list", false, "If true, construct side lists from the nodesets in the mesh (i.e. if every node on a give side is in a nodeset then add that side to a sideset");
+  params.addParam<bool>("construct_side_list_from_node_list",
+                        false,
+                        "If true, construct side lists from the nodesets in the mesh (i.e. if "
+                        "every node on a give side is in a nodeset then add that side to a "
+                        "sideset");
 
-  params.addParam<std::vector<std::string> >("displacements", "The variables corresponding to the x y z displacements of the mesh.  If this is provided then the displacements will be taken into account during the computation.");
-  params.addParam<std::vector<BoundaryName> >("ghosted_boundaries", "Boundaries to be ghosted if using Nemesis");
-  params.addParam<std::vector<Real> >("ghosted_boundaries_inflation", "If you are using ghosted boundaries you will want to set this value to a vector of amounts to inflate the bounding boxes by.  ie if you are running a 3D problem you might set it to '0.2 0.1 0.4'");
-  params.addParam<unsigned int>("patch_size", 40, "The number of nodes to consider in the NearestNode neighborhood.");
+  params.addParam<std::vector<std::string>>(
+      "displacements",
+      "The variables corresponding to the x y z displacements of the mesh.  If "
+      "this is provided then the displacements will be taken into account during "
+      "the computation.");
+  params.addParam<std::vector<BoundaryName>>("ghosted_boundaries",
+                                             "Boundaries to be ghosted if using Nemesis");
+  params.addParam<std::vector<Real>>("ghosted_boundaries_inflation",
+                                     "If you are using ghosted boundaries you will want to set "
+                                     "this value to a vector of amounts to inflate the bounding "
+                                     "boxes by.  ie if you are running a 3D problem you might set "
+                                     "it to '0.2 0.1 0.4'");
 
-  params.addParam<unsigned int>("uniform_refine", 0, "Specify the level of uniform refinement applied to the initial mesh");
-
-  params.addParam<bool>("skip_partitioning", false, "If true the mesh won't be partitioned. This may cause large load imbalanced but is currently required if you "
-                                                    "have a simulation containing uniform refinement, adaptivity and stateful material properties");
+  params.addParam<unsigned int>(
+      "uniform_refine", 0, "Specify the level of uniform refinement applied to the initial mesh");
+  params.addParam<bool>("skip_partitioning",
+                        false,
+                        "If true the mesh won't be partitioned. This may cause large load "
+                        "imbalanced but is currently required if you "
+                        "have a simulation containing uniform refinement, adaptivity and stateful "
+                        "material properties");
 
   // groups
-  params.addParamNamesToGroup("displacements ghosted_boundaries ghosted_boundaries_inflation patch_size", "Advanced");
-  params.addParamNamesToGroup("second_order construct_side_list_from_node_list skip_partitioning", "Advanced");
+  params.addParamNamesToGroup("displacements ghosted_boundaries ghosted_boundaries_inflation",
+                              "Advanced");
+  params.addParamNamesToGroup("second_order construct_side_list_from_node_list skip_partitioning",
+                              "Advanced");
   params.addParamNamesToGroup("block_id block_name boundary_id boundary_name", "Add Names");
 
   return params;
 }
 
-SetupMeshAction::SetupMeshAction(InputParameters params) :
-    MooseObjectAction(params)
-{
-}
+SetupMeshAction::SetupMeshAction(InputParameters params) : MooseObjectAction(params) {}
 
 void
-SetupMeshAction::setupMesh(MooseMesh *mesh)
+SetupMeshAction::setupMesh(MooseMesh * mesh)
 {
-  std::vector<BoundaryName> ghosted_boundaries = getParam<std::vector<BoundaryName> >("ghosted_boundaries");
+  std::vector<BoundaryName> ghosted_boundaries =
+      getParam<std::vector<BoundaryName>>("ghosted_boundaries");
 
   for (const auto & bnd_name : ghosted_boundaries)
     mesh->addGhostedBoundary(mesh->getBoundaryID(bnd_name));
 
-  mesh->setPatchSize(getParam<unsigned int>("patch_size"));
-
   if (isParamValid("ghosted_boundaries_inflation"))
   {
-    std::vector<Real> ghosted_boundaries_inflation = getParam<std::vector<Real> >("ghosted_boundaries_inflation");
+    std::vector<Real> ghosted_boundaries_inflation =
+        getParam<std::vector<Real>>("ghosted_boundaries_inflation");
     mesh->setGhostedBoundaryInflation(ghosted_boundaries_inflation);
   }
 
@@ -86,37 +108,36 @@ SetupMeshAction::setupMesh(MooseMesh *mesh)
   level += _app.getParam<unsigned int>("refinements");
 
   mesh->setUniformRefineLevel(level);
-#endif //LIBMESH_ENABLE_AMR
+#endif // LIBMESH_ENABLE_AMR
 
   // Add entity names to the mesh
   if (_pars.isParamValid("block_id") && _pars.isParamValid("block_name"))
   {
-    std::vector<SubdomainID> ids = getParam<std::vector<SubdomainID> >("block_id");
-    std::vector<SubdomainName> names = getParam<std::vector<SubdomainName> >("block_name");
+    std::vector<SubdomainID> ids = getParam<std::vector<SubdomainID>>("block_id");
+    std::vector<SubdomainName> names = getParam<std::vector<SubdomainName>>("block_name");
     std::set<SubdomainName> seen_it;
 
     if (ids.size() != names.size())
       mooseError("You must supply the same number of block ids and names parameters");
 
-    for (unsigned int i=0; i<ids.size(); ++i)
+    for (unsigned int i = 0; i < ids.size(); ++i)
     {
       if (seen_it.find(names[i]) != seen_it.end())
         mooseError("The following dynamic block name is not unique: " + names[i]);
       seen_it.insert(names[i]);
       mesh->setSubdomainName(ids[i], names[i]);
     }
-
   }
   if (_pars.isParamValid("boundary_id") && _pars.isParamValid("boundary_name"))
   {
-    std::vector<BoundaryID> ids = getParam<std::vector<BoundaryID> >("boundary_id");
-    std::vector<BoundaryName> names = getParam<std::vector<BoundaryName> >("boundary_name");
+    std::vector<BoundaryID> ids = getParam<std::vector<BoundaryID>>("boundary_id");
+    std::vector<BoundaryName> names = getParam<std::vector<BoundaryName>>("boundary_name");
     std::set<SubdomainName> seen_it;
 
     if (ids.size() != names.size())
       mooseError("You must supply the same number of boundary ids and names parameters");
 
-    for (unsigned int i=0; i<ids.size(); ++i)
+    for (unsigned int i = 0; i < ids.size(); ++i)
     {
       if (seen_it.find(names[i]) != seen_it.end())
         mooseError("The following dynamic boundary name is not unique: " + names[i]);
@@ -139,6 +160,52 @@ SetupMeshAction::act()
   // Create the mesh object and tell it to build itself
   if (_current_task == "setup_mesh")
   {
+    // switch non-file meshes to be a file-mesh if using a pre-split mesh configuration.
+    if (_app.parameters().get<bool>("use_split"))
+    {
+      auto split_file = _app.parameters().get<std::string>("split_file");
+
+      // Get the split_file extension, if there is one, and use that to decide
+      // between .cpr and .cpa
+      std::string split_file_ext;
+      auto pos = split_file.rfind(".");
+      if (pos != std::string::npos)
+        split_file_ext = split_file.substr(pos + 1, std::string::npos);
+
+      // If split_file already has the .cpr or .cpa extension, we go with
+      // that, otherwise we strip off the extension and append ".cpr".
+      if (split_file != "" && split_file_ext != "cpr" && split_file_ext != "cpa")
+        split_file = MooseUtils::stripExtension(split_file) + ".cpr";
+
+      if (_type != "FileMesh")
+      {
+        if (split_file == "")
+        {
+          if (_app.processor_id() == 0)
+            mooseError(
+                "Cannot use split mesh for a non-file mesh without specifying --split-file on "
+                "command line");
+          MOOSE_ABORT;
+        }
+
+        _type = "FileMesh";
+        auto new_pars = validParams<FileMesh>();
+        new_pars.set<MeshFileName>("file") = split_file;
+        new_pars.set<MooseApp *>("_moose_app") = _moose_object_pars.get<MooseApp *>("_moose_app");
+        new_pars.set<MooseEnum>("parallel_type") = "distributed";
+        _moose_object_pars = new_pars;
+      }
+      else
+      {
+        _moose_object_pars.set<MooseEnum>("parallel_type") = "distributed";
+        if (split_file != "")
+          _moose_object_pars.set<MeshFileName>("file") = split_file;
+        else
+          _moose_object_pars.set<MeshFileName>("file") =
+              MooseUtils::stripExtension(_moose_object_pars.get<MeshFileName>("file")) + ".cpr";
+      }
+    }
+
     _mesh = _factory.create<MooseMesh>(_type, "mesh", _moose_object_pars);
     if (isParamValid("displacements"))
       _displaced_mesh = _factory.create<MooseMesh>(_type, "displaced_mesh", _moose_object_pars);
@@ -152,9 +219,10 @@ SetupMeshAction::act()
       // Initialize the displaced mesh
       _displaced_mesh->init();
 
-      std::vector<std::string> displacements = getParam<std::vector<std::string> >("displacements");
+      std::vector<std::string> displacements = getParam<std::vector<std::string>>("displacements");
       if (displacements.size() < _displaced_mesh->dimension())
-        mooseError("Number of displacements must be greater than or equal to the dimension of the mesh!");
+        mooseError(
+            "Number of displacements must be greater than or equal to the dimension of the mesh!");
     }
 
     setupMesh(_mesh.get());

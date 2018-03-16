@@ -1,26 +1,35 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "DerivativeTwoPhaseMaterial.h"
 
-template<>
-InputParameters validParams<DerivativeTwoPhaseMaterial>()
+template <>
+InputParameters
+validParams<DerivativeTwoPhaseMaterial>()
 {
   InputParameters params = validParams<DerivativeFunctionMaterialBase>();
-  params.addClassDescription("Two phase material that combines two single phase materials using a switching function.");
+  params.addClassDescription(
+      "Two phase material that combines two single phase materials using a switching function.");
 
   // Two base materials
   params.addRequiredParam<MaterialPropertyName>("fa_name", "Phase A material (at eta=0)");
   params.addRequiredParam<MaterialPropertyName>("fb_name", "Phase A material (at eta=1)");
-  params.addParam<MaterialPropertyName>("h", "h", "Switching Function Material that provides h(eta)");
+  params.addParam<MaterialPropertyName>(
+      "h", "h", "Switching Function Material that provides h(eta)");
   params.addParam<MaterialPropertyName>("g", "g", "Barrier Function Material that provides g(eta)");
 
   // All arguments of the phase free energies
   params.addCoupledVar("args", "Arguments of fa and fb - use vector coupling");
-  params.addCoupledVar("displacement_gradients", "Vector of displacement gradient variables (see Modules/PhaseField/DisplacementGradients action)");
+  params.addCoupledVar("displacement_gradients",
+                       "Vector of displacement gradient variables (see "
+                       "Modules/PhaseField/DisplacementGradients "
+                       "action)");
 
   // Order parameter which determines the phase
   params.addRequiredCoupledVar("eta", "Order parameter");
@@ -31,8 +40,8 @@ InputParameters validParams<DerivativeTwoPhaseMaterial>()
   return params;
 }
 
-DerivativeTwoPhaseMaterial::DerivativeTwoPhaseMaterial(const InputParameters & parameters) :
-    DerivativeFunctionMaterialBase(parameters),
+DerivativeTwoPhaseMaterial::DerivativeTwoPhaseMaterial(const InputParameters & parameters)
+  : DerivativeFunctionMaterialBase(parameters),
     _eta(coupledValue("eta")),
     _eta_name(getVar("eta", 0)->name()),
     _eta_var(coupled("eta")),
@@ -64,24 +73,30 @@ DerivativeTwoPhaseMaterial::DerivativeTwoPhaseMaterial(const InputParameters & p
     _prop_d2Fb[i].resize(_nargs);
 
     // TODO: maybe we should reserve and initialize to NULL...
-    if (_third_derivatives) {
+    if (_third_derivatives)
+    {
       _prop_d3Fa[i].resize(_nargs);
       _prop_d3Fb[i].resize(_nargs);
     }
 
     for (unsigned int j = 0; j < _nargs; ++j)
     {
-      _prop_d2Fa[i][j] = &getMaterialPropertyDerivative<Real>("fa_name", _arg_names[i], _arg_names[j]);
-      _prop_d2Fb[i][j] = &getMaterialPropertyDerivative<Real>("fb_name", _arg_names[i], _arg_names[j]);
+      _prop_d2Fa[i][j] =
+          &getMaterialPropertyDerivative<Real>("fa_name", _arg_names[i], _arg_names[j]);
+      _prop_d2Fb[i][j] =
+          &getMaterialPropertyDerivative<Real>("fb_name", _arg_names[i], _arg_names[j]);
 
-      if (_third_derivatives) {
+      if (_third_derivatives)
+      {
         _prop_d3Fa[i][j].resize(_nargs);
         _prop_d3Fb[i][j].resize(_nargs);
 
         for (unsigned int k = 0; k < _nargs; ++k)
         {
-          _prop_d3Fa[i][j][k] = &getMaterialPropertyDerivative<Real>("fa_name", _arg_names[i], _arg_names[j], _arg_names[k]);
-          _prop_d3Fb[i][j][k] = &getMaterialPropertyDerivative<Real>("fb_name", _arg_names[i], _arg_names[j], _arg_names[k]);
+          _prop_d3Fa[i][j][k] = &getMaterialPropertyDerivative<Real>(
+              "fa_name", _arg_names[i], _arg_names[j], _arg_names[k]);
+          _prop_d3Fb[i][j][k] = &getMaterialPropertyDerivative<Real>(
+              "fb_name", _arg_names[i], _arg_names[j], _arg_names[k]);
         }
       }
     }

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef LINEMATERIALSAMPLERBASE_H
 #define LINEMATERIALSAMPLERBASE_H
@@ -21,19 +16,20 @@
 #include "BlockRestrictable.h"
 #include "LineSegment.h"
 #include "RayTracing.h" // Moose::elementsIntersectedByLine()
-#include "Assembly.h" // Assembly::qRule()
-#include "MooseMesh.h" // MooseMesh::getMesh()
+#include "Assembly.h"   // Assembly::qRule()
+#include "MooseMesh.h"  // MooseMesh::getMesh()
 #include "SwapBackSentinel.h"
+#include "FEProblem.h"
 
-// libMesh includes
 #include "libmesh/quadrature.h" // _qrule->n_points()
 
 // Forward Declarations
 class MooseMesh;
-template<typename T> class LineMaterialSamplerBase;
+template <typename T>
+class LineMaterialSamplerBase;
 
-template<>
-InputParameters validParams<LineMaterialSamplerBase<Real> >();
+template <>
+InputParameters validParams<LineMaterialSamplerBase<Real>>();
 
 /**
  * This is a base class for sampling material properties for the
@@ -43,11 +39,10 @@ InputParameters validParams<LineMaterialSamplerBase<Real> >();
  * those points along the line.  Derived classes can be created to
  * sample arbitrary types of material properties.
  */
-template<typename T>
-class LineMaterialSamplerBase :
-  public GeneralVectorPostprocessor,
-  public SamplerBase,
-  public BlockRestrictable
+template <typename T>
+class LineMaterialSamplerBase : public GeneralVectorPostprocessor,
+                                public SamplerBase,
+                                public BlockRestrictable
 {
 public:
   /**
@@ -97,28 +92,29 @@ protected:
   MooseMesh & _mesh;
 
   /// The quadrature rule
-  QBase * & _qrule;
+  QBase *& _qrule;
 
   /// The quadrature points
   const MooseArray<Point> & _q_point;
 };
 
 template <typename T>
-LineMaterialSamplerBase<T>::LineMaterialSamplerBase(const InputParameters & parameters) :
-    GeneralVectorPostprocessor(parameters),
+LineMaterialSamplerBase<T>::LineMaterialSamplerBase(const InputParameters & parameters)
+  : GeneralVectorPostprocessor(parameters),
     SamplerBase(parameters, this, _communicator),
-    BlockRestrictable(parameters),
+    BlockRestrictable(this),
     _start(getParam<Point>("start")),
     _end(getParam<Point>("end")),
     _mesh(_subproblem.mesh()),
     _qrule(_subproblem.assembly(_tid).qRule()),
     _q_point(_subproblem.assembly(_tid).qPoints())
 {
-  std::vector<std::string> material_property_names = getParam<std::vector<std::string> >("property");
+  std::vector<std::string> material_property_names = getParam<std::vector<std::string>>("property");
   for (unsigned int i = 0; i < material_property_names.size(); ++i)
   {
     if (!hasMaterialProperty<T>(material_property_names[i]))
-      mooseError("In LineMaterialSamplerBase material property: " + material_property_names[i] + " does not exist.");
+      mooseError("In LineMaterialSamplerBase material property: " + material_property_names[i] +
+                 " does not exist.");
     _material_properties.push_back(&getMaterialProperty<T>(material_property_names[i]));
   }
 
@@ -146,6 +142,11 @@ LineMaterialSamplerBase<T>::execute()
   const Real line_length(line_vec.norm());
   const RealVectorValue line_unit_vec = line_vec / line_length;
   std::vector<Real> values(_material_properties.size());
+
+  std::set<unsigned int> needed_mat_props;
+  const std::set<unsigned int> & mp_deps = getMatPropDependencies();
+  needed_mat_props.insert(mp_deps.begin(), mp_deps.end());
+  _fe_problem.setActiveMaterialProperties(needed_mat_props, _tid);
 
   for (const auto & elem : intersected_elems)
   {
@@ -179,6 +180,7 @@ LineMaterialSamplerBase<T>::execute()
       addSample(_q_point[qp], qp_proj_dist_along_line, values);
     }
   }
+  _fe_problem.clearActiveMaterialProperties(_tid);
 }
 
 template <typename T>

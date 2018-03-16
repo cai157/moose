@@ -1,19 +1,22 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef REGULARSOLUTIONFREEENERGY_H
 #define REGULARSOLUTIONFREEENERGY_H
 
 #include "DerivativeParsedMaterialHelper.h"
 #include "ExpressionBuilder.h"
 
-//Forward Declarations
+// Forward Declarations
 class RegularSolutionFreeEnergy;
 
-template<>
+template <>
 InputParameters validParams<RegularSolutionFreeEnergy>();
 
 /**
@@ -21,8 +24,7 @@ InputParameters validParams<RegularSolutionFreeEnergy>();
  * and uses automatic differentiation to get the derivatives
  * \f$ F = \frac14 \omega c(1 - c) + k_bT (c\log c + (1 - c)\log(1 - c))\f$.
  */
-class RegularSolutionFreeEnergy : public DerivativeParsedMaterialHelper,
-                                  public ExpressionBuilder
+class RegularSolutionFreeEnergy : public DerivativeParsedMaterialHelper, public ExpressionBuilder
 {
 public:
   RegularSolutionFreeEnergy(const InputParameters & parameters);
@@ -41,4 +43,4 @@ protected:
   const Real _kB;
 };
 
-#endif //REGULARSOLUTIONFREEENERGY_H
+#endif // REGULARSOLUTIONFREEENERGY_H

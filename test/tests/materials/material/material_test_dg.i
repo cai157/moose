@@ -48,7 +48,7 @@
   [../]
 
   [./forcing]
-    type = UserForcingFunction
+    type = BodyForce
     variable = u
     function = forcing_fn
   [../]
@@ -58,11 +58,11 @@
   active = 'dgdiff'
 
   [./dgdiff]
-    type = DGMatDiffusion
+    type = DGDiffusion
     variable = u
     sigma = 6
     epsilon = -1.0
-    prop_name = matp
+    diff = matp
   [../]
 []
 
@@ -99,7 +99,6 @@
 [Executioner]
   type = Steady
 
-  # Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 []
 

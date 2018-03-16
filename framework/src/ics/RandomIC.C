@@ -1,24 +1,22 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "RandomIC.h"
 #include "MooseRandom.h"
 
 #include "libmesh/point.h"
 
-template<>
-InputParameters validParams<RandomIC>()
+registerMooseObject("MooseApp", RandomIC);
+
+template <>
+InputParameters
+validParams<RandomIC>()
 {
   InputParameters params = validParams<InitialCondition>();
   params.addParam<Real>("min", 0.0, "Lower bound of the randomly generated values");
@@ -27,8 +25,8 @@ InputParameters validParams<RandomIC>()
   return params;
 }
 
-RandomIC::RandomIC(const InputParameters & parameters) :
-    InitialCondition(parameters),
+RandomIC::RandomIC(const InputParameters & parameters)
+  : InitialCondition(parameters),
     _min(getParam<Real>("min")),
     _max(getParam<Real>("max")),
     _range(_max - _min)
@@ -40,13 +38,13 @@ RandomIC::RandomIC(const InputParameters & parameters) :
 Real
 RandomIC::value(const Point & /*p*/)
 {
-  //Random number between 0 and 1
+  // Random number between 0 and 1
   Real rand_num = MooseRandom::rand();
 
-  //Between 0 and range
+  // Between 0 and range
   rand_num *= _range;
 
-  //Between min and max
+  // Between min and max
   rand_num += _min;
 
   return rand_num;

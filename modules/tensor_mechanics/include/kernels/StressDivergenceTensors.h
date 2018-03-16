@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef STRESSDIVERGENCETENSORS_H
 #define STRESSDIVERGENCETENSORS_H
 
@@ -11,12 +14,12 @@
 #include "RankTwoTensor.h"
 #include "RankFourTensor.h"
 
-//Forward Declarations
+// Forward Declarations
 class StressDivergenceTensors;
 class RankTwoTensor;
 class RankFourTensor;
 
-template<>
+template <>
 InputParameters validParams<StressDivergenceTensors>();
 
 /**
@@ -63,17 +66,23 @@ protected:
   std::vector<unsigned int> _disp_var;
 
   const bool _temp_coupled;
-
   const unsigned int _temp_var;
 
+  /// d(strain)/d(temperature), if computed by ComputeThermalExpansionEigenstrain
+  const MaterialProperty<RankTwoTensor> * const _deigenstrain_dT;
+
+  const bool _out_of_plane_strain_coupled;
+  const unsigned int _out_of_plane_strain_var;
+  const unsigned int _out_of_plane_strain_direction;
+
   /// Gradient of test function averaged over the element. Used in volumetric locking correction calculation.
-  std::vector<std::vector<Real> > _avg_grad_test;
+  std::vector<std::vector<Real>> _avg_grad_test;
 
   /// Gradient of phi function averaged over the element. Used in volumetric locking correction calculation.
-  std::vector<std::vector<Real> > _avg_grad_phi;
+  std::vector<std::vector<Real>> _avg_grad_phi;
 
   /// Flag for volumetric locking correction
   bool _volumetric_locking_correction;
 };
 
-#endif //STRESSDIVERGENCETENSORS_H
+#endif // STRESSDIVERGENCETENSORS_H

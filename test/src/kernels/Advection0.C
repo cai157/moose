@@ -1,20 +1,19 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "Advection0.h"
 
-template<>
-InputParameters validParams<Advection0>()
+registerMooseObject("MooseTestApp", Advection0);
+
+template <>
+InputParameters
+validParams<Advection0>()
 {
   InputParameters params = validParams<Kernel>();
 
@@ -29,8 +28,7 @@ InputParameters validParams<Advection0>()
   return params;
 }
 
-Advection0::Advection0(const InputParameters & parameters) :
-    Kernel(parameters)
+Advection0::Advection0(const InputParameters & parameters) : Kernel(parameters)
 {
   _Au = getParam<Real>("Au");
   _Bu = getParam<Real>("Bu");
@@ -45,7 +43,8 @@ Real
 Advection0::computeQpResidual()
 {
   VectorValue<Number> vel(_Au + _Bu * _q_point[_qp](0) + _Cu * _q_point[_qp](1),
-                          _Av + _Bv * _q_point[_qp](0) + _Cv * _q_point[_qp](1), 0.0);
+                          _Av + _Bv * _q_point[_qp](0) + _Cv * _q_point[_qp](1),
+                          0.0);
   return -_test[_i][_qp] * vel * _grad_u[_qp];
 }
 
@@ -53,6 +52,7 @@ Real
 Advection0::computeQpJacobian()
 {
   VectorValue<Number> vel(_Au + _Bu * _q_point[_qp](0) + _Cu * _q_point[_qp](1),
-                          _Av + _Bv * _q_point[_qp](0) + _Cv * _q_point[_qp](1), 0.0);
+                          _Av + _Bv * _q_point[_qp](0) + _Cv * _q_point[_qp](1),
+                          0.0);
   return -_test[_i][_qp] * vel * _grad_phi[_j][_qp];
 }

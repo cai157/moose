@@ -1,24 +1,25 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "NodalValueSampler.h"
+
+// MOOSE includes
+#include "MooseVariableField.h"
 
 // C++ includes
 #include <numeric>
 
-template<>
-InputParameters validParams<NodalValueSampler>()
+registerMooseObject("MooseApp", NodalValueSampler);
+
+template <>
+InputParameters
+validParams<NodalValueSampler>()
 {
   InputParameters params = validParams<NodalVariableVectorPostprocessor>();
 
@@ -27,15 +28,14 @@ InputParameters validParams<NodalValueSampler>()
   return params;
 }
 
-NodalValueSampler::NodalValueSampler(const InputParameters & parameters) :
-    NodalVariableVectorPostprocessor(parameters),
-    SamplerBase(parameters, this, _communicator)
+NodalValueSampler::NodalValueSampler(const InputParameters & parameters)
+  : NodalVariableVectorPostprocessor(parameters), SamplerBase(parameters, this, _communicator)
 {
   std::vector<std::string> var_names(_coupled_moose_vars.size());
   _values.resize(_coupled_moose_vars.size());
   _has_values.resize(_coupled_moose_vars.size());
 
-  for (unsigned int i=0; i<_coupled_moose_vars.size(); i++)
+  for (unsigned int i = 0; i < _coupled_moose_vars.size(); i++)
     var_names[i] = _coupled_moose_vars[i]->name();
 
   // Initialize the data structures in SamplerBase
@@ -61,9 +61,9 @@ NodalValueSampler::execute()
   //
   // If you have two different discretizations, you'll have to use two
   // separate NodalValueSampler objects to get their values.
-  for (unsigned int i=0; i<_coupled_moose_vars.size(); i++)
+  for (unsigned int i = 0; i < _coupled_moose_vars.size(); i++)
   {
-    const VariableValue & nodal_solution = _coupled_moose_vars[i]->nodalSln();
+    const VariableValue & nodal_solution = _coupled_moose_vars[i]->nodalValue();
 
     if (nodal_solution.size() > 0)
     {
@@ -78,10 +78,8 @@ NodalValueSampler::execute()
   }
 
   // Sum the number of values we had
-  unsigned int num_values = std::accumulate(_has_values.begin(),
-                                            _has_values.end(),
-                                            0,
-                                            std::plus<unsigned int>());
+  unsigned int num_values =
+      std::accumulate(_has_values.begin(), _has_values.end(), 0, std::plus<unsigned int>());
 
   // If the number of values matches the number of available values,
   // call addSample() as normal.  If there are more than zero values
@@ -92,7 +90,8 @@ NodalValueSampler::execute()
     SamplerBase::addSample(*_current_node, _current_node->id(), _values);
 
   else if (num_values != 0 && num_values < _has_values.size())
-    mooseError("You must use separate NodalValueSampler objects for variables with different discretizations.");
+    mooseError("You must use separate NodalValueSampler objects for variables with different "
+               "discretizations.");
 }
 
 void
@@ -108,4 +107,3 @@ NodalValueSampler::threadJoin(const UserObject & y)
 
   SamplerBase::threadJoin(vpp);
 }
-

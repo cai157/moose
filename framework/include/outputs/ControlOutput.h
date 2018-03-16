@@ -1,51 +1,42 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef CONTROLOUTPUT_H
 #define CONTROLOUTPUT_H
 
 // MOOSE includes
-#include "BasicOutput.h"
 #include "Output.h"
 
 // Forward declarations
 class ControlOutput;
 
-template<>
+template <>
 InputParameters validParams<ControlOutput>();
 
 /**
  * Class for output information regarding Controls to the screen
  */
-class ControlOutput : public BasicOutput<Output>
+class ControlOutput : public Output
 {
 public:
-
   /**
    * Class constructor
    */
   ControlOutput(const InputParameters & parameters);
 
 protected:
-
   /**
    * Perform the output of control information
    */
   virtual void output(const ExecFlagType & type) override;
 
 private:
-
   /**
    * Output a list of active MooseObjects
    */

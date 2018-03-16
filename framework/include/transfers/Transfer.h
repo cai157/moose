@@ -1,23 +1,18 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef TRANSFER_H
 #define TRANSFER_H
 
 // Moose
-#include "ParallelUniqueId.h"
 #include "MooseObject.h"
+#include "MooseTypes.h"
 #include "SetupInterface.h"
 #include "Restartable.h"
 
@@ -34,7 +29,7 @@ class System;
 class EquationSystems;
 }
 
-template<>
+template <>
 InputParameters validParams<Transfer>();
 
 /**
@@ -43,10 +38,7 @@ InputParameters validParams<Transfer>();
  * Transfers are objects that take values from one Application
  * or System and put them in another Application or System.
  */
-class Transfer :
-  public MooseObject,
-  public SetupInterface,
-  public Restartable
+class Transfer : public MooseObject, public SetupInterface, public Restartable
 {
 public:
   Transfer(const InputParameters & parameters);
@@ -74,7 +66,6 @@ public:
   static System * find_sys(EquationSystems & es, const std::string & var_name);
 
 protected:
-
   SubProblem & _subproblem;
   FEProblemBase & _fe_problem;
   SystemBase & _sys;

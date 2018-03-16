@@ -1,42 +1,42 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SideValueSampler.h"
 
-// libmesh includes
+// MOOSE includes
+#include "MooseVariableField.h"
+
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<SideValueSampler>()
+registerMooseObject("MooseApp", SideValueSampler);
+
+template <>
+InputParameters
+validParams<SideValueSampler>()
 {
   InputParameters params = validParams<SideVectorPostprocessor>();
 
   params += validParams<SamplerBase>();
 
-  params.addRequiredCoupledVar("variable", "The names of the variables that this VectorPostprocessor operates on");
+  params.addRequiredCoupledVar(
+      "variable", "The names of the variables that this VectorPostprocessor operates on");
 
   return params;
 }
 
-SideValueSampler::SideValueSampler(const InputParameters & parameters) :
-    SideVectorPostprocessor(parameters),
-    SamplerBase(parameters, this, _communicator)
+SideValueSampler::SideValueSampler(const InputParameters & parameters)
+  : SideVectorPostprocessor(parameters), SamplerBase(parameters, this, _communicator)
 {
   std::vector<std::string> var_names(_coupled_moose_vars.size());
   _values.resize(_coupled_moose_vars.size());
 
-  for (unsigned int i=0; i<_coupled_moose_vars.size(); i++)
+  for (unsigned int i = 0; i < _coupled_moose_vars.size(); i++)
     var_names[i] = _coupled_moose_vars[i]->name();
 
   // Initialize the datastructions in SamplerBase
@@ -52,10 +52,10 @@ SideValueSampler::initialize()
 void
 SideValueSampler::execute()
 {
-  for (unsigned int _qp=0; _qp<_qrule->n_points(); _qp++)
+  for (unsigned int _qp = 0; _qp < _qrule->n_points(); _qp++)
   {
-    for (unsigned int i=0; i<_coupled_moose_vars.size(); i++)
-      _values[i] = _coupled_moose_vars[i]->sln()[_qp];
+    for (unsigned int i = 0; i < _coupled_moose_vars.size(); i++)
+      _values[i] = (dynamic_cast<MooseVariable *>(_coupled_moose_vars[i]))->sln()[_qp];
 
     SamplerBase::addSample(_q_point[_qp], _current_elem->id(), _values);
   }
@@ -74,4 +74,3 @@ SideValueSampler::threadJoin(const UserObject & y)
 
   SamplerBase::threadJoin(vpp);
 }
-

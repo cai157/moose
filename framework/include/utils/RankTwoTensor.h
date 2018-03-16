@@ -1,36 +1,39 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef RANKTWOTENSOR_H
 #define RANKTWOTENSOR_H
 
 #include "Moose.h"
-#include "PermutationTensor.h"
 
 #include "RankFourTensor.h"
-#include "DerivativeMaterialInterface.h"
 
 // Any requisite includes here
 #include "libmesh/libmesh.h"
 #include "libmesh/vector_value.h"
 #include "libmesh/tensor_value.h"
 
-#include "petscsys.h"
-#include "petscblaslapack.h"
-
 #include <vector>
 #include "MooseRandom.h"
 
+// Forward declarations
 class RankTwoTensor;
+class RankFourTensor;
+
+template <typename T>
+void mooseSetToZero(T & v);
 
 /**
  * Helper function template specialization to set an object to zero.
  * Needed by DerivativeMaterialInterface
  */
-template<>
+template <>
 void mooseSetToZero<RankTwoTensor>(RankTwoTensor & v);
 
 /**
@@ -67,16 +70,28 @@ public:
   {
     autodetect = 0,
     isotropic1 = 1,
-    diagonal3  = 3,
+    diagonal3 = 3,
     symmetric6 = 6,
-    general    = 9
+    general = 9
   };
 
   /**
    * Constructor that takes in 3 vectors and uses them to create rows
    * _vals[0][i] = row1(i), _vals[1][i] = row2(i), _vals[2][i] = row3(i)
    */
-  RankTwoTensor(const TypeVector<Real> & row1, const TypeVector<Real> & row2, const TypeVector<Real> & row3);
+  RankTwoTensor(const TypeVector<Real> & row1,
+                const TypeVector<Real> & row2,
+                const TypeVector<Real> & row3);
+
+  /// named constructor for initializing from row vectors
+  static RankTwoTensor initializeFromRows(const TypeVector<Real> & row0,
+                                          const TypeVector<Real> & row1,
+                                          const TypeVector<Real> & row2);
+
+  /// named constructor for initializing from column vectors
+  static RankTwoTensor initializeFromColumns(const TypeVector<Real> & col0,
+                                             const TypeVector<Real> & col1,
+                                             const TypeVector<Real> & col2);
 
   /// Constructor that proxies the fillFromInputVector method
   RankTwoTensor(const std::vector<Real> & input) { this->fillFromInputVector(input); };
@@ -85,7 +100,8 @@ public:
   RankTwoTensor(Real S11, Real S22, Real S33, Real S23, Real S13, Real S12);
 
   /// Initialization list replacement constructors, 9 arguments
-  RankTwoTensor(Real S11, Real S21, Real S31, Real S12, Real S22, Real S32, Real S13, Real S23, Real S33);
+  RankTwoTensor(
+      Real S11, Real S21, Real S31, Real S12, Real S22, Real S32, Real S13, Real S23, Real S33);
 
   /// Copy constructor from RealTensorValue
   RankTwoTensor(const TypeTensor<Real> & a);
@@ -94,10 +110,10 @@ public:
   static RankTwoTensor Identity() { return RankTwoTensor(initIdentity); }
 
   /// Gets the value for the index specified.  Takes index = 0,1,2
-  Real & operator()(unsigned int i, unsigned int j);
+  inline Real & operator()(unsigned int i, unsigned int j) { return _vals[i * N + j]; }
 
   /// Gets the value for the index specified.  Takes index = 0,1,2, used for const
-  Real operator()(unsigned int i, unsigned int j) const;
+  inline Real operator()(unsigned int i, unsigned int j) const { return _vals[i * N + j]; }
 
   /// zeroes all _vals components
   void zero();
@@ -106,16 +122,16 @@ public:
   static MooseEnum fillMethodEnum();
 
   /**
-  * fillFromInputVector takes 6 or 9 inputs to fill in the Rank-2 tensor.
-  * If 6 inputs, then symmetry is assumed S_ij = S_ji, and
-  *   _vals[0][0] = input[0]
-  *   _vals[1][1] = input[1]
-  *   _vals[2][2] = input[2]
-  *   _vals[1][2] = input[3]
-  *   _vals[0][2] = input[4]
-  *   _vals[0][1] = input[5]
-  * If 9 inputs then input order is [0][0], [1][0], [2][0], [0][1], [1][1], ..., [2][2]
-  */
+   * fillFromInputVector takes 6 or 9 inputs to fill in the Rank-2 tensor.
+   * If 6 inputs, then symmetry is assumed S_ij = S_ji, and
+   *   _vals[0][0] = input[0]
+   *   _vals[1][1] = input[1]
+   *   _vals[2][2] = input[2]
+   *   _vals[1][2] = input[3]
+   *   _vals[0][2] = input[4]
+   *   _vals[0][1] = input[5]
+   * If 9 inputs then input order is [0][0], [1][0], [2][0], [0][1], [1][1], ..., [2][2]
+   */
   void fillFromInputVector(const std::vector<Real> & input, FillMethod fill_method = autodetect);
 
 public:
@@ -126,24 +142,31 @@ public:
   TypeVector<Real> column(const unsigned int c) const;
 
   /**
+   * Returns a rotated version of the tensor data given a rank two tensor rotation tensor
+   * _vals[i][j] = R_ij * R_jl * _vals[k][l]
+   * @param R rotation matrix as a RealTensorValue
+   */
+  RankTwoTensor rotated(const RealTensorValue & R) const;
+
+  /**
    * rotates the tensor data given a rank two tensor rotation tensor
    * _vals[i][j] = R_ij * R_jl * _vals[k][l]
    * @param R rotation matrix as a RealTensorValue
    */
-  void rotate(RealTensorValue & R);
+  void rotate(const RealTensorValue & R);
 
   /**
    * rotates the tensor data given a rank two tensor rotation tensor
    * _vals[i][j] = R_ij * R_jl * _vals[k][l]
    * @param R rotation matrix as a RankTwoTensor
    */
-  void rotate(RankTwoTensor & R);
+  void rotate(const RankTwoTensor & R);
 
   /**
    * rotates the tensor data anticlockwise around the z-axis
    * @param a angle in radians
    */
-  RankTwoTensor rotateXyPlane(const Real a);
+  RankTwoTensor rotateXyPlane(Real a);
 
   /**
    * Returns a matrix that is the transpose of the matrix this
@@ -152,49 +175,52 @@ public:
   RankTwoTensor transpose() const;
 
   /// sets _vals to a, and returns _vals
-  RankTwoTensor & operator= (const RankTwoTensor & a);
+  RankTwoTensor & operator=(const RankTwoTensor & a);
 
   /// adds a to _vals
-  RankTwoTensor & operator+= (const RankTwoTensor & a);
+  RankTwoTensor & operator+=(const RankTwoTensor & a);
 
   /// returns _vals + a
-  RankTwoTensor operator+ (const RankTwoTensor & a) const;
+  RankTwoTensor operator+(const RankTwoTensor & a) const;
 
   /// sets _vals -= a and returns vals
-  RankTwoTensor & operator-= (const RankTwoTensor & a);
+  RankTwoTensor & operator-=(const RankTwoTensor & a);
 
   /// returns _vals - a
-  RankTwoTensor operator- (const RankTwoTensor & a) const;
+  RankTwoTensor operator-(const RankTwoTensor & a) const;
 
   /// returns -_vals
-  RankTwoTensor operator - () const;
+  RankTwoTensor operator-() const;
 
   /// performs _vals *= a
-  RankTwoTensor & operator*= (const Real a);
+  RankTwoTensor & operator*=(const Real a);
 
   /// returns _vals*a
-  RankTwoTensor operator* (const Real a) const;
+  RankTwoTensor operator*(const Real a) const;
 
   /// performs _vals /= a
-  RankTwoTensor & operator/= (const Real a);
+  RankTwoTensor & operator/=(const Real a);
 
   /// returns _vals/a
-  RankTwoTensor operator/ (const Real a) const;
+  RankTwoTensor operator/(const Real a) const;
 
   /// Defines multiplication with a vector to get a vector
-  TypeVector<Real> operator* (const TypeVector<Real> & a) const;
+  TypeVector<Real> operator*(const TypeVector<Real> & a) const;
 
   /// performs _vals *= a (component by component) and returns the result
-  RankTwoTensor & operator*= (const RankTwoTensor & a);
+  RankTwoTensor & operator*=(const RankTwoTensor & a);
 
   /// Defines multiplication with another RankTwoTensor
-  RankTwoTensor operator* (const RankTwoTensor & a) const;
+  RankTwoTensor operator*(const RankTwoTensor & a) const;
 
   /// Defines multiplication with a TypeTensor<Real>
-  RankTwoTensor operator* (const TypeTensor<Real> & a) const;
+  RankTwoTensor operator*(const TypeTensor<Real> & a) const;
 
   /// Defines logical equality with another RankTwoTensor
-  bool operator== (const RankTwoTensor & a) const;
+  bool operator==(const RankTwoTensor & a) const;
+
+  /// Sets _vals to the values in a ColumnMajorMatrix (must be 3x3)
+  RankTwoTensor & operator=(const ColumnMajorMatrix & a);
 
   /// returns _vals_ij * a_ij (sum on i, j)
   Real doubleContraction(const RankTwoTensor & a) const;
@@ -207,6 +233,12 @@ public:
 
   /// returns C_ijkl = a_jk * b_il
   RankFourTensor mixedProductJkIl(const RankTwoTensor & a) const;
+
+  /// returns C_ijkl = a_il * b_jk
+  RankFourTensor mixedProductIlJk(const RankTwoTensor & a) const;
+
+  /// return positive projection tensor of eigen-decomposition
+  RankFourTensor positveProjectionEigenDecomposition() const;
 
   /// returns A_ij - de_ij*tr(A)/3, where A are the _vals
   RankTwoTensor deviatoric() const;
@@ -298,7 +330,6 @@ public:
    */
   RankTwoTensor ddet() const;
 
-
   /// Calculate the inverse of the tensor
   RankTwoTensor inverse() const;
 
@@ -341,7 +372,8 @@ public:
    * often defined by continuation from the un-equal case, and that is
    * too sophisticated for this routine.
    */
-  void dsymmetricEigenvalues(std::vector<Real> & eigvals, std::vector<RankTwoTensor> & deigvals) const;
+  void dsymmetricEigenvalues(std::vector<Real> & eigvals,
+                             std::vector<RankTwoTensor> & deigvals) const;
 
   /**
    * Computes second derivatives of Eigenvalues of a rank two tensor
@@ -358,31 +390,34 @@ public:
    * @param a Eigenvectors are placed in this array if calculation_type == "V".
    * See code in dsymmetricEigenvalues for extracting eigenvectors from the a output.
    */
-  void syev(const char * calculation_type, std::vector<PetscScalar> & eigvals, std::vector<PetscScalar> & a) const;
+  void syev(const char * calculation_type,
+            std::vector<PetscScalar> & eigvals,
+            std::vector<PetscScalar> & a) const;
 
   /**
-   * Uses the petscblaslapack.h LAPACKsyev_ routine to perform RU decomposition and obtain the rotation tensor.
+   * Uses the petscblaslapack.h LAPACKsyev_ routine to perform RU decomposition and obtain the
+   * rotation tensor.
    */
   void getRUDecompositionRotation(RankTwoTensor & rot) const;
 
   /**
    * This function initializes random seed based on a user-defined number.
    */
-  static void initRandom( unsigned int );
+  static void initRandom(unsigned int);
 
   /**
    * This function generates a random unsymmetric rank two tensor.
    * The first real scales the random number.
    * The second real offsets the uniform random number
    */
-  static RankTwoTensor genRandomTensor( Real, Real );
+  static RankTwoTensor genRandomTensor(Real, Real);
 
   /**
    * This function generates a random symmetric rank two tensor.
    * The first real scales the random number.
    * The second real offsets the uniform random number
    */
-  static RankTwoTensor genRandomSymmTensor( Real, Real );
+  static RankTwoTensor genRandomSymmTensor(Real, Real);
 
   /// RankTwoTensor from outer product of vectors
   void vectorOuterProduct(const TypeVector<Real> &, const TypeVector<Real> &);
@@ -398,23 +433,29 @@ public:
 
   /// returns this_ij * b_ijkl
   RankTwoTensor initialContraction(const RankFourTensor & b) const;
-private:
-  static const unsigned int N = LIBMESH_DIM;
-  Real _vals[N][N];
 
-  template<class T>
+private:
+  static constexpr unsigned int N = LIBMESH_DIM;
+  static constexpr unsigned int N2 = N * N;
+
+  /// The values of the rank-two tensor stored by index=(i * LIBMESH_DIM + j)
+  Real _vals[N2];
+
+  template <class T>
   friend void dataStore(std::ostream &, T &, void *);
 
-  template<class T>
+  template <class T>
   friend void dataLoad(std::istream &, T &, void *);
+  friend class RankFourTensor;
+  friend class RankThreeTensor;
 };
 
 inline RankTwoTensor operator*(Real a, const RankTwoTensor & b) { return b * a; }
 
-template<>
+template <>
 void dataStore(std::ostream & stream, RankTwoTensor &, void *);
 
-template<>
+template <>
 void dataLoad(std::istream & stream, RankTwoTensor &, void *);
 
-#endif //RANKTWOTENSOR_H
+#endif // RANKTWOTENSOR_H

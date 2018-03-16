@@ -38,14 +38,21 @@
   [../]
 []
 
+[Postprocessors]
+  [./unorm]
+    type = ElementL2Norm
+    variable = u
+  [../]
+[]
+
 [Executioner]
   type = Steady
 
-  # Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 []
 
 [Outputs]
   file_base = steady_out
   exodus = true
+  checkpoint = true
 []

@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef AEFVUpwindINTERNALSIDEFLUX_H
 #define AEFVUpwindINTERNALSIDEFLUX_H
@@ -13,7 +15,7 @@
 // Forward Declarations
 class AEFVUpwindInternalSideFlux;
 
-template<>
+template <>
 InputParameters validParams<AEFVUpwindInternalSideFlux>();
 
 /**
@@ -24,21 +26,20 @@ InputParameters validParams<AEFVUpwindInternalSideFlux>();
 class AEFVUpwindInternalSideFlux : public InternalSideFluxBase
 {
 public:
-
   AEFVUpwindInternalSideFlux(const InputParameters & parameters);
   virtual ~AEFVUpwindInternalSideFlux();
 
   virtual void calcFlux(unsigned int iside,
-                        unsigned int ielem,
-                        unsigned int ineig,
+                        dof_id_type ielem,
+                        dof_id_type ineig,
                         const std::vector<Real> & uvec1,
                         const std::vector<Real> & uvec2,
                         const RealVectorValue & dwave,
                         std::vector<Real> & flux) const override;
 
   virtual void calcJacobian(unsigned int iside,
-                            unsigned int ielem,
-                            unsigned int ineig,
+                            dof_id_type ielem,
+                            dof_id_type ineig,
                             const std::vector<Real> & uvec1,
                             const std::vector<Real> & uvec2,
                             const RealVectorValue & dwave,
@@ -46,7 +47,6 @@ public:
                             DenseMatrix<Real> & jac2) const override;
 
 protected:
-
 };
 
 #endif

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MONOTONECUBICINTERPOLATION_H
 #define MONOTONECUBICINTERPOLATION_H
@@ -88,13 +83,9 @@ public:
   virtual unsigned int getSampleSize();
 
 protected:
-
   // Error check routines run during initialization
   virtual void errorCheck();
   Real sign(const Real & x) const;
-  enum MonotonicStatus {monotonic_increase, monotonic_decrease, monotonic_constant, monotonic_not};
-  MonotonicStatus _monotonic_status;
-  void checkMonotone();
 
   // Building blocks of Hermite polynomials
   Real phi(const Real & t) const;
@@ -119,16 +110,32 @@ protected:
   Real h4DoublePrime(const Real & xhi, const Real & xlo, const Real & x) const;
 
   // Interpolating cubic polynomial and derivatives
-  virtual Real p(const Real & xhi, const Real & xlo, const Real & fhi, const Real & flo,
-                 const Real & dhi, const Real & dlo, const Real & x) const;
-  virtual Real pPrime(const Real & xhi, const Real & xlo, const Real & fhi, const Real & flo,
-                      const Real & dhi, const Real & dlo, const Real & x) const;
-  virtual Real pDoublePrime(const Real & xhi, const Real & xlo, const Real & fhi, const Real & flo,
-                            const Real & dhi, const Real & dlo, const Real & x) const;
+  virtual Real p(const Real & xhi,
+                 const Real & xlo,
+                 const Real & fhi,
+                 const Real & flo,
+                 const Real & dhi,
+                 const Real & dlo,
+                 const Real & x) const;
+  virtual Real pPrime(const Real & xhi,
+                      const Real & xlo,
+                      const Real & fhi,
+                      const Real & flo,
+                      const Real & dhi,
+                      const Real & dlo,
+                      const Real & x) const;
+  virtual Real pDoublePrime(const Real & xhi,
+                            const Real & xlo,
+                            const Real & fhi,
+                            const Real & flo,
+                            const Real & dhi,
+                            const Real & dlo,
+                            const Real & x) const;
 
   // Algorithm routines
   virtual void initialize_derivs();
-  virtual void modify_derivs(const Real & alpha, const Real & beta, const Real & delta, Real & yp_lo, Real & yp_hi);
+  virtual void modify_derivs(
+      const Real & alpha, const Real & beta, const Real & delta, Real & yp_lo, Real & yp_hi);
   virtual void solve();
   virtual void findInterval(const Real & x, unsigned int & klo, unsigned int & khi) const;
 
@@ -142,6 +149,7 @@ protected:
 
   unsigned int _n_knots;
   unsigned int _n_intervals;
+  unsigned int _internal_knots;
 };
 
 #endif

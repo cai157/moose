@@ -1,50 +1,36 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef LINESEGMENTTEST_H
 #define LINESEGMENTTEST_H
 
-//CPPUnit includes
-#include "GuardedHelperMacros.h"
+#include "gtest_include.h"
 
-// Moose includes
 #include "LineSegment.h"
 
-class LineSegmentTest : public CppUnit::TestFixture
+class LineSegmentTest : public ::testing::Test
 {
-
-  CPPUNIT_TEST_SUITE( LineSegmentTest );
-
-  CPPUNIT_TEST( closestPointTest );
-  CPPUNIT_TEST( closestNormalPointTest );
-  CPPUNIT_TEST( containsPointTest );
-  CPPUNIT_TEST( planeIntersectTest );
-  CPPUNIT_TEST( lineIntersectTest );
-
-  CPPUNIT_TEST_SUITE_END();
-
 public:
-  LineSegmentTest();
-  ~LineSegmentTest();
+  LineSegmentTest()
+    : _posx(Point(0, 0), Point(5, 0)),
+      _posy(Point(0, 0), Point(0, 5)),
+      _negy(Point(0, 0), Point(0, -5)),
+      _posdiag(Point(0, 0), Point(5, 5)),
+      _negdiag(Point(0, 0), Point(-5, -5)),
+      _pos3x(Point(0, 0, 0), Point(5, 0, 0)),
+      _neg3y(Point(0, 0, 0), Point(0, -5, 0)),
+      _pos3diag(Point(0, 0, 0), Point(5, 5, 5)),
+      _neg3diag(Point(0, 0, 0), Point(-5, -5, -5))
+  {
+  }
 
-  void closestPointTest();
-  void closestNormalPointTest();
-  void containsPointTest();
-  void planeIntersectTest();
-  void lineIntersectTest();
-
-private:
+protected:
   LineSegment _posx;
   LineSegment _posy;
   LineSegment _negy;
@@ -57,4 +43,4 @@ private:
   LineSegment _neg3diag;
 };
 
-#endif  // LINESEGMENTTEST_H
+#endif // LINESEGMENTTEST_H

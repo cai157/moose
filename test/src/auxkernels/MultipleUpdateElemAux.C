@@ -1,21 +1,19 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "MultipleUpdateElemAux.h"
 
-template<>
-InputParameters validParams<MultipleUpdateElemAux>()
+registerMooseObject("MooseTestApp", MultipleUpdateElemAux);
+
+template <>
+InputParameters
+validParams<MultipleUpdateElemAux>()
 {
   InputParameters params = validParams<AuxKernel>();
 
@@ -24,21 +22,20 @@ InputParameters validParams<MultipleUpdateElemAux>()
   return params;
 }
 
-MultipleUpdateElemAux::MultipleUpdateElemAux(const InputParameters & parameters) :
-    AuxKernel(parameters),
-    _n_vars(coupledComponents("vars"))
+MultipleUpdateElemAux::MultipleUpdateElemAux(const InputParameters & parameters)
+  : AuxKernel(parameters), _n_vars(coupledComponents("vars"))
 {
-  for (unsigned int i=0; i<_n_vars; i++)
+  for (unsigned int i = 0; i < _n_vars; i++)
   {
-    _vars.push_back(getVar("vars", i));
-    if (_vars[i]->isNodal()) mooseError("variables have to be elemental");
+    _vars.push_back(dynamic_cast<MooseVariable *>(getVar("vars", i)));
+    if (_vars[i]->isNodal())
+      mooseError("variables have to be elemental");
   }
-  if (isNodal()) mooseError("variable have to be elemental");
+  if (isNodal())
+    mooseError("variable have to be elemental");
 }
 
-MultipleUpdateElemAux::~MultipleUpdateElemAux()
-{
-}
+MultipleUpdateElemAux::~MultipleUpdateElemAux() {}
 
 void
 MultipleUpdateElemAux::compute()
@@ -47,7 +44,7 @@ MultipleUpdateElemAux::compute()
 
   computeVarValues(values);
 
-  for (unsigned int i=0; i<_n_vars; i++)
+  for (unsigned int i = 0; i < _n_vars; i++)
     _vars[i]->setNodalValue(values[i]);
 
   _var.setNodalValue(0.0);
@@ -62,6 +59,6 @@ MultipleUpdateElemAux::computeValue()
 void
 MultipleUpdateElemAux::computeVarValues(std::vector<Real> & values)
 {
-  for (unsigned int i=0; i<values.size(); i++)
-    values[i] = 100+i;
+  for (unsigned int i = 0; i < values.size(); i++)
+    values[i] = 100 + i;
 }

@@ -1,34 +1,30 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "GlobalParamsAction.h"
 
-template<>
-InputParameters validParams<GlobalParamsAction>()
+registerMooseAction("MooseApp", GlobalParamsAction, "set_global_params");
+
+template <>
+InputParameters
+validParams<GlobalParamsAction>()
 {
   InputParameters params = validParams<Action>();
   std::vector<std::string> blocks(1, "");
 
   /* GlobalParams should not have children or other standard public Action attributes */
-  params.addPrivateParam<std::vector<std::string> >("active", blocks);
+  params.addPrivateParam<std::vector<std::string>>("active", blocks);
+  params.addPrivateParam<std::vector<std::string>>("inactive", blocks);
   return params;
 }
 
-GlobalParamsAction::GlobalParamsAction(InputParameters params) :
-    Action(params)
-{
-}
+GlobalParamsAction::GlobalParamsAction(InputParameters params) : Action(params) {}
 
 void
 GlobalParamsAction::act()
@@ -40,4 +36,3 @@ GlobalParamsAction::remove(const std::string & name)
 {
   parameters().remove(name);
 }
-

@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWMATRIXINTERNALENERGY_H
 #define POROUSFLOWMATRIXINTERNALENERGY_H
@@ -12,7 +14,7 @@
 
 class PorousFlowMatrixInternalEnergy;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowMatrixInternalEnergy>();
 
 /**
@@ -28,9 +30,8 @@ public:
   PorousFlowMatrixInternalEnergy(const InputParameters & parameters);
 
 protected:
-  virtual void initQpStatefulProperties();
-
-  virtual void computeQpProperties();
+  virtual void initQpStatefulProperties() override;
+  virtual void computeQpProperties() override;
 
   /// Specific heat capacity of rock grains
   const Real _cp;
@@ -45,16 +46,13 @@ protected:
   const MaterialProperty<Real> & _temperature_nodal;
 
   /// d(temperature at the nodes)/d(PorousFlow variable)
-  const MaterialProperty<std::vector<Real> > & _dtemperature_nodal_dvar;
+  const MaterialProperty<std::vector<Real>> & _dtemperature_nodal_dvar;
 
   /// Matrix internal_energy at the nodes
   MaterialProperty<Real> & _en_nodal;
 
-  /// Old matrix internal_energy at the nodes
-  MaterialProperty<Real> & _en_nodal_old;
-
   /// d(matrix internal energy)/d(PorousFlow variable)
-  MaterialProperty<std::vector<Real> > & _den_nodal_dvar;
+  MaterialProperty<std::vector<Real>> & _den_nodal_dvar;
 };
 
 #endif // POROUSFLOWMATRIXINTERNALENERGY_H

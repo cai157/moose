@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "StateProcessor.h"
 #include <stdlib.h>
@@ -12,12 +14,11 @@
 #include "MooseRandom.h"
 
 StateProcessor::StateProcessor(unsigned int max_time_step, int seed)
-  : _max_time_step(max_time_step),
-    _ev_times()
+  : _max_time_step(max_time_step), _ev_times()
 {
   MooseRandom::seed(seed);
 
-  //add a bunch of random time items
+  // add a bunch of random time items
   unsigned int r = MooseRandom::randl() % 10;
   for (unsigned int i = 0; i < r; i++)
   {
@@ -26,7 +27,7 @@ StateProcessor::StateProcessor(unsigned int max_time_step, int seed)
   }
 }
 
-//Add the event in to the list in the proper order
+// Add the event in to the list in the proper order
 void
 StateProcessor::addEv(unsigned int time_step = 0)
 {
@@ -52,7 +53,7 @@ StateProcessor::process(unsigned int time_step)
   if (time_step == _ev_times.back())
     _ev_times.pop_back();
 
-  //todo run state processing
+  // todo run state processing
 
   if (_ev_times.size() > 0)
     return _ev_times.back();

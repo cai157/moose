@@ -1,29 +1,38 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "DesorptionFromMatrix.h"
 
 #include <iostream>
 
-template<>
-InputParameters validParams<DesorptionFromMatrix>()
+template <>
+InputParameters
+validParams<DesorptionFromMatrix>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addRequiredCoupledVar("pressure_var", "Variable representing the porepressure of the fluid adsorbed into the matrix");
-  params.addClassDescription("Mass flow rate from the matrix to the porespace.  Add this to TimeDerivative kernel to get complete DE for the fluid in adsorbed in the matrix");
+  params.addRequiredCoupledVar(
+      "pressure_var",
+      "Variable representing the porepressure of the fluid adsorbed into the matrix");
+  params.addClassDescription("Mass flow rate from the matrix to the porespace.  Add this to "
+                             "TimeDerivative kernel to get complete DE for the fluid adsorbed "
+                             "in the matrix");
   return params;
 }
 
-DesorptionFromMatrix::DesorptionFromMatrix(const InputParameters & parameters) :
-    Kernel(parameters),
+DesorptionFromMatrix::DesorptionFromMatrix(const InputParameters & parameters)
+  : Kernel(parameters),
     _pressure_var(coupled("pressure_var")),
     _mass_rate_from_matrix(getMaterialProperty<Real>("mass_rate_from_matrix")),
     _dmass_rate_from_matrix_dC(getMaterialProperty<Real>("dmass_rate_from_matrix_dC")),
     _dmass_rate_from_matrix_dp(getMaterialProperty<Real>("dmass_rate_from_matrix_dp"))
-{}
+{
+}
 
 Real
 DesorptionFromMatrix::computeQpResidual()

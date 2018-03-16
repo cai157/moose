@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef AEFVBC_H
 #define AEFVBC_H
@@ -11,10 +13,10 @@
 #include "IntegratedBC.h"
 #include "BoundaryFluxBase.h"
 
-//Forward Declarations
+// Forward Declarations
 class AEFVBC;
 
-template<>
+template <>
 InputParameters validParams<AEFVBC>();
 
 /**
@@ -43,12 +45,10 @@ InputParameters validParams<AEFVBC>();
 class AEFVBC : public IntegratedBC
 {
 public:
-
   AEFVBC(const InputParameters & parameters);
   virtual ~AEFVBC() {}
 
 protected:
-
   virtual Real computeQpResidual();
   virtual Real computeQpJacobian();
 
@@ -58,10 +58,10 @@ protected:
   // "1" denotes variable value from the host element
 
   /// piecewise constant variable values in host element
-  const VariableValue &  _uc1;
+  const VariableValue & _uc1;
 
   /// extrapolated variable values at side center
-  const MaterialProperty<Real> &  _u1;
+  const MaterialProperty<Real> & _u1;
 
   /// bounadry flux object
   const BoundaryFluxBase & _flux;

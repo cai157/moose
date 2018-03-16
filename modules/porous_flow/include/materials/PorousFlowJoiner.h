@@ -1,19 +1,21 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWJOINER_H
 #define POROUSFLOWJOINER_H
 
 #include "PorousFlowMaterialVectorBase.h"
 
-//Forward Declarations
+// Forward Declarations
 class PorousFlowJoiner;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowJoiner>();
 
 /**
@@ -62,22 +64,19 @@ protected:
   const bool _include_old;
 
   /// Derivatives of porepressure variable wrt PorousFlow variables at the qps or nodes
-  const MaterialProperty<std::vector<std::vector<Real> > > & _dporepressure_dvar;
+  const MaterialProperty<std::vector<std::vector<Real>>> & _dporepressure_dvar;
 
   /// Derivatives of saturation variable wrt PorousFlow variables at the qps or nodes
-  const MaterialProperty<std::vector<std::vector<Real> > > & _dsaturation_dvar;
+  const MaterialProperty<std::vector<std::vector<Real>>> & _dsaturation_dvar;
 
   /// Derivatives of temperature variable wrt PorousFlow variables at the qps or nodes
-  const MaterialProperty<std::vector<Real> > & _dtemperature_dvar;
+  const MaterialProperty<std::vector<Real>> & _dtemperature_dvar;
 
   /// computed property of the phase
-  MaterialProperty<std::vector<Real> > & _property;
-
-  /// old value of property of the phase
-  MaterialProperty<std::vector<Real> > * const _property_old;
+  MaterialProperty<std::vector<Real>> & _property;
 
   /// d(property)/d(PorousFlow variable)
-  MaterialProperty<std::vector<std::vector<Real> > > & _dproperty_dvar;
+  MaterialProperty<std::vector<std::vector<Real>>> & _dproperty_dvar;
 
   /// property of each phase
   std::vector<const MaterialProperty<Real> *> _phase_property;
@@ -92,4 +91,4 @@ protected:
   std::vector<const MaterialProperty<Real> *> _dphase_property_dt;
 };
 
-#endif //POROUSFLOWJOINER_H
+#endif // POROUSFLOWJOINER_H

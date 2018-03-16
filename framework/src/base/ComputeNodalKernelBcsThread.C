@@ -1,29 +1,25 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ComputeNodalKernelBcsThread.h"
 
+// MOOSE includes
 #include "AuxiliarySystem.h"
 #include "FEProblem.h"
+#include "MooseVariableField.h"
 #include "NodalKernel.h"
 
-// libmesh includes
 #include "libmesh/threads.h"
 
-ComputeNodalKernelBcsThread::ComputeNodalKernelBcsThread(FEProblemBase & fe_problem,
-                                                         const MooseObjectWarehouse<NodalKernel> & nodal_kernels) :
-    ThreadedNodeLoop<ConstBndNodeRange, ConstBndNodeRange::const_iterator>(fe_problem),
+ComputeNodalKernelBcsThread::ComputeNodalKernelBcsThread(
+    FEProblemBase & fe_problem, const MooseObjectWarehouse<NodalKernel> & nodal_kernels)
+  : ThreadedNodeLoop<ConstBndNodeRange, ConstBndNodeRange::const_iterator>(fe_problem),
     _aux_sys(fe_problem.getAuxiliarySystem()),
     _nodal_kernels(nodal_kernels),
     _num_cached(0)
@@ -31,8 +27,9 @@ ComputeNodalKernelBcsThread::ComputeNodalKernelBcsThread(FEProblemBase & fe_prob
 }
 
 // Splitting Constructor
-ComputeNodalKernelBcsThread::ComputeNodalKernelBcsThread(ComputeNodalKernelBcsThread & x, Threads::split split) :
-    ThreadedNodeLoop<ConstBndNodeRange, ConstBndNodeRange::const_iterator>(x, split),
+ComputeNodalKernelBcsThread::ComputeNodalKernelBcsThread(ComputeNodalKernelBcsThread & x,
+                                                         Threads::split split)
+  : ThreadedNodeLoop<ConstBndNodeRange, ConstBndNodeRange::const_iterator>(x, split),
     _aux_sys(x._aux_sys),
     _nodal_kernels(x._nodal_kernels),
     _num_cached(0)
@@ -65,7 +62,7 @@ ComputeNodalKernelBcsThread::onNode(ConstBndNodeRange::const_iterator & node_it)
     if (node->processor_id() == _fe_problem.processor_id())
     {
       _fe_problem.reinitNodeFace(node, boundary_id, _tid);
-      const std::vector<MooseSharedPointer<NodalKernel> > & objects = _nodal_kernels.getActiveBoundaryObjects(boundary_id, _tid);
+      const auto & objects = _nodal_kernels.getActiveBoundaryObjects(boundary_id, _tid);
       for (const auto & nodal_kernel : objects)
         nodal_kernel->computeResidual();
 
@@ -73,7 +70,7 @@ ComputeNodalKernelBcsThread::onNode(ConstBndNodeRange::const_iterator & node_it)
     }
   }
 
-  if (_num_cached == 20) //cache 20 nodes worth before adding into the residual
+  if (_num_cached == 20) // cache 20 nodes worth before adding into the residual
   {
     _num_cached = 0;
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOOSEOBJECTPARAMETERNAME_H
 #define MOOSEOBJECTPARAMETERNAME_H
@@ -26,11 +21,12 @@
  *
  * This class is used by the Control logic system, allowing for multiple tags
  * to be applied to many different MooseObject parameters.
+ *
+ * This class simply adds a third field (parameter name) to the MooseObjectName class.
  */
 class MooseObjectParameterName : public MooseObjectName
 {
 public:
-
   /**
    * Build an object given a raw parameter name (e.g., from an input file parameter)
    */
@@ -39,12 +35,25 @@ public:
   /**
    * Build an object given a MooseObjectName and parameter name
    */
-  MooseObjectParameterName(const MooseObjectName & obj_name, std::string param);
+  MooseObjectParameterName(const MooseObjectName & obj_name, const std::string & param);
+
+  /**
+   * Build an object given a tag, object name, and parameter name
+   */
+  MooseObjectParameterName(const std::string & tag,
+                           const std::string & name,
+                           const std::string & param,
+                           const std::string & separator = std::string("/"));
 
   /**
    * Return the parameter name.
    */
   const std::string & parameter() const { return _parameter; }
+
+  /**
+   * Adds the parameter name to error checking.
+   */
+  virtual void check() final;
 
   ///@{
   /**
@@ -70,10 +79,8 @@ public:
   friend std::ostream & operator<<(std::ostream & stream, const MooseObjectParameterName & obj);
 
 protected:
-
   /// The name of the input parameter
   std::string _parameter;
-
 };
 
 #endif // MOOSEOBJECTPARAMETERNAME_H

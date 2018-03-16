@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "AddOutputAction.h"
@@ -22,22 +17,21 @@
 #include "FileMesh.h"
 #include "MooseApp.h"
 
-// libMesh includes
 #include "libmesh/mesh_function.h"
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/explicit_system.h"
 
-template<>
-InputParameters validParams<AddOutputAction>()
+registerMooseAction("MooseApp", AddOutputAction, "add_output");
+
+template <>
+InputParameters
+validParams<AddOutputAction>()
 {
-   InputParameters params = validParams<MooseObjectAction>();
-   return params;
+  InputParameters params = validParams<MooseObjectAction>();
+  return params;
 }
 
-AddOutputAction::AddOutputAction(InputParameters params) :
-    MooseObjectAction(params)
-{
-}
+AddOutputAction::AddOutputAction(InputParameters params) : MooseObjectAction(params) {}
 
 void
 AddOutputAction::act()
@@ -51,12 +45,12 @@ AddOutputAction::act()
 
   // Reject the reserved names for objects not built by MOOSE
   if (!_moose_object_pars.get<bool>("_built_by_moose") && output_warehouse.isReservedName(_name))
-    mooseError("The name '" << _name << "' is a reserved name for output objects");
+    mooseError("The name '", _name, "' is a reserved name for output objects");
 
-  // Check that an object by the same name does not already exist; this must be done before the object
-  // is created to avoid getting misleading errors from the Parser
+  // Check that an object by the same name does not already exist; this must be done before the
+  // object is created to avoid getting misleading errors from the Parser
   if (output_warehouse.hasOutput(_name))
-    mooseError("An output object named '" << _name << "' already exists");
+    mooseError("An output object named '", _name, "' already exists");
 
   // Add a pointer to the FEProblemBase class
   _moose_object_pars.addPrivateParam<FEProblemBase *>("_fe_problem_base", _problem.get());
@@ -69,7 +63,7 @@ AddOutputAction::act()
 
     // --show-input should enable the display of the input file on the screen
     if (_app.getParam<bool>("show_input") && _moose_object_pars.get<bool>("output_screen"))
-      _moose_object_pars.set<MultiMooseEnum>("execute_input_on") = "initial";
+      _moose_object_pars.set<ExecFlagEnum>("execute_input_on") = EXEC_INITIAL;
   }
 
   // Apply the common parameters
@@ -88,6 +82,6 @@ AddOutputAction::act()
     _moose_object_pars.set<std::string>("suffix") = "auto_recovery";
 
   // Create the object and add it to the warehouse
-  MooseSharedPointer<Output> output = _factory.create<Output>(_type, _name, _moose_object_pars);
+  std::shared_ptr<Output> output = _factory.create<Output>(_type, _name, _moose_object_pars);
   output_warehouse.addOutput(output);
 }

@@ -1,14 +1,23 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 #ifndef CONSERVEDNORMALNOISE_H
 #define CONSERVEDNORMALNOISE_H
 
 #include "ConservedNoiseBase.h"
 #include "ConservedNormalNoiseVeneer.h"
 
-//Forward delcarations
+// Forward delcarations
 class ConservedNormalNoise;
 
-template<>
-InputParameters validParams<ConservedNormalNoise>()
+template <>
+InputParameters
+validParams<ConservedNormalNoise>()
 {
   return validParams<ConservedNoiseBase>();
 }
@@ -23,9 +32,10 @@ InputParameters validParams<ConservedNormalNoise>()
 class ConservedNormalNoise : public ConservedNormalNoiseVeneer<ConservedNoiseBase>
 {
 public:
-
-  ConservedNormalNoise(const InputParameters & parameters) :
-      ConservedNormalNoiseVeneer<ConservedNoiseBase>(parameters) {}
+  ConservedNormalNoise(const InputParameters & parameters)
+    : ConservedNormalNoiseVeneer<ConservedNoiseBase>(parameters)
+  {
+  }
 };
 
-#endif //CONSERVEDNORMALNOISE_H
+#endif // CONSERVEDNORMALNOISE_H

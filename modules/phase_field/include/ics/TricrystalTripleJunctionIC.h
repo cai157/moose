@@ -1,24 +1,21 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef TRICRYSTALTRIPLEJUNCTIONIC_H
 #define TRICRYSTALTRIPLEJUNCTIONIC_H
 
-// MOOSE Includes
-#include "Kernel.h"
 #include "InitialCondition.h"
-#include "NonlinearSystem.h"
-
-// System includes
-#include <string>
 
 // Forward Declarations
 class TricrystalTripleJunctionIC;
 
-template<>
+template <>
 InputParameters validParams<TricrystalTripleJunctionIC>();
 
 /**
@@ -29,19 +26,17 @@ class TricrystalTripleJunctionIC : public InitialCondition
 {
 public:
   TricrystalTripleJunctionIC(const InputParameters & parameters);
+
   virtual Real value(const Point & p);
 
 protected:
-  MooseMesh & _mesh;
-
-  /// A reference to the nonlinear system
-  NonlinearSystemBase & _nl;
+  const MooseMesh & _mesh;
 
   /// Number of order parameters
-  unsigned int _op_num;
+  const unsigned int _op_num;
 
   // Order parameter index
-  unsigned int _op_index;
+  const unsigned int _op_index;
 
   /// Point where the triple junction occurs
   Point _junction;
@@ -59,4 +54,4 @@ protected:
   Real _tan_theta2;
 };
 
-#endif //TRICRYSTALTRIPLEJUNCTIONIC_H
+#endif // TRICRYSTALTRIPLEJUNCTIONIC_H

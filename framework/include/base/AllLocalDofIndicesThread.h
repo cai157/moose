@@ -1,24 +1,18 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef ALLLOCALDOFINDICESTHREAD_H
 #define ALLLOCALDOFINDICESTHREAD_H
 
 #include "Moose.h"
-#include "ParallelUniqueId.h"
+#include "MooseTypes.h"
 
-// libmesh includes
 #include "libmesh/elem_range.h"
 
 // Forward declare classes in libMesh
@@ -27,7 +21,6 @@ namespace libMesh
 class System;
 class DofMap;
 }
-
 
 /**
  * Grab all the local dof indices for the variables passed in, in the system passed in.
@@ -39,7 +32,7 @@ public:
   // Splitting Constructor
   AllLocalDofIndicesThread(AllLocalDofIndicesThread & x, Threads::split split);
 
-  void operator() (const ConstElemRange & range);
+  void operator()(const ConstElemRange & range);
 
   void join(const AllLocalDofIndicesThread & y);
 
@@ -53,4 +46,4 @@ protected:
   THREAD_ID _tid;
 };
 
-#endif //ALLLOCALDOFINDICESTHREAD_H
+#endif // ALLLOCALDOFINDICESTHREAD_H

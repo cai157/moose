@@ -1,30 +1,29 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "RichardsSumQuantity.h"
 
-template<>
-InputParameters validParams<RichardsSumQuantity>()
+template <>
+InputParameters
+validParams<RichardsSumQuantity>()
 {
   InputParameters params = validParams<GeneralUserObject>();
 
   return params;
 }
 
-RichardsSumQuantity::RichardsSumQuantity(const InputParameters & parameters) :
-    GeneralUserObject(parameters),
-    _total(0)
+RichardsSumQuantity::RichardsSumQuantity(const InputParameters & parameters)
+  : GeneralUserObject(parameters), _total(0)
 {
 }
 
-RichardsSumQuantity::~RichardsSumQuantity()
-{
-}
+RichardsSumQuantity::~RichardsSumQuantity() {}
 
 void
 RichardsSumQuantity::zero()
@@ -59,4 +58,3 @@ RichardsSumQuantity::getValue() const
 {
   return _total;
 }
-

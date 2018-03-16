@@ -1,33 +1,39 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "NodalArea.h"
 
-// libmesh includes
+// MOOSE includes
+#include "MooseVariable.h"
+#include "SystemBase.h"
+
+#include "libmesh/numeric_vector.h"
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<NodalArea>()
+template <>
+InputParameters
+validParams<NodalArea>()
 {
   InputParameters params = validParams<SideIntegralVariableUserObject>();
-
-  params.set<MultiMooseEnum>("execute_on") = "linear";
+  params.set<ExecFlagEnum>("execute_on") = EXEC_LINEAR;
   return params;
 }
 
-NodalArea::NodalArea(const InputParameters & parameters) :
-    SideIntegralVariableUserObject(parameters),
-    _phi(getCoupledVars().find("variable")->second[0]->phiFace()),
-    _system( _variable->sys() ),
-    _aux_solution( _system.solution() )
-{}
+NodalArea::NodalArea(const InputParameters & parameters)
+  : SideIntegralVariableUserObject(parameters),
+    _phi(_variable->phiFace()),
+    _system(_variable->sys()),
+    _aux_solution(_system.solution())
+{
+}
 
-NodalArea::~NodalArea()
-{}
+NodalArea::~NodalArea() {}
 
 void
 NodalArea::threadJoin(const UserObject & fred)
@@ -36,7 +42,7 @@ NodalArea::threadJoin(const UserObject & fred)
 
   std::map<const Node *, Real>::const_iterator it = na._node_areas.begin();
   const std::map<const Node *, Real>::const_iterator it_end = na._node_areas.end();
-  for ( ; it != it_end; ++it )
+  for (; it != it_end; ++it)
   {
     _node_areas[it->first] += it->second;
   }
@@ -58,14 +64,14 @@ void
 NodalArea::execute()
 {
   std::vector<Real> nodeAreas(_phi.size());
-  for ( unsigned qp(0); qp < _qrule->n_points(); ++qp )
+  for (unsigned qp(0); qp < _qrule->n_points(); ++qp)
   {
-    for ( unsigned j(0); j < _phi.size(); ++j )
+    for (unsigned j(0); j < _phi.size(); ++j)
     {
-      nodeAreas[j] +=  (_phi[j][qp] * _JxW[qp] * _coord[qp]);
+      nodeAreas[j] += (_phi[j][qp] * _JxW[qp] * _coord[qp]);
     }
   }
-  for ( unsigned j(0); j < _phi.size(); ++j )
+  for (unsigned j(0); j < _phi.size(); ++j)
   {
     const Real area = nodeAreas[j];
     if (area != 0)
@@ -80,28 +86,27 @@ NodalArea::finalize()
 {
 
   const std::map<const Node *, Real>::iterator it_end = _node_areas.end();
-  for ( std::map<const Node *, Real>::iterator it = _node_areas.begin(); it != it_end; ++it )
+  for (std::map<const Node *, Real>::iterator it = _node_areas.begin(); it != it_end; ++it)
   {
     const Node * const node = it->first;
     dof_id_type dof = node->dof_number(_system.number(), _variable->number(), 0);
-    _aux_solution.set( dof, 0 );
+    _aux_solution.set(dof, 0);
   }
   _aux_solution.close();
 
-  for ( std::map<const Node *, Real>::iterator it = _node_areas.begin(); it != it_end; ++it )
+  for (std::map<const Node *, Real>::iterator it = _node_areas.begin(); it != it_end; ++it)
   {
     const Node * const node = it->first;
     dof_id_type dof = node->dof_number(_system.number(), _variable->number(), 0);
-    _aux_solution.add( dof, it->second );
+    _aux_solution.add(dof, it->second);
   }
   _aux_solution.close();
-
 }
 
 Real
-NodalArea::nodalArea( const Node * node ) const
+NodalArea::nodalArea(const Node * node) const
 {
-  std::map<const Node *, Real>::const_iterator it = _node_areas.find( node );
+  std::map<const Node *, Real>::const_iterator it = _node_areas.find(node);
   Real retVal(0);
   if (it != _node_areas.end())
   {
@@ -109,4 +114,3 @@ NodalArea::nodalArea( const Node * node ) const
   }
   return retVal;
 }
-

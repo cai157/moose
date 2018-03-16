@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "AStableDirk4.h"
@@ -19,26 +14,28 @@
 #include "PetscSupport.h"
 #include "LStableDirk4.h"
 
-template<>
-InputParameters validParams<AStableDirk4>()
+registerMooseObject("MooseApp", AStableDirk4);
+
+template <>
+InputParameters
+validParams<AStableDirk4>()
 {
   InputParameters params = validParams<TimeIntegrator>();
   params.addParam<bool>("safe_start", true, "If true, use LStableDirk4 to bootstrap this method.");
   return params;
 }
 
-
-AStableDirk4::AStableDirk4(const InputParameters & parameters) :
-    TimeIntegrator(parameters),
+AStableDirk4::AStableDirk4(const InputParameters & parameters)
+  : TimeIntegrator(parameters),
     _stage(1),
-    _gamma(0.5 + std::sqrt(3)/3. * std::cos(libMesh::pi/18.)),
+    _gamma(0.5 + std::sqrt(3) / 3. * std::cos(libMesh::pi / 18.)),
     _safe_start(getParam<bool>("safe_start"))
 {
   // Name the stage residuals "residual_stage1", "residual_stage2", etc.
-  for (unsigned int stage=0; stage<3; ++stage)
+  for (unsigned int stage = 0; stage < 3; ++stage)
   {
     std::ostringstream oss;
-    oss << "residual_stage" << stage+1;
+    oss << "residual_stage" << stage + 1;
     _stage_residuals[stage] = &(_nl.addVector(oss.str(), false, GHOSTED));
   }
 
@@ -48,11 +45,14 @@ AStableDirk4::AStableDirk4(const InputParameters & parameters) :
   _c[2] = 1.0 - _gamma;
 
   _a[0][0] = _gamma;
-  _a[1][0] = .5 - _gamma; /**/ _a[1][1] = _gamma;
-  _a[2][0] = 2.*_gamma;   /**/ _a[2][1] = 1-4.*_gamma; /**/ _a[2][2] = _gamma;
+  _a[1][0] = .5 - _gamma; /**/
+  _a[1][1] = _gamma;
+  _a[2][0] = 2. * _gamma;     /**/
+  _a[2][1] = 1 - 4. * _gamma; /**/
+  _a[2][2] = _gamma;
 
-  _b[0] = 1./(24. * (.5-_gamma)*(.5-_gamma));
-  _b[1] = 1. - 1./(12. * (.5-_gamma)*(.5-_gamma));
+  _b[0] = 1. / (24. * (.5 - _gamma) * (.5 - _gamma));
+  _b[1] = 1. - 1. / (12. * (.5 - _gamma) * (.5 - _gamma));
   _b[2] = _b[0];
 
   // If doing a _safe_start, construct the bootstrapping
@@ -75,28 +75,18 @@ AStableDirk4::AStableDirk4(const InputParameters & parameters) :
   }
 }
 
-
-
-AStableDirk4::~AStableDirk4()
-{
-}
-
-
-
 void
 AStableDirk4::computeTimeDerivatives()
 {
-  // We are multiplying by the method coefficients in postStep(), so
+  // We are multiplying by the method coefficients in postResidual(), so
   // the time derivatives are of the same form at every stage although
   // the current solution varies depending on the stage.
-  _u_dot  = *_solution;
+  _u_dot = *_solution;
   _u_dot -= _solution_old;
   _u_dot *= 1. / _dt;
   _u_dot.close();
   _du_dot_du = 1. / _dt;
 }
-
-
 
 void
 AStableDirk4::solve()
@@ -125,7 +115,7 @@ AStableDirk4::solve()
       if (current_stage < 4)
       {
         _console << "Stage " << _stage << "\n";
-        _fe_problem.time() = time_old + _c[_stage-1]*_dt;
+        _fe_problem.time() = time_old + _c[_stage - 1] * _dt;
       }
       else
       {
@@ -139,19 +129,17 @@ AStableDirk4::solve()
   }
 }
 
-
-
 void
-AStableDirk4::postStep(NumericVector<Number> & residual)
+AStableDirk4::postResidual(NumericVector<Number> & residual)
 {
   if (_t_step == 1 && _safe_start)
-    _bootstrap_method->postStep(residual);
+    _bootstrap_method->postResidual(residual);
 
   else
   {
     // Error if _stage got messed up somehow.
     if (_stage > 4)
-      mooseError("AStableDirk4::postStep(): Member variable _stage can only have values 1-4.");
+      mooseError("AStableDirk4::postResidual(): Member variable _stage can only have values 1-4.");
 
     if (_stage < 4)
     {
@@ -168,12 +156,12 @@ AStableDirk4::postStep(NumericVector<Number> & residual)
 
       // Store this stage's non-time residual.  We are calling operator=
       // here, and that calls close().
-      *_stage_residuals[_stage-1] = _Re_non_time;
+      *_stage_residuals[_stage - 1] = _Re_non_time;
 
       // Build up the residual for this stage.
       residual.add(1., _Re_time);
       for (unsigned int j = 0; j < _stage; ++j)
-        residual.add(_a[_stage-1][j], *_stage_residuals[j]);
+        residual.add(_a[_stage - 1][j], *_stage_residuals[j]);
       residual.close();
     }
     else

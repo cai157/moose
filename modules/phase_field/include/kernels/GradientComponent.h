@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef GRADIENTCOMPONENT_H
 #define GRADIENTCOMPONENT_H
 
@@ -11,7 +14,7 @@
 
 class GradientComponent;
 
-template<>
+template <>
 InputParameters validParams<GradientComponent>();
 
 class GradientComponent : public Kernel
@@ -25,13 +28,13 @@ protected:
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
   /// Identity of the coupled variable
-  unsigned int _v_var;
+  const unsigned int _v_var;
 
   /// Gradient of the coupled variable
   const VariableGradient & _grad_v;
 
   /// Component of the gradient vector to match
-  unsigned int _component;
+  const unsigned int _component;
 };
 
-#endif //GRADIENTCOMPONENT_H
+#endif // GRADIENTCOMPONENT_H

@@ -1,5 +1,6 @@
 [Mesh]
   type = GeneratedMesh
+  parallel_type = replicated # Until RayTracing.C is fixed
   dim = 3
   nx = 10
   ny = 10
@@ -42,7 +43,6 @@
 []
 
 [Executioner]
-  # Preconditioned JFNK (default)
   type = Steady
   solve_type = PJFNK
   petsc_options_iname = '-pc_type -pc_hypre_type'

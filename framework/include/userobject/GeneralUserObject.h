@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef GENERALUSEROBJECT_H
 #define GENERALUSEROBJECT_H
@@ -23,28 +18,25 @@
 #include "UserObjectInterface.h"
 #include "PostprocessorInterface.h"
 #include "VectorPostprocessorInterface.h"
-#include "MaterialPropertyInterface.h"
 
 // Forward Declarations
 class GeneralUserObject;
 
-template<>
+template <>
 InputParameters validParams<GeneralUserObject>();
 
 /* This class is here to combine the Postprocessor interface and the
  * base class Postprocessor object along with adding MooseObject to the inheritance tree*/
-class GeneralUserObject :
-  public UserObject,
-  public MaterialPropertyInterface,
-  public TransientInterface,
-  public DependencyResolverInterface,
-  public UserObjectInterface,
-  protected PostprocessorInterface,
-  protected VectorPostprocessorInterface
+class GeneralUserObject : public UserObject,
+                          public MaterialPropertyInterface,
+                          public TransientInterface,
+                          public DependencyResolverInterface,
+                          public UserObjectInterface,
+                          protected PostprocessorInterface,
+                          protected VectorPostprocessorInterface
 {
 public:
   GeneralUserObject(const InputParameters & parameters);
-
 
   const std::set<std::string> & getRequestedItems() override;
 
@@ -54,8 +46,8 @@ public:
   /**
    * This method is not used and should not be used in a custom GeneralUserObject.
    */
-  virtual void threadJoin(const UserObject &) override; /*final*/
-  virtual void subdomainSetup() override; /*final*/
+  virtual void threadJoin(const UserObject &) final;
+  virtual void subdomainSetup() final;
   ///@}
 
   ///@{
@@ -65,8 +57,11 @@ public:
   virtual const PostprocessorValue & getPostprocessorValue(const std::string & name);
   virtual const PostprocessorValue & getPostprocessorValueByName(const PostprocessorName & name);
 
-  virtual const VectorPostprocessorValue & getVectorPostprocessorValue(const std::string & name, const std::string & vector_name) override;
-  virtual const VectorPostprocessorValue & getVectorPostprocessorValueByName(const VectorPostprocessorName & name, const std::string & vector_name) override;
+  virtual const VectorPostprocessorValue &
+  getVectorPostprocessorValue(const std::string & name, const std::string & vector_name) override;
+  virtual const VectorPostprocessorValue &
+  getVectorPostprocessorValueByName(const VectorPostprocessorName & name,
+                                    const std::string & vector_name) override;
   ///@}
 
 protected:

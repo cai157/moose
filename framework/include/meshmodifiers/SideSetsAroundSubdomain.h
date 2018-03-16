@@ -1,26 +1,20 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef SIDESETSAROUNDSUBDOMAIN_H
 #define SIDESETSAROUNDSUBDOMAIN_H
 
 #include "AddSideSetsBase.h" // needed for _fe_face, if restricting using normals
-#include "BlockRestrictable.h"
 
 class SideSetsAroundSubdomain;
 
-template<>
+template <>
 InputParameters validParams<SideSetsAroundSubdomain>();
 
 /**
@@ -29,14 +23,10 @@ InputParameters validParams<SideSetsAroundSubdomain>();
  * Optionally, only adds faces that have a normal
  * equal to specified normal up to a tolerance
  */
-class SideSetsAroundSubdomain :
-  public AddSideSetsBase,
-  public BlockRestrictable
+class SideSetsAroundSubdomain : public AddSideSetsBase
 {
 public:
   SideSetsAroundSubdomain(const InputParameters & parameters);
-
-  virtual void initialize() override;
 
 protected:
   virtual void modify() override;

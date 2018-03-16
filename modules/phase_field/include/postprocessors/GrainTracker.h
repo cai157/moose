@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef GRAINTRACKER_H
 #define GRAINTRACKER_H
@@ -11,14 +13,13 @@
 #include "FeatureFloodCount.h"
 #include "GrainTrackerInterface.h"
 
-// libMesh includes
 #include "libmesh/mesh_tools.h"
 
 class GrainTracker;
-class EBSDReader;
+class PolycrystalUserObjectBase;
 struct GrainDistance;
 
-template<>
+template <>
 InputParameters validParams<GrainTracker>();
 
 class GrainTracker : public FeatureFloodCount, public GrainTrackerInterface
@@ -39,6 +40,7 @@ public:
     bool intersects_boundary;
     unsigned int id;
     Point centroid;
+    Status status;
   };
 
   struct CacheValues
@@ -56,8 +58,11 @@ public:
   };
 
   // GrainTrackerInterface methods
-  virtual Real getEntityValue(dof_id_type node_id, FieldType field_type, std::size_t var_index=0) const override;
-  virtual const std::vector<unsigned int> & getVarToFeatureVector(dof_id_type elem_id) const override;
+  virtual Real getEntityValue(dof_id_type node_id,
+                              FieldType field_type,
+                              std::size_t var_index = 0) const override;
+  virtual const std::vector<unsigned int> &
+  getVarToFeatureVector(dof_id_type elem_id) const override;
   virtual unsigned int getFeatureVar(unsigned int feature_id) const override;
   virtual std::size_t getNumberActiveGrains() const override;
   virtual Point getGrainCentroid(unsigned int grain_id) const override;
@@ -66,23 +71,29 @@ public:
 
 protected:
   virtual void updateFieldInfo() override;
-  virtual Real getThreshold(std::size_t current_index, bool active_feature) const override;
-  virtual bool isNewFeatureOrConnectedRegion(const DofObject * dof_object, std::size_t current_index,
-                                             FeatureData * & feature, unsigned int & new_id) override;
+  virtual Real getThreshold(std::size_t current_index) const override;
 
+  /**
+   * This method extracts the necessary state from the passed in object necessary to continue
+   * tracking grains. This method is meant to be used with the PolycrystalUserobjectBase class
+   * that sets up initial conditions for Polycrystal simulations. We can use the state of that
+   * object rather than rediscovering everything ourselves.
+   */
+  void prepopulateState(const FeatureFloodCount & ffc_object);
+
+  /**
+   */
   void communicateHaloMap();
 
   /**
-   * When the tracking phase starts (_t_step == _tracking_step) it assigns a unique id to every FeatureData object
-   * found by the FeatureFloodCount object. If an EBSDReader is linked into the GrainTracker the information from the
-   * reader is used to assign grain information, otherwise it's ordered by each Feature's "minimum entity id" and
-   * assigned a non-negative integer.
+   * When the tracking phase starts (_t_step == _tracking_step) it assigns a unique id to every
+   * FeatureData object found by the FeatureFloodCount object.
    */
   void assignGrains();
 
   /**
-   * On subsequent time_steps, incoming FeatureData objects are compared to previous time_step information to
-   * track grains between time steps.
+   * On subsequent time_steps, incoming FeatureData objects are compared to previous time_step
+   * information to track grains between time steps.
    *
    * This method updates the _feature_sets data structure.
    * This method should only be called on the root processor
@@ -90,8 +101,8 @@ protected:
   void trackGrains();
 
   /**
-   * This method is called when a new grain is detected. It can be overridden by a derived class to handle
-   * setting new properties on the newly created grain.
+   * This method is called when a new grain is detected. It can be overridden by a derived class to
+   * handle setting new properties on the newly created grain.
    */
   virtual void newGrainCreated(unsigned int new_grain_id);
 
@@ -107,57 +118,56 @@ protected:
   void broadcastAndUpdateGrainData();
 
   /**
-   * Populates and sorts a min_distances vector with the minimum distances to all grains in the simulation
-   * for a given grain. There are _vars.size() entries in the outer vector, one for each order parameter.
-   * A list of grains with the same OP are ordered in lists per OP.
+   * Populates and sorts a min_distances vector with the minimum distances to all grains in the
+   * simulation for a given grain. There are _vars.size() entries in the outer vector, one for
+   * each order parameter. A list of grains with the same OP are ordered in lists per OP.
    */
-  void computeMinDistancesFromGrain(FeatureData & grain, std::vector<std::list<GrainDistance> > & min_distances);
+  void computeMinDistancesFromGrain(FeatureData & grain,
+                                    std::vector<std::list<GrainDistance>> & min_distances);
 
   /**
-   * This is the recursive part of the remapping algorithm. It attempts to remap a grain to a new index and recurses until max_depth
-   * is reached.
+   * This is the recursive part of the remapping algorithm. It attempts to remap a grain to a new
+   * index and recurses until max_depth is reached.
    */
   bool attemptGrainRenumber(FeatureData & grain, unsigned int depth, unsigned int max_depth);
 
   /**
-   * A routine for moving all of the solution values from a given grain to a new variable number. It is called
-   * with different modes to only cache, or actually do the work, or bypass the cache altogether.
+   * A routine for moving all of the solution values from a given grain to a new variable number. It
+   * is called with different modes to only cache, or actually do the work, or bypass the cache
+   * altogether.
    */
-  void swapSolutionValues(FeatureData &  grain, std::size_t new_var_index, std::vector<std::map<Node *, CacheValues> > & cache,
+  void swapSolutionValues(FeatureData & grain,
+                          std::size_t new_var_index,
+                          std::vector<std::map<Node *, CacheValues>> & cache,
                           RemapCacheMode cache_mode);
 
   /**
    * Helper method for actually performing the swaps.
    */
-  void swapSolutionValuesHelper(Node * curr_node, std::size_t curr_var_index, std::size_t new_var_index,
-                                std::vector<std::map<Node *, CacheValues> > & cache, RemapCacheMode cache_mode);
+  void swapSolutionValuesHelper(Node * curr_node,
+                                std::size_t curr_var_index,
+                                std::size_t new_var_index,
+                                std::vector<std::map<Node *, CacheValues>> & cache,
+                                RemapCacheMode cache_mode);
 
   /**
-   * This method returns the minimum periodic distance between two vectors of bounding boxes. If the bounding boxes overlap
-   * the result is always -1.0.
+   * This method returns the minimum periodic distance between two vectors of bounding boxes. If the
+   * bounding boxes overlap the result is always -1.0.
    */
-  Real boundingRegionDistance(std::vector<MeshTools::BoundingBox> & bboxes1, std::vector<MeshTools::BoundingBox> bboxes2) const;
+  Real boundingRegionDistance(std::vector<MeshTools::BoundingBox> & bboxes1,
+                              std::vector<MeshTools::BoundingBox> & bboxes2) const;
 
   /**
-   * This method returns the minimum periodic distance between the centroids of two vectors of bounding boxes.
+   * This method returns the minimum periodic distance between the centroids of two vectors of
+   * bounding boxes.
    */
-  Real centroidRegionDistance(std::vector<MeshTools::BoundingBox> & bboxes1, std::vector<MeshTools::BoundingBox> bboxes2) const;
+  Real centroidRegionDistance(std::vector<MeshTools::BoundingBox> & bboxes1,
+                              std::vector<MeshTools::BoundingBox> & bboxes2) const;
 
   /**
-   * This method takes all of the partial features and expands the local, ghosted, and halo sets around those regions
-   * to account for the diffuse interface. Rather than using any kind of recursion here, we simply expand the region
-   * by all "point" neighbors from the actual grain cells since all point neighbors will contain contributions to the region.
-   */
-  void expandEBSDGrains();
-
-  /**
-   * This method colors neighbors of halo entries to expand the halo as desired for a given simulation.
-   */
-  void expandHalos(unsigned int num_layers_to_expand);
-
-  /**
-   * Retrieve the next unique grain number if a new grain is detected during trackGrains. This method
-   * handles reserve order parameter indices properly. Direct access to the next index should be avoided.
+   * Retrieve the next unique grain number if a new grain is detected during trackGrains. This
+   * method handles reserve order parameter indices properly. Direct access to the next index
+   * should be avoided.
    */
   unsigned int getNextUniqueID();
 
@@ -169,7 +179,7 @@ protected:
   const int _tracking_step;
 
   /// The thickness of the halo surrounding each grain
-  const unsigned int _halo_level;
+  const unsigned short _halo_level;
 
   /// Depth of renumbering recursion (a depth of zero means no recursion)
   static const unsigned int _max_renumbering_recursion = 4;
@@ -177,7 +187,8 @@ protected:
   /// The number of reserved order parameters
   const unsigned short _n_reserve_ops;
 
-  /// The cutoff index where if variable index >= this number, no remapping TO that variable will occur
+  /// The cutoff index where if variable index >= this number, no remapping TO that variable
+  /// will occur
   const std::size_t _reserve_op_index;
 
   /// The threshold above (or below) where a grain may be found on a reserve op field
@@ -195,17 +206,21 @@ protected:
    */
   std::vector<FeatureData> & _feature_sets_old;
 
-  /// Optional ESBD Reader
-  const EBSDReader * _ebsd_reader;
+  /// An optional IC UserObject which can provide initial data structures to this object.
+  const PolycrystalUserObjectBase * _poly_ic_uo;
 
-  /// Optional EBSD OP variable pointer (required if EBSD is supplied)
-  MooseVariable * _ebsd_op_var;
+  /**
+   * Boolean to indicate the first time this object executes.
+   * Note: _tracking_step isn't enough if people skip initial or execute more than once per step.
+   */
+  bool _first_time;
 
-  /// The phase to retrieve EBSD information from
-  const unsigned int _phase;
-
-  /// Boolean to indicate that we should retrieve EBSD information from a specific phase
-  const bool _consider_phase;
+  /**
+   * Boolean to terminate with an error if a new grain is created during the simulation.
+   * This is for simulations where new grains are not expected. Note, this does not impact
+   * the initial callback to newGrainCreated() nor does it get triggered for splitting grains.
+   */
+  bool _error_on_grain_creation;
 
 private:
   /// Holds the first unique grain index when using _reserve_op (all the remaining indices are sequential)
@@ -217,14 +232,9 @@ private:
   /// Holds the next "regular" grain ID (a grain found or remapped to the standard op vars)
   unsigned int _max_curr_grain_id;
 
-  /// Boolean to indicate the first time this object executes.
-  /// _tracking_step isn't enough if people skip initial or execute more than once per step
-  bool _first_time;
-
   /// Boolean to indicate whether this is a Steady or Transient solve
   const bool _is_transient;
 };
-
 
 /**
  * This struct is used to hold distance information to other grains in the simulation. It is used
@@ -232,8 +242,12 @@ private:
  */
 struct GrainDistance
 {
-  GrainDistance();
-  GrainDistance(Real distance, std::size_t grain_index, unsigned int grain_id, std::size_t var_index);
+  GrainDistance(Real distance, std::size_t var_index);
+
+  GrainDistance(Real distance,
+                std::size_t var_index,
+                std::size_t grain_index,
+                unsigned int grain_id);
 
   // Copy constructors
   GrainDistance(const GrainDistance & f) = default;
@@ -245,14 +259,15 @@ struct GrainDistance
 
   bool operator<(const GrainDistance & rhs) const;
 
-  unsigned int _grain_id;
   Real _distance;
-  std::size_t _grain_index;
   std::size_t _var_index;
+  std::size_t _grain_index;
+  unsigned int _grain_id;
 };
 
-template<> void dataStore(std::ostream & stream, GrainTracker::PartialFeatureData & feature, void * context);
-template<> void dataLoad(std::istream & stream, GrainTracker::PartialFeatureData & feature, void * context);
-
+template <>
+void dataStore(std::ostream & stream, GrainTracker::PartialFeatureData & feature, void * context);
+template <>
+void dataLoad(std::istream & stream, GrainTracker::PartialFeatureData & feature, void * context);
 
 #endif

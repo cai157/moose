@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef CROSSTERMBARRIERFUNCTIONBASE_H
 #define CROSSTERMBARRIERFUNCTIONBASE_H
 
@@ -13,7 +16,7 @@
 // Forward Declarations
 class CrossTermBarrierFunctionBase;
 
-template<>
+template <>
 InputParameters validParams<CrossTermBarrierFunctionBase>();
 
 /**
@@ -45,13 +48,13 @@ protected:
   ///@{ Barrier function and its derivatives
   MaterialProperty<Real> & _prop_g;
   std::vector<MaterialProperty<Real> *> _prop_dg;
-  std::vector<std::vector<MaterialProperty<Real> *> > _prop_d2g;
+  std::vector<std::vector<MaterialProperty<Real> *>> _prop_d2g;
   ///@}
 
   ///@{ Switching functions and their derivatives
   std::vector<const MaterialProperty<Real> *> _h;
-  std::vector<std::vector<const MaterialProperty<Real> *> > _dh;
+  std::vector<std::vector<const MaterialProperty<Real> *>> _dh;
   ///@}
 };
 
-#endif //CROSSTERMBARRIERFUNCTIONBASE_H
+#endif // CROSSTERMBARRIERFUNCTIONBASE_H

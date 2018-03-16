@@ -1,35 +1,29 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef DOFMAPOUTPUT_H
 #define DOFMAPOUTPUT_H
 
 // MOOSE includes
-#include "BasicOutput.h"
 #include "FileOutput.h"
 
 // Forward declarations
 class DOFMapOutput;
 class MooseMesh;
 
-template<>
+template <>
 InputParameters validParams<DOFMapOutput>();
 
 /**
  * An output object for writing the DOF map of the system in a machine parsable format
  */
-class DOFMapOutput : public BasicOutput<FileOutput>
+class DOFMapOutput : public FileOutput
 {
 public:
   DOFMapOutput(const InputParameters & parameters);
@@ -47,15 +41,14 @@ public:
   void output(const ExecFlagType & type) override;
 
 protected:
-
   /**
    * A helper method for joining items with a delimeter
    * @param begin Beginning iterator
    * @param end Ending iterator
    * @param delim The delimiter character to insert
    */
-  template<typename T>
-  std::string join(const T & begin, const T & end, const char* const delim);
+  template <typename T>
+  std::string join(const T & begin, const T & end, const char * const delim);
 
   /**
    * Write the file stream to the file

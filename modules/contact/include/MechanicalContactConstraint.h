@@ -1,56 +1,61 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MECHANICALCONTACTCONSTRAINT_H
 #define MECHANICALCONTACTCONSTRAINT_H
 
-//MOOSE includes
+// MOOSE includes
 #include "NodeFaceConstraint.h"
-
 #include "ContactMaster.h"
 
-//Forward Declarations
+// Forward Declarations
 class MechanicalContactConstraint;
 
-template<>
+template <>
 InputParameters validParams<MechanicalContactConstraint>();
 
 /**
- * A MechanicalContactConstraint forces the value of a variable to be the same on both sides of an interface.
+ * A MechanicalContactConstraint forces the value of a variable to be the same on both sides of an
+ * interface.
  */
-class MechanicalContactConstraint :
-  public NodeFaceConstraint
+class MechanicalContactConstraint : public NodeFaceConstraint
 {
 public:
   MechanicalContactConstraint(const InputParameters & parameters);
-  virtual ~MechanicalContactConstraint(){}
+  virtual ~MechanicalContactConstraint() {}
 
-  virtual void timestepSetup();
-  virtual void jacobianSetup();
+  virtual void timestepSetup() override;
+  virtual void jacobianSetup() override;
+  virtual void residualEnd() override;
 
-  virtual void updateContactSet(bool beginning_of_step = false);
+  virtual bool AugmentedLagrangianContactConverged();
 
-  virtual Real computeQpSlaveValue();
+  virtual void updateAugmentedLagrangianMultiplier(bool beginning_of_step = false);
 
-  virtual Real computeQpResidual(Moose::ConstraintType type);
+  virtual void updateContactStatefulData(bool beginning_of_step = false);
+
+  virtual Real computeQpSlaveValue() override;
+
+  virtual Real computeQpResidual(Moose::ConstraintType type) override;
 
   /**
    * Computes the jacobian for the current element.
    */
-  virtual void computeJacobian();
+  virtual void computeJacobian() override;
 
   /**
    * Compute off-diagonal Jacobian entries
    * @param jvar The index of the coupled variable
    */
-  virtual void computeOffDiagJacobian(unsigned int jvar);
+  virtual void computeOffDiagJacobian(unsigned int jvar) override;
 
-  virtual Real computeQpJacobian(Moose::ConstraintJacobianType type);
+  virtual Real computeQpJacobian(Moose::ConstraintJacobianType type) override;
 
   /**
    * Compute off-diagonal Jacobian entries
@@ -58,14 +63,14 @@ public:
    * @param jvar The index of the coupled variable
    */
   virtual Real computeQpOffDiagJacobian(Moose::ConstraintJacobianType type,
-                                        unsigned int jvar);
+                                        unsigned int jvar) override;
 
   /**
    * Get the dof indices of the nodes connected to the slave node for a specific variable
    * @param var_num The number of the variable for which dof indices are gathered
    * @return bool indicating whether the coupled variable is one of the displacement variables
    */
-  virtual void getConnectedDofIndices(unsigned int var_num);
+  virtual void getConnectedDofIndices(unsigned int var_num) override;
 
   /**
    * Determine whether the coupled variable is one of the displacement variables,
@@ -74,19 +79,18 @@ public:
    * @param component The component index computed in this routine
    * @return bool indicating whether the coupled variable is one of the displacement variables
    */
-  bool getCoupledVarComponent(unsigned int var_num,
-                              unsigned int &component);
+  bool getCoupledVarComponent(unsigned int var_num, unsigned int & component);
 
+  virtual bool addCouplingEntriesToJacobian() override { return _master_slave_jacobian; }
 
-  virtual bool addCouplingEntriesToJacobian() { return _master_slave_jacobian; }
-
-  bool shouldApply();
-  void computeContactForce(PenetrationInfo * pinfo);
+  bool shouldApply() override;
+  void computeContactForce(PenetrationInfo * pinfo, bool update_contact_set);
 
 protected:
-
+  MooseSharedPointer<DisplacedProblem> _displaced_problem;
   Real nodalArea(PenetrationInfo & pinfo);
   Real getPenalty(PenetrationInfo & pinfo);
+  Real getTangentialPenalty(PenetrationInfo & pinfo);
 
   const unsigned int _component;
   ContactModel _model;
@@ -94,23 +98,20 @@ protected:
   const bool _normalize_penalty;
 
   const Real _penalty;
+  Real _penalty_tangential;
   const Real _friction_coefficient;
   const Real _tension_release;
   const Real _capture_tolerance;
   const unsigned int _stick_lock_iterations;
   const Real _stick_unlock_factor;
-  bool _update_contact_set;
+  bool _update_stateful_data;
 
   NumericVector<Number> & _residual_copy;
-//  std::map<Point, PenetrationInfo *> _point_to_info;
-
-  unsigned int _x_var;
-  unsigned int _y_var;
-  unsigned int _z_var;
+  //  std::map<Point, PenetrationInfo *> _point_to_info;
 
   const unsigned int _mesh_dimension;
 
-  VectorValue<unsigned> _vars;
+  std::vector<unsigned int> _vars;
 
   MooseVariable * _nodal_area_var;
   SystemBase & _aux_system;
@@ -122,6 +123,19 @@ protected:
   const bool _connected_slave_nodes_jacobian;
   /// Whether to include coupling terms with non-displacement variables in the Jacobian
   const bool _non_displacement_vars_jacobian;
+
+  /// The tolerance of the penetration for augmented Lagrangian method
+  Real _al_penetration_tolerance;
+  /// The tolerance of the incremental slip for augmented Lagrangian method
+  Real _al_incremental_slip_tolerance;
+  /// The tolerance of the frictional force for augmented Lagrangian method
+  Real _al_frictional_force_tolerance;
+
+  std::set<dof_id_type> _current_contact_state;
+  std::set<dof_id_type> _old_contact_state;
+
+private:
+  const bool _print_contact_nodes;
 };
 
 #endif

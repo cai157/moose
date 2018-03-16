@@ -1,10 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef RICHARDSMASS_H
 #define RICHARDSMASS_H
@@ -12,17 +13,17 @@
 #include "ElementIntegralVariablePostprocessor.h"
 #include "RichardsVarNames.h"
 
-//Forward Declarations
+// Forward Declarations
 class RichardsMass;
 
-template<>
+template <>
 InputParameters validParams<RichardsMass>();
 
 /**
  * This postprocessor computes the fluid mass by integrating the density over the volume
  *
  */
-class RichardsMass: public ElementIntegralVariablePostprocessor
+class RichardsMass : public ElementIntegralVariablePostprocessor
 {
 public:
   RichardsMass(const InputParameters & parameters);
@@ -37,7 +38,7 @@ protected:
   unsigned int _pvar;
 
   /// Mass, or vector of masses in multicomponent situation
-  const MaterialProperty<std::vector<Real> > & _mass;
+  const MaterialProperty<std::vector<Real>> & _mass;
 };
 
 #endif

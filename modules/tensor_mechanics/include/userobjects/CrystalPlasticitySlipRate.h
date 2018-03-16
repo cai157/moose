@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef CRYSTALPLASTICITYSLIPRATE_H
 #define CRYSTALPLASTICITYSLIPRATE_H
 
@@ -12,7 +15,7 @@
 
 class CrystalPlasticitySlipRate;
 
-template<>
+template <>
 InputParameters validParams<CrystalPlasticitySlipRate>();
 
 /**
@@ -22,14 +25,15 @@ InputParameters validParams<CrystalPlasticitySlipRate>();
  */
 class CrystalPlasticitySlipRate : public CrystalPlasticityUOBase
 {
- public:
+public:
   CrystalPlasticitySlipRate(const InputParameters & parameters);
 
-  virtual void calcFlowDirection(unsigned int qp, std::vector<RankTwoTensor> & flow_direction) const = 0;
+  virtual void calcFlowDirection(unsigned int qp,
+                                 std::vector<RankTwoTensor> & flow_direction) const = 0;
   virtual bool calcSlipRate(unsigned qp, Real dt, std::vector<Real> & val) const = 0;
   virtual bool calcSlipRateDerivative(unsigned qp, Real dt, std::vector<Real> & val) const = 0;
 
- protected:
+protected:
   virtual void getSlipSystems();
 
   virtual void readFileFlowRateParams();

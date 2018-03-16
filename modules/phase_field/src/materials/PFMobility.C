@@ -1,17 +1,19 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "PFMobility.h"
 
-// libmesh includes
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<PFMobility>()
+template <>
+InputParameters
+validParams<PFMobility>()
 {
   InputParameters params = validParams<Material>();
   params.addRequiredParam<Real>("mob", "The mobility value");
@@ -19,14 +21,15 @@ InputParameters validParams<PFMobility>()
   return params;
 }
 
-PFMobility::PFMobility(const InputParameters & parameters) :
-    Material(parameters),
+PFMobility::PFMobility(const InputParameters & parameters)
+  : Material(parameters),
     _M(declareProperty<Real>("M")),
     _grad_M(declareProperty<RealGradient>("grad_M")),
     _kappa_c(declareProperty<Real>("kappa_c")),
     _mob(getParam<Real>("mob")),
     _kappa(getParam<Real>("kappa"))
-{}
+{
+}
 
 void
 PFMobility::computeProperties()
@@ -38,4 +41,3 @@ PFMobility::computeProperties()
     _kappa_c[qp] = _kappa;
   }
 }
-

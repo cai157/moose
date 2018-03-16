@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "NodalAreaVarAction.h"
 
 #include "Factory.h"
@@ -12,8 +15,9 @@
 #include "MooseApp.h"
 #include "libmesh/string_to_enum.h"
 
-template<>
-InputParameters validParams<NodalAreaVarAction>()
+template <>
+InputParameters
+validParams<NodalAreaVarAction>()
 {
   MooseEnum orders("CONSTANT FIRST SECOND THIRD FOURTH", "FIRST");
 
@@ -22,10 +26,7 @@ InputParameters validParams<NodalAreaVarAction>()
   return params;
 }
 
-NodalAreaVarAction::NodalAreaVarAction(const InputParameters & params) :
-  Action(params)
-{
-}
+NodalAreaVarAction::NodalAreaVarAction(const InputParameters & params) : Action(params) {}
 
 void
 NodalAreaVarAction::act()
@@ -33,5 +34,4 @@ NodalAreaVarAction::act()
   _problem->addAuxVariable("nodal_area_" + _name,
                            FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("order")),
                                   Utility::string_to_enum<FEFamily>("LAGRANGE")));
-
 }

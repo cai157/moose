@@ -1,28 +1,25 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOOSEVARIABLESCALAR_H
 #define MOOSEVARIABLESCALAR_H
 
 #include "MooseVariableBase.h"
-#include "ParallelUniqueId.h"
 
 // libMesh forward declarations
 namespace libMesh
 {
-template <typename T> class NumericVector;
+template <typename T>
+class NumericVector;
 }
+
+class Assembly;
 
 /**
  * Class for scalar variables (they are different).
@@ -30,7 +27,11 @@ template <typename T> class NumericVector;
 class MooseVariableScalar : public MooseVariableBase
 {
 public:
-  MooseVariableScalar(unsigned int var_num, const FEType & fe_type, SystemBase & sys, Assembly & assembly, Moose::VarKindType var_kind);
+  MooseVariableScalar(unsigned int var_num,
+                      const FEType & fe_type,
+                      SystemBase & sys,
+                      Assembly & assembly,
+                      Moose::VarKindType var_kind);
   virtual ~MooseVariableScalar();
 
   void reinit();
@@ -58,6 +59,9 @@ public:
   void insert(NumericVector<Number> & soln);
 
 protected:
+  /// The assembly
+  Assembly & _assembly;
+
   /// The value of scalar variable
   VariableValue _u;
   /// The old value of scalar variable

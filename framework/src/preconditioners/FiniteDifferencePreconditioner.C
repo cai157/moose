@@ -1,50 +1,75 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "FiniteDifferencePreconditioner.h"
-#include "NonlinearSystem.h"
-#include "FEProblem.h"
 
-// libMesh includes
+// MOOSE includes
+#include "FEProblem.h"
+#include "MooseVariableField.h"
+#include "NonlinearSystem.h"
+
 #include "libmesh/coupling_matrix.h"
 
+registerMooseObjectAliased("MooseApp", FiniteDifferencePreconditioner, "FDP");
 
-template<>
-InputParameters validParams<FiniteDifferencePreconditioner>()
+template <>
+InputParameters
+validParams<FiniteDifferencePreconditioner>()
 {
   InputParameters params = validParams<MoosePreconditioner>();
 
-  params.addParam<std::vector<std::string> >("off_diag_row", "The off diagonal row you want to add into the matrix, it will be associated with an off diagonal column from the same position in off_diag_colum.");
-  params.addParam<std::vector<std::string> >("off_diag_column", "The off diagonal column you want to add into the matrix, it will be associated with an off diagonal row from the same position in off_diag_row.");
-  params.addParam<bool>("full", false, "Set to true if you want the full set of couplings.  Simply for convenience so you don't have to set every off_diag_row and off_diag_column combination.");
-  params.addParam<bool>("implicit_geometric_coupling", false, "Set to true if you want to add entries into the matrix for degrees of freedom that might be coupled by inspection of the geometric search objects.");
+  params.addParam<std::vector<std::string>>(
+      "off_diag_row",
+      "The off diagonal row you want to add into the matrix, it will be associated "
+      "with an off diagonal column from the same position in off_diag_colum.");
+  params.addParam<std::vector<std::string>>("off_diag_column",
+                                            "The off diagonal column you want to add into the "
+                                            "matrix, it will be associated with an off diagonal "
+                                            "row from the same position in off_diag_row.");
+  params.addParam<bool>("full",
+                        false,
+                        "Set to true if you want the full set of couplings.  Simply "
+                        "for convenience so you don't have to set every "
+                        "off_diag_row and off_diag_column combination.");
+  params.addParam<bool>("implicit_geometric_coupling",
+                        false,
+                        "Set to true if you want to add entries into the "
+                        "matrix for degrees of freedom that might be coupled "
+                        "by inspection of the geometric search objects.");
+
+  MooseEnum finite_difference_type("standard coloring", "coloring");
+  params.addParam<MooseEnum>("finite_difference_type",
+                             finite_difference_type,
+                             "standard: standard finite difference"
+                             "coloring: finite difference based on coloring");
 
   return params;
 }
 
-FiniteDifferencePreconditioner::FiniteDifferencePreconditioner(const InputParameters & params) :
-    MoosePreconditioner(params)
+FiniteDifferencePreconditioner::FiniteDifferencePreconditioner(const InputParameters & params)
+  : MoosePreconditioner(params),
+    _finite_difference_type(getParam<MooseEnum>("finite_difference_type"))
 {
   if (n_processors() > 1)
-    mooseError("Can't use the Finite Difference Preconditioner in parallel yet!");
+    mooseWarning("Finite differencing to assemble the Jacobian is MUCH MUCH slower than forming "
+                 "the Jacobian by hand, so don't complain about performance if you use it!");
 
   NonlinearSystemBase & nl = _fe_problem.getNonlinearSystemBase();
   unsigned int n_vars = nl.nVariables();
 
-  CouplingMatrix * cm = new CouplingMatrix(n_vars);
+  std::unique_ptr<CouplingMatrix> cm = libmesh_make_unique<CouplingMatrix>(n_vars);
 
   bool full = getParam<bool>("full");
+
+  // standard finite difference method will add off-diagonal entries
+  if (_finite_difference_type == "standard")
+    full = true;
 
   if (!full)
   {
@@ -53,11 +78,13 @@ FiniteDifferencePreconditioner::FiniteDifferencePreconditioner(const InputParame
       (*cm)(i, i) = 1;
 
     // off-diagonal entries
-    std::vector<std::vector<unsigned int> > off_diag(n_vars);
-    for (unsigned int i = 0; i < getParam<std::vector<std::string> >("off_diag_row").size(); i++)
+    std::vector<std::vector<unsigned int>> off_diag(n_vars);
+    for (unsigned int i = 0; i < getParam<std::vector<std::string>>("off_diag_row").size(); i++)
     {
-      unsigned int row = nl.getVariable(0, getParam<std::vector<std::string> >("off_diag_row")[i]).number();
-      unsigned int column = nl.getVariable(0, getParam<std::vector<std::string> >("off_diag_column")[i]).number();
+      unsigned int row =
+          nl.getVariable(0, getParam<std::vector<std::string>>("off_diag_row")[i]).number();
+      unsigned int column =
+          nl.getVariable(0, getParam<std::vector<std::string>>("off_diag_column")[i]).number();
       (*cm)(row, column) = 1;
     }
 
@@ -67,10 +94,10 @@ FiniteDifferencePreconditioner::FiniteDifferencePreconditioner(const InputParame
   {
     for (unsigned int i = 0; i < n_vars; i++)
       for (unsigned int j = 0; j < n_vars; j++)
-        (*cm)(i,j) = 1;
+        (*cm)(i, j) = 1;
   }
 
-  _fe_problem.setCouplingMatrix(cm);
+  _fe_problem.setCouplingMatrix(std::move(cm));
 
   bool implicit_geometric_coupling = getParam<bool>("implicit_geometric_coupling");
 

@@ -42,7 +42,6 @@
 []
 
 [Executioner]
-  # Preconditioned JFNK (default)
   type = Transient
   num_steps = 3
   dt = 0.1
@@ -92,7 +91,7 @@
   [./point_control]
     type = TestControl
     test_type = 'point'
-    parameter = 'point'
+    parameter = '*/*/point'
     execute_on = 'initial'
   [../]
 []

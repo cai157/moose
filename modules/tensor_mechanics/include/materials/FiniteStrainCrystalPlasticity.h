@@ -1,25 +1,29 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef FINITESTRAINCRYSTALPLASTICITY_H
 #define FINITESTRAINCRYSTALPLASTICITY_H
 
 #include "ComputeStressBase.h"
 
+class FiniteStrainCrystalPlasticity;
+
+template <>
+InputParameters validParams<FiniteStrainCrystalPlasticity>();
+
 /**
  * FiniteStrainCrystalPlasticity uses the multiplicative decomposition of deformation gradient
- * and solves the PK2 stress residual equation at the intermediate configuration to evolve the material state.
+ * and solves the PK2 stress residual equation at the intermediate configuration to evolve the
+ * material state.
  * The internal variables are updated using an interative predictor-corrector algorithm.
  * Backward Euler integration rule is used for the rate equations.
  */
-class FiniteStrainCrystalPlasticity;
-
-template<>
-InputParameters validParams<FiniteStrainCrystalPlasticity>();
-
 class FiniteStrainCrystalPlasticity : public ComputeStressBase
 {
 public:
@@ -55,13 +59,13 @@ protected:
    */
   virtual void getSlipIncrements();
 
-  //Override to modify slip system resistance evolution
+  // Override to modify slip system resistance evolution
   /**
    * This function updates the slip system resistances.
    */
   virtual void update_slip_system_resistance();
 
-  //Old function: Kept to avoid code break in computeQpStress
+  // Old function: Kept to avoid code break in computeQpStress
   /**
    * This function updates the slip system resistances.
    */
@@ -168,12 +172,12 @@ protected:
   /**
    * This function calculate stress residual.
    */
-  virtual void calcResidual( RankTwoTensor & );
+  virtual void calcResidual(RankTwoTensor &);
 
   /**
    * This function calculate jacobian.
    */
-  virtual void calcJacobian( RankFourTensor & );
+  virtual void calcJacobian(RankFourTensor &);
 
   /**
    * This function calculate the tangent moduli for preconditioner.
@@ -293,20 +297,19 @@ protected:
   ///Line search bisection method maximum iteration number
   unsigned int _lsrch_max_iter;
 
-  //Line search method
+  // Line search method
   MooseEnum _lsrch_method;
 
   MaterialProperty<RankTwoTensor> & _fp;
-  MaterialProperty<RankTwoTensor> & _fp_old;
+  const MaterialProperty<RankTwoTensor> & _fp_old;
   MaterialProperty<RankTwoTensor> & _pk2;
-  MaterialProperty<RankTwoTensor> & _pk2_old;
+  const MaterialProperty<RankTwoTensor> & _pk2_old;
   MaterialProperty<RankTwoTensor> & _lag_e;
-  MaterialProperty<RankTwoTensor> & _lag_e_old;
-  MaterialProperty<std::vector<Real> > & _gss;
-  MaterialProperty<std::vector<Real> > & _gss_old;
-  MaterialProperty<std::vector<Real> > & _slip_incr_out;
+  const MaterialProperty<RankTwoTensor> & _lag_e_old;
+  MaterialProperty<std::vector<Real>> & _gss;
+  const MaterialProperty<std::vector<Real>> & _gss_old;
   MaterialProperty<Real> & _acc_slip;
-  MaterialProperty<Real> & _acc_slip_old;
+  const MaterialProperty<Real> & _acc_slip_old;
   MaterialProperty<RankTwoTensor> & _update_rot;
 
   const MaterialProperty<RankTwoTensor> & _deformation_gradient;
@@ -341,7 +344,7 @@ protected:
 
   bool _read_from_slip_sys_file;
 
-  bool _err_tol;///Flag to check whether convergence is achieved
+  bool _err_tol; ///Flag to check whether convergence is achieved
 
   ///Used for substepping; Uniformly divides the increment in deformation gradient
   RankTwoTensor _delta_dfgrd, _dfgrd_tmp_old;
@@ -351,4 +354,4 @@ protected:
   bool _first_step_iter, _last_step_iter, _first_substep;
 };
 
-#endif //FINITESTRAINCRYSTALPLASTICITY_H
+#endif // FINITESTRAINCRYSTALPLASTICITY_H

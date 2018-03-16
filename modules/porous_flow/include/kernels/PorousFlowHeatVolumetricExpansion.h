@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWHEATVOLUMETRICEXPANSION_H
 #define POROUSFLOWHEATVOLUMETRICEXPANSION_H
@@ -14,7 +16,7 @@
 // Forward Declarations
 class PorousFlowHeatVolumetricExpansion;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowHeatVolumetricExpansion>();
 
 /**
@@ -50,10 +52,10 @@ protected:
   const MaterialProperty<Real> & _porosity;
 
   /// d(porosity)/d(porous-flow variable)
-  const MaterialProperty<std::vector<Real> > & _dporosity_dvar;
+  const MaterialProperty<std::vector<Real>> & _dporosity_dvar;
 
   /// d(porosity)/d(grad porous-flow variable)
-  const MaterialProperty<std::vector<RealGradient> > & _dporosity_dgradvar;
+  const MaterialProperty<std::vector<RealGradient>> & _dporosity_dgradvar;
 
   /// the nearest qp to the node
   const MaterialProperty<unsigned int> * const _nearest_qp;
@@ -62,31 +64,31 @@ protected:
   const MaterialProperty<Real> & _rock_energy_nodal;
 
   /// d(nodal rock energy density)/d(PorousFlow variable)
-  const MaterialProperty<std::vector<Real> > & _drock_energy_nodal_dvar;
+  const MaterialProperty<std::vector<Real>> & _drock_energy_nodal_dvar;
 
   /// nodal fluid density
-  const MaterialProperty<std::vector<Real> > * _fluid_density;
+  const MaterialProperty<std::vector<Real>> * const _fluid_density;
 
   /// d(nodal fluid density)/d(porous-flow variable)
-  const MaterialProperty<std::vector<std::vector<Real> > > * _dfluid_density_dvar;
+  const MaterialProperty<std::vector<std::vector<Real>>> * const _dfluid_density_dvar;
 
   /// nodal fluid saturation
-  const MaterialProperty<std::vector<Real> > * _fluid_saturation_nodal;
+  const MaterialProperty<std::vector<Real>> * const _fluid_saturation_nodal;
 
   /// d(nodal fluid saturation)/d(porous-flow variable)
-  const MaterialProperty<std::vector<std::vector<Real> > > * _dfluid_saturation_nodal_dvar;
+  const MaterialProperty<std::vector<std::vector<Real>>> * const _dfluid_saturation_nodal_dvar;
 
   /// internal energy of the phases, evaluated at the nodes
-  const MaterialProperty<std::vector<Real> > * _energy_nodal;
+  const MaterialProperty<std::vector<Real>> * const _energy_nodal;
 
   /// d(internal energy)/d(PorousFlow variable)
-  const MaterialProperty<std::vector<std::vector<Real> > > * _denergy_nodal_dvar;
+  const MaterialProperty<std::vector<std::vector<Real>>> * const _denergy_nodal_dvar;
 
   /// strain rate
   const MaterialProperty<Real> & _strain_rate_qp;
 
   /// d(strain rate)/d(porous-flow variable)
-  const MaterialProperty<std::vector<RealGradient> > & _dstrain_rate_qp_dvar;
+  const MaterialProperty<std::vector<RealGradient>> & _dstrain_rate_qp_dvar;
 
   /**
    * Derivative of energy part of the residual with respect to the Variable
@@ -100,9 +102,10 @@ protected:
    * Derivative of volumetric-strain part of the residual with respect to the Variable
    * with variable number jvar.
    * This is used by both computeQpJacobian and computeQpOffDiagJacobian
-   * @param jvar take the derivative of the volumetric-strain part of the residual wrt this variable number
+   * @param jvar take the derivative of the volumetric-strain part of the residual wrt this variable
+   * number
    */
   Real computedVolQpJac(unsigned int jvar);
 };
 
-#endif //POROUSFLOWHEATVOLUMETRICEXPANSION_H
+#endif // POROUSFLOWHEATVOLUMETRICEXPANSION_H

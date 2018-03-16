@@ -1,33 +1,30 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "AdamsPredictor.h"
 #include "NonlinearSystem.h"
 
-// libMesh includes
 #include "libmesh/numeric_vector.h"
 
-template<>
-InputParameters validParams<AdamsPredictor>()
+registerMooseObject("MooseApp", AdamsPredictor);
+
+template <>
+InputParameters
+validParams<AdamsPredictor>()
 {
   InputParameters params = validParams<Predictor>();
   params.addParam<int>("order", 2, "The maximum reachable order of the Adams-Bashforth Predictor");
   return params;
 }
 
-AdamsPredictor::AdamsPredictor(const InputParameters & parameters) :
-    Predictor(parameters),
+AdamsPredictor::AdamsPredictor(const InputParameters & parameters)
+  : Predictor(parameters),
     _order(getParam<int>("order")),
     _current_old_solution(_nl.addVector("AB2_current_old_solution", true, GHOSTED)),
     _older_solution(_nl.addVector("AB2_older_solution", true, GHOSTED)),
@@ -57,7 +54,7 @@ AdamsPredictor::timestepSetup()
   _current_old_solution.localize(_older_solution);
   // Set current old solution to hold what it says.
   (_nl.solutionOld()).localize(_current_old_solution);
-  //Same thing for dt
+  // Same thing for dt
   _dt_older = _dtstorage;
   _dtstorage = _dt_old;
 }

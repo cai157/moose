@@ -1,12 +1,21 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef HHPFCRFF_H
 #define HHPFCRFF_H
 
 #include "KernelValue.h"
 
-//Forward Declarations
+// Forward Declarations
 class HHPFCRFF;
 
-template<>
+template <>
 InputParameters validParams<HHPFCRFF>();
 
 /**
@@ -22,14 +31,13 @@ protected:
   virtual Real precomputeQpJacobian();
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
-  bool _positive;
-  Real _kernel_sign;
+  const Real _kernel_sign;
 
   const MaterialProperty<Real> & _prop;
 
-  bool _has_coupled_var;
+  const bool _has_coupled_var;
   const VariableValue * _coupled_var;
-  unsigned int _coupled_var_var;
+  const unsigned int _coupled_var_var;
 };
 
-#endif //HHFPCRFF_H
+#endif // HHFPCRFF_H

@@ -1,20 +1,23 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef CONSERVEDLANGEVINNOISE_H
 #define CONSERVEDLANGEVINNOISE_H
 
 #include "LangevinNoise.h"
 #include "ConservedNoiseBase.h"
 
-//Forward Declarations
+// Forward Declarations
 class ConservedLangevinNoise;
 
-template<>
-InputParameters validParams<LangevinNoise>();
+template <>
+InputParameters validParams<ConservedLangevinNoise>();
 
 class ConservedLangevinNoise : public LangevinNoise
 {
@@ -22,11 +25,11 @@ public:
   ConservedLangevinNoise(const InputParameters & parameters);
 
 protected:
-  virtual void residualSetup() {};
+  virtual void residualSetup(){};
   virtual Real computeQpResidual();
 
 private:
   const ConservedNoiseInterface & _noise;
 };
 
-#endif //CONSERVEDLANGEVINNOISE_H
+#endif // CONSERVEDLANGEVINNOISE_H

@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef ELASTICITYTENSOR_H
 #define ELASTICITYTENSOR_H
 
@@ -37,10 +40,9 @@ public:
    */
   void calculate(unsigned int qp);
 
-  virtual ColumnMajorMatrix calculateDerivative(unsigned int qp,unsigned int i);
+  virtual ColumnMajorMatrix calculateDerivative(unsigned int qp, unsigned int i);
 
 protected:
-
   /**
    * Whether or not the matrix is constant for all of time and space.
    */
@@ -60,6 +62,4 @@ protected:
   virtual void calculateEntries(unsigned int qp) = 0;
 };
 
-
-
-#endif //ELASTICITYTENSOR_H
+#endif // ELASTICITYTENSOR_H

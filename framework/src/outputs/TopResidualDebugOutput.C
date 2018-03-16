@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "TopResidualDebugOutput.h"
@@ -22,25 +17,28 @@
 #include "MooseMesh.h"
 #include "NonlinearSystemBase.h"
 
-// libMesh includes
 #include "libmesh/transient_system.h"
 #include "libmesh/fe_type.h"
 
-template<>
-InputParameters validParams<TopResidualDebugOutput>()
+registerMooseObject("MooseApp", TopResidualDebugOutput);
+
+template <>
+InputParameters
+validParams<TopResidualDebugOutput>()
 {
-  InputParameters params = validParams<BasicOutput<PetscOutput> >();
+  InputParameters params = validParams<PetscOutput>();
 
   // Create parameters for allowing debug outputter to be defined within the [Outputs] block
-  params.addParam<unsigned int>("num_residuals", 0, "The number of top residuals to print out (0 = no output)");
+  params.addParam<unsigned int>(
+      "num_residuals", 0, "The number of top residuals to print out (0 = no output)");
 
   // By default operate on both nonlinear and linear residuals
-  params.set<MultiMooseEnum>("execute_on") = "linear nonlinear timestep_end";
+  params.set<ExecFlagEnum>("execute_on", true) = {EXEC_LINEAR, EXEC_NONLINEAR, EXEC_TIMESTEP_END};
   return params;
 }
 
-TopResidualDebugOutput::TopResidualDebugOutput(const InputParameters & parameters) :
-    BasicOutput<PetscOutput>(parameters),
+TopResidualDebugOutput::TopResidualDebugOutput(const InputParameters & parameters)
+  : PetscOutput(parameters),
     _num_residuals(getParam<unsigned int>("num_residuals")),
     _sys(_problem_ptr->getNonlinearSystemBase().system())
 {
@@ -72,7 +70,8 @@ TopResidualDebugOutput::printTopResiduals(const NumericVector<Number> & residual
     dof_id_type nd = node.id();
 
     for (unsigned int var = 0; var < node.n_vars(_sys.number()); ++var)
-      if (node.n_dofs(_sys.number(), var) > 0) // this check filters scalar variables (which are clearly not a dof on every node)
+      if (node.n_dofs(_sys.number(), var) >
+          0) // this check filters scalar variables (which are clearly not a dof on every node)
       {
         dof_id_type dof_idx = node.dof_number(_sys.number(), var, 0);
         vec[j] = TopResidualDebugOutputTopResidualData(var, nd, residual(dof_idx));
@@ -112,8 +111,8 @@ TopResidualDebugOutput::printTopResiduals(const NumericVector<Number> & residual
 
   for (unsigned int i = 0; i < n; ++i)
   {
-    Moose::err << "[DBG][" << processor_id() << "] " << std::setprecision(15) << vec[i]._residual << " '"
-               << _sys.variable_name(vec[i]._var).c_str() << "' ";
+    Moose::err << "[DBG][" << processor_id() << "] " << std::setprecision(15) << vec[i]._residual
+               << " '" << _sys.variable_name(vec[i]._var).c_str() << "' ";
     if (vec[i]._is_scalar)
       Moose::err << "(SCALAR)\n";
     else

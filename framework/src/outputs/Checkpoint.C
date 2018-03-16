@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // C POSIX includes
 #include <sys/stat.h>
@@ -23,19 +18,24 @@
 #include "RestartableData.h"
 #include "MooseMesh.h"
 
-// libMesh includes
 #include "libmesh/checkpoint_io.h"
 #include "libmesh/enum_xdr_mode.h"
 
-template<>
-InputParameters validParams<Checkpoint>()
+registerMooseObject("MooseApp", Checkpoint);
+
+template <>
+InputParameters
+validParams<Checkpoint>()
 {
   // Get the parameters from the base classes
-  InputParameters params = validParams<BasicOutput<FileOutput> >();
+  InputParameters params = validParams<FileOutput>();
 
   // Typical checkpoint options
   params.addParam<unsigned int>("num_files", 2, "Number of the restart files to save");
-  params.addParam<std::string>("suffix", "cp", "This will be appended to the file_base to create the directory name for checkpoint files.");
+  params.addParam<std::string>(
+      "suffix",
+      "cp",
+      "This will be appended to the file_base to create the directory name for checkpoint files.");
 
   // Advanced settings
   params.addParam<bool>("binary", true, "Toggle the output of binary files");
@@ -43,8 +43,8 @@ InputParameters validParams<Checkpoint>()
   return params;
 }
 
-Checkpoint::Checkpoint(const InputParameters & parameters) :
-    BasicOutput<FileOutput>(parameters),
+Checkpoint::Checkpoint(const InputParameters & parameters)
+  : FileOutput(parameters),
     _num_files(getParam<unsigned int>("num_files")),
     _suffix(getParam<std::string>("suffix")),
     _binary(getParam<bool>("binary")),
@@ -62,13 +62,8 @@ Checkpoint::filename()
 {
   // Get the time step with correct zero padding
   std::ostringstream output;
-  output << directory()
-         << "/"
-         << std::setw(_padding)
-         << std::setprecision(0)
-         << std::setfill('0')
-         << std::right
-         << timeStep();
+  output << directory() << "/" << std::setw(_padding) << std::setprecision(0) << std::setfill('0')
+         << std::right << timeStep();
   return output.str();
 }
 
@@ -86,7 +81,7 @@ Checkpoint::output(const ExecFlagType & /*type*/)
 
   // Create the output directory
   std::string cp_dir = directory();
-  mkdir(cp_dir.c_str(),  S_IRWXU | S_IRGRP);
+  mkdir(cp_dir.c_str(), S_IRWXU | S_IRGRP);
 
   // Create the output filename
   std::string current_file = filename();
@@ -95,10 +90,11 @@ Checkpoint::output(const ExecFlagType & /*type*/)
   MeshBase & mesh = _es_ptr->get_mesh();
   CheckpointIO io(mesh, _binary);
 
-  // Set renumbering flag (renumber if adaptivity is on)
-  bool renumber = false;
-  if (_problem_ptr->adaptivity().isOn())
-    renumber = true;
+  // Set libHilbert renumbering flag to false.  We don't support
+  // N-to-M restarts regardless, and if we're *never* going to do
+  // N-to-M restarts then libHilbert is just unnecessary computation
+  // and communication.
+  const bool renumber = false;
 
   // Create checkpoint file structure
   CheckpointFileNames current_file_struct;
@@ -117,11 +113,15 @@ Checkpoint::output(const ExecFlagType & /*type*/)
   // Write the checkpoint file
   io.write(current_file_struct.checkpoint);
 
-  // Write the xdr
-  _es_ptr->write(current_file_struct.system, ENCODE, EquationSystems::WRITE_DATA | EquationSystems::WRITE_ADDITIONAL_DATA | EquationSystems::WRITE_PARALLEL_FILES, renumber);
+  // Write the system data, using ENCODE vs WRITE based on xdr vs xda
+  _es_ptr->write(current_file_struct.system,
+                 EquationSystems::WRITE_DATA | EquationSystems::WRITE_ADDITIONAL_DATA |
+                     EquationSystems::WRITE_PARALLEL_FILES,
+                 renumber);
 
   // Write the restartable data
-  _restartable_data_io.writeRestartableData(current_file_struct.restart, _restartable_data, _recoverable_data);
+  _restartable_data_io.writeRestartableData(
+      current_file_struct.restart, _restartable_data, _recoverable_data);
 
   // Remove old checkpoint files
   updateCheckpointFiles(current_file_struct);
@@ -133,8 +133,6 @@ Checkpoint::output(const ExecFlagType & /*type*/)
 void
 Checkpoint::updateCheckpointFiles(CheckpointFileNames file_struct)
 {
-  int ret = 0;          // return code for file operations
-
   // Update the list of stored files
   _file_names.push_back(file_struct);
 
@@ -151,36 +149,33 @@ Checkpoint::updateCheckpointFiles(CheckpointFileNames file_struct)
     processor_id_type proc_id = processor_id();
 
     // Delete checkpoint files (_mesh.cpr)
-    if (_parallel_mesh)
+    if (proc_id == 0)
     {
       std::ostringstream oss;
-      oss << delete_files.checkpoint << '-' << n_processors() << '-' << proc_id;
-      ret = remove(oss.str().c_str());
-      if (ret != 0)
-        mooseWarning("Error during the deletion of file '" << oss.str().c_str() << "': " << ret);
+      oss << delete_files.checkpoint;
+      std::string file_name = oss.str();
+      CheckpointIO::cleanup(file_name, _parallel_mesh ? comm().size() : 1);
     }
-    else if (proc_id == 0)
-    {
-      ret = remove(delete_files.checkpoint.c_str());
-      if (ret != 0)
-        mooseWarning("Error during the deletion of file '" << delete_files.checkpoint << "': " << ret);
 
-      // Delete the system files (xdr and xdr.0000, ...)
-      ret = remove(delete_files.system.c_str());
+    // Delete the system files (xdr and xdr.0000, ...)
+    if (proc_id == 0)
+    {
+      std::ostringstream oss;
+      oss << delete_files.system;
+      std::string file_name = oss.str();
+      int ret = remove(file_name.c_str());
       if (ret != 0)
-        mooseWarning("Error during the deletion of file '" << delete_files.system << "': " << ret);
+        mooseWarning("Error during the deletion of file '", file_name, "': ", std::strerror(ret));
     }
 
     {
       std::ostringstream oss;
-      oss << delete_files.system
-          << "." << std::setw(4)
-          << std::setprecision(0)
-          << std::setfill('0')
+      oss << delete_files.system << "." << std::setw(4) << std::setprecision(0) << std::setfill('0')
           << proc_id;
-      ret = remove(oss.str().c_str());
+      std::string file_name = oss.str();
+      int ret = remove(file_name.c_str());
       if (ret != 0)
-        mooseWarning("Error during the deletion of file '" << oss.str().c_str() << "': " << ret);
+        mooseWarning("Error during the deletion of file '", file_name, "': ", std::strerror(ret));
     }
 
     unsigned int n_threads = libMesh::n_threads();
@@ -193,9 +188,10 @@ Checkpoint::updateCheckpointFiles(CheckpointFileNames file_struct)
         oss << delete_files.restart << "-" << proc_id;
         if (n_threads > 1)
           oss << "-" << tid;
-        ret = remove(oss.str().c_str());
+        std::string file_name = oss.str();
+        int ret = remove(file_name.c_str());
         if (ret != 0)
-          mooseWarning("Error during the deletion of file '" << oss.str().c_str() << "': " << ret);
+          mooseWarning("Error during the deletion of file '", file_name, "': ", std::strerror(ret));
       }
     }
   }

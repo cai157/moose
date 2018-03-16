@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "XDA.h"
@@ -18,11 +13,15 @@
 #include "FEProblem.h"
 #include "MooseMesh.h"
 
-template<>
-InputParameters validParams<XDA>()
+registerMooseObject("MooseApp", XDA);
+registerMooseObjectAliased("MooseApp", XDA, "XDR");
+
+template <>
+InputParameters
+validParams<XDA>()
 {
   // Get the base class parameters
-  InputParameters params = validParams<BasicOutput<OversampleOutput> >();
+  InputParameters params = validParams<OversampleOutput>();
 
   // Add description for the XDA class
   params.addClassDescription("Object for outputting data in the XDA/XDR format");
@@ -35,9 +34,8 @@ InputParameters validParams<XDA>()
   return params;
 }
 
-XDA::XDA(const InputParameters & parameters) :
-    BasicOutput<OversampleOutput> (parameters),
-    _binary(getParam<bool>("_binary"))
+XDA::XDA(const InputParameters & parameters)
+  : OversampleOutput(parameters), _binary(getParam<bool>("_binary"))
 {
 }
 
@@ -53,14 +51,15 @@ XDA::output(const ExecFlagType & /*type*/)
     mooseError("Unacceptable filename, you must include an extension (.xda or .xdr).");
 
   // Insert the mesh suffix
-  mesh_name.insert(mesh_name.size()-4, "_mesh");
+  mesh_name.insert(mesh_name.size() - 4, "_mesh");
 
   // Set the binary flag
   XdrMODE mode = _binary ? ENCODE : WRITE;
 
   // Write the files
   _mesh_ptr->getMesh().write(mesh_name);
-  _es_ptr->write(es_name, mode, EquationSystems::WRITE_DATA | EquationSystems::WRITE_ADDITIONAL_DATA);
+  _es_ptr->write(
+      es_name, mode, EquationSystems::WRITE_DATA | EquationSystems::WRITE_ADDITIONAL_DATA);
   _file_num++;
 }
 
@@ -69,13 +68,8 @@ XDA::filename()
 {
   // Append the padded time step to the file base
   std::ostringstream output;
-  output << _file_base
-         << "_"
-         << std::setw(_padding)
-         << std::setprecision(0)
-         << std::setfill('0')
-         << std::right
-         << _file_num;
+  output << _file_base << "_" << std::setw(_padding) << std::setprecision(0) << std::setfill('0')
+         << std::right << _file_num;
 
   if (_binary)
     output << ".xdr";

@@ -1,30 +1,32 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "BoundingValueNodalDamper.h"
 
-template<>
-InputParameters validParams<BoundingValueNodalDamper>()
+registerMooseObject("MooseApp", BoundingValueNodalDamper);
+
+template <>
+InputParameters
+validParams<BoundingValueNodalDamper>()
 {
   InputParameters params = validParams<NodalDamper>();
-  params.addParam<Real>("max_value", std::numeric_limits<Real>::max(), "The maximum permissible iterative value for the variable.");
-  params.addParam<Real>("min_value", std::numeric_limits<Real>::lowest(), "The minimum permissible iterative value for the variable.");
+  params.addParam<Real>("max_value",
+                        std::numeric_limits<Real>::max(),
+                        "The maximum permissible iterative value for the variable.");
+  params.addParam<Real>("min_value",
+                        std::numeric_limits<Real>::lowest(),
+                        "The minimum permissible iterative value for the variable.");
   return params;
 }
 
-BoundingValueNodalDamper::BoundingValueNodalDamper(const InputParameters & parameters) :
-    NodalDamper(parameters),
+BoundingValueNodalDamper::BoundingValueNodalDamper(const InputParameters & parameters)
+  : NodalDamper(parameters),
     _max_value(parameters.get<Real>("max_value")),
     _min_value(parameters.get<Real>("min_value"))
 {
@@ -35,7 +37,7 @@ BoundingValueNodalDamper::BoundingValueNodalDamper(const InputParameters & param
 Real
 BoundingValueNodalDamper::computeQpDamping()
 {
-  //Note that _u_increment contains the negative of the increment
+  // Note that _u_increment contains the negative of the increment
   if (_u[_qp] < _min_value)
     return 1.0 - (_u[_qp] - _min_value) / -_u_increment[_qp];
   else if (_u[_qp] > _max_value)

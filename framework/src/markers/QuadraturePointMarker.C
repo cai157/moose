@@ -1,49 +1,56 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "QuadraturePointMarker.h"
 #include "FEProblem.h"
 #include "MooseEnum.h"
 #include "Assembly.h"
 
-// libMesh includes
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<QuadraturePointMarker>()
+template <>
+InputParameters
+validParams<QuadraturePointMarker>()
 {
   InputParameters params = validParams<Marker>();
   params += validParams<MaterialPropertyInterface>();
   MooseEnum third_state("DONT_MARK=-1 COARSEN DO_NOTHING REFINE", "DONT_MARK");
-  params.addParam<MooseEnum>("third_state", third_state, "The Marker state to apply to values falling in-between the coarsen and refine thresholds.");
-  params.addParam<Real>("coarsen", "The threshold value for coarsening.  Elements with variable values beyond this will be marked for coarsening.");
-  params.addParam<Real>("refine", "The threshold value for refinement.  Elements with variable values beyond this will be marked for refinement.");
-  params.addParam<bool>("invert", false, "If this is true then values _below_ 'refine' will be refined and _above_ 'coarsen' will be coarsened.");
-  params.addRequiredParam<VariableName>("variable", "The values of this variable will be compared to 'refine' and 'coarsen' to see what should be done with the element");
+  params.addParam<MooseEnum>(
+      "third_state",
+      third_state,
+      "The Marker state to apply to values falling in-between the coarsen and refine thresholds.");
+  params.addParam<Real>("coarsen",
+                        "The threshold value for coarsening.  Elements with variable "
+                        "values beyond this will be marked for coarsening.");
+  params.addParam<Real>("refine",
+                        "The threshold value for refinement.  Elements with variable "
+                        "values beyond this will be marked for refinement.");
+  params.addParam<bool>("invert",
+                        false,
+                        "If this is true then values _below_ 'refine' will be "
+                        "refined and _above_ 'coarsen' will be coarsened.");
+  params.addRequiredParam<VariableName>("variable",
+                                        "The values of this variable will be compared "
+                                        "to 'refine' and 'coarsen' to see what should "
+                                        "be done with the element");
   return params;
 }
 
-
-QuadraturePointMarker::QuadraturePointMarker(const InputParameters & parameters) :
-    Marker(parameters),
+QuadraturePointMarker::QuadraturePointMarker(const InputParameters & parameters)
+  : Marker(parameters),
     Coupleable(this, false),
-    MaterialPropertyInterface(this),
+    MaterialPropertyInterface(this, blockIDs()),
     _qrule(_assembly.qRule()),
     _q_point(_assembly.qPoints()),
     _qp(0)
 {
-  const std::vector<MooseVariable *> & coupled_vars = getCoupledMooseVars();
+  const std::vector<MooseVariableFE *> & coupled_vars = getCoupledMooseVars();
   for (const auto & var : coupled_vars)
     addMooseVariableDependency(var);
 }

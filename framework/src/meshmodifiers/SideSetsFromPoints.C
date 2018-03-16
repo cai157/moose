@@ -1,42 +1,43 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SideSetsFromPoints.h"
 #include "Parser.h"
 #include "InputParameters.h"
 #include "MooseMesh.h"
 
-// libMesh includes
 #include "libmesh/mesh_generation.h"
 #include "libmesh/mesh.h"
 #include "libmesh/string_to_enum.h"
 #include "libmesh/quadrature_gauss.h"
 #include "libmesh/point_locator_base.h"
 
-template<>
-InputParameters validParams<SideSetsFromPoints>()
+registerMooseObject("MooseApp", SideSetsFromPoints);
+
+template <>
+InputParameters
+validParams<SideSetsFromPoints>()
 {
   InputParameters params = validParams<AddSideSetsBase>();
-  params.addRequiredParam<std::vector<BoundaryName> >("new_boundary", "The name of the boundary to create");
-  params.addRequiredParam<std::vector<Point> >("points", "A list of points from which to start painting sidesets");
+  params.addClassDescription("Adds a new sideset starting at the specified point containing all "
+                             "connected element faces with the same normal.");
+  params.addRequiredParam<std::vector<BoundaryName>>("new_boundary",
+                                                     "The name of the boundary to create");
+  params.addRequiredParam<std::vector<Point>>(
+      "points", "A list of points from which to start painting sidesets");
   return params;
 }
 
-SideSetsFromPoints::SideSetsFromPoints(const InputParameters & parameters) :
-    AddSideSetsBase(parameters),
-    _boundary_names(getParam<std::vector<BoundaryName> >("new_boundary")),
-    _points(getParam<std::vector<Point> >("points"))
+SideSetsFromPoints::SideSetsFromPoints(const InputParameters & parameters)
+  : AddSideSetsBase(parameters),
+    _boundary_names(getParam<std::vector<BoundaryName>>("new_boundary")),
+    _points(getParam<std::vector<Point>>("points"))
 {
   if (_points.size() != _boundary_names.size())
     mooseError("point list and boundary list are not the same length");
@@ -66,7 +67,7 @@ SideSetsFromPoints::modify()
 
     for (unsigned int side = 0; side < elem->n_sides(); ++side)
     {
-      if (elem->neighbor(side))
+      if (elem->neighbor_ptr(side))
         continue;
 
       // See if this point is on this side

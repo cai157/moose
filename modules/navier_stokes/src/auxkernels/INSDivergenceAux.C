@@ -1,18 +1,22 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "INSDivergenceAux.h"
 #include "MooseMesh.h"
 
-template<>
-InputParameters validParams<INSDivergenceAux>()
+template <>
+InputParameters
+validParams<INSDivergenceAux>()
 {
   InputParameters params = validParams<AuxKernel>();
 
+  params.addClassDescription("Computes h_min / |u|.");
   // Coupled variables
   params.addRequiredCoupledVar("u", "x-velocity");
   params.addCoupledVar("v", "y-velocity"); // only required in 2D and 3D
@@ -21,8 +25,8 @@ InputParameters validParams<INSDivergenceAux>()
   return params;
 }
 
-INSDivergenceAux::INSDivergenceAux(const InputParameters & parameters) :
-    AuxKernel(parameters),
+INSDivergenceAux::INSDivergenceAux(const InputParameters & parameters)
+  : AuxKernel(parameters),
     _grad_u_vel(coupledGradient("u")),
     _grad_v_vel(_mesh.dimension() >= 2 ? coupledGradient("v") : _grad_zero),
     _grad_w_vel(_mesh.dimension() == 3 ? coupledGradient("w") : _grad_zero)

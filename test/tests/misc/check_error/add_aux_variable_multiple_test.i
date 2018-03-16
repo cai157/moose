@@ -11,6 +11,8 @@
 
 [AuxVariables]
   [./q]
+    family = MONOMIAL
+    order = third
   [../]
 []
 
@@ -39,7 +41,6 @@
 [Executioner]
   type = Steady
 
-  # Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 []
 

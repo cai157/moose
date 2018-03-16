@@ -1,23 +1,29 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "PorousFlowPermeabilityConst.h"
 
-template<>
-InputParameters validParams<PorousFlowPermeabilityConst>()
+template <>
+InputParameters
+validParams<PorousFlowPermeabilityConst>()
 {
   InputParameters params = validParams<PorousFlowPermeabilityBase>();
-  params.addRequiredParam<RealTensorValue>("permeability", "The permeability tensor (usually in m^2), which is assumed constant for this material");
-  params.addClassDescription("This Material calculates the permeability tensor assuming it is constant");
+  params.addRequiredParam<RealTensorValue>(
+      "permeability",
+      "The permeability tensor (usually in m^2), which is assumed constant for this material");
+  params.addClassDescription(
+      "This Material calculates the permeability tensor assuming it is constant");
   return params;
 }
 
-PorousFlowPermeabilityConst::PorousFlowPermeabilityConst(const InputParameters & parameters) :
-    PorousFlowPermeabilityBase(parameters),
+PorousFlowPermeabilityConst::PorousFlowPermeabilityConst(const InputParameters & parameters)
+  : PorousFlowPermeabilityBase(parameters),
     _input_permeability(getParam<RealTensorValue>("permeability"))
 {
 }

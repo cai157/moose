@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef ACINTERFACEKOBAYASHI2_H
 #define ACINTERFACEKOBAYASHI2_H
 
@@ -13,7 +16,7 @@
 
 class ACInterfaceKobayashi2;
 
-template<>
+template <>
 InputParameters validParams<ACInterfaceKobayashi2>();
 
 /**
@@ -22,13 +25,12 @@ InputParameters validParams<ACInterfaceKobayashi2>();
  * doi:10.1016/0167-2789(93)90120-P
  * This kernel implements the third term on the right side of eq. (3) of the paper.
  */
-class ACInterfaceKobayashi2 : public DerivativeMaterialInterface<JvarMapKernelInterface<KernelGrad> >
+class ACInterfaceKobayashi2 : public DerivativeMaterialInterface<JvarMapKernelInterface<KernelGrad>>
 {
 public:
- ACInterfaceKobayashi2(const InputParameters & parameters);
+  ACInterfaceKobayashi2(const InputParameters & parameters);
 
 protected:
-
   virtual RealGradient precomputeQpResidual();
   virtual RealGradient precomputeQpJacobian();
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
@@ -44,6 +46,6 @@ protected:
   /// Mobility derivative w.r.t. other coupled variables
   std::vector<const MaterialProperty<Real> *> _dLdarg;
   std::vector<const MaterialProperty<Real> *> _depsdarg;
- };
+};
 
-#endif //ACINTERFACEKOBAYASHI2_H
+#endif // ACINTERFACEKOBAYASHI2_H

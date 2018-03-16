@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef MATREACTION_H
 #define MATREACTION_H
 
@@ -14,14 +17,14 @@
 // Forward Declaration
 class MatReaction;
 
-template<>
+template <>
 InputParameters validParams<MatReaction>();
 
 /**
  * This kernel adds to the residual a contribution of \f$ -L*v \f$ where \f$ L \f$ is a material
  * property and \f$ v \f$ is a variable (nonlinear or coupled).
  */
-class MatReaction : public DerivativeMaterialInterface<JvarMapKernelInterface<Kernel> >
+class MatReaction : public DerivativeMaterialInterface<JvarMapKernelInterface<Kernel>>
 {
 public:
   MatReaction(const InputParameters & parameters);
@@ -64,4 +67,4 @@ protected:
   std::vector<const MaterialProperty<Real> *> _dLdarg;
 };
 
-#endif //MATREACTION_H
+#endif // MATREACTION_H

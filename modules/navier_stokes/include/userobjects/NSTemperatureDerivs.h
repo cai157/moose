@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef NSTEMPERATUREDERIVS_H
 #define NSTEMPERATUREDERIVS_H
 
@@ -37,15 +40,14 @@ private:
   T & _data;
 };
 
-
 template <class T>
-NSTemperatureDerivs<T>::NSTemperatureDerivs(T & x) :
-    _data(x)
+NSTemperatureDerivs<T>::NSTemperatureDerivs(T & x) : _data(x)
 {
 }
 
 template <class T>
-Real NSTemperatureDerivs<T>::get_grad(unsigned i)
+Real
+NSTemperatureDerivs<T>::get_grad(unsigned i)
 {
   // Convenience vars
   const Real U0 = _data._rho[_data._qp];
@@ -55,7 +57,7 @@ Real NSTemperatureDerivs<T>::get_grad(unsigned i)
   const Real U4 = _data._rho_E[_data._qp];
 
   const Real rho2 = U0 * U0;
-  const Real mom2 = U1*U1 + U2*U2 + U3*U3;
+  const Real mom2 = U1 * U1 + U2 * U2 + U3 * U3;
   const Real tmp = -1.0 / rho2 / _data._fp.cv();
 
   switch (i)
@@ -82,7 +84,8 @@ Real NSTemperatureDerivs<T>::get_grad(unsigned i)
 }
 
 template <class T>
-Real NSTemperatureDerivs<T>::get_hess(unsigned i, unsigned j)
+Real
+NSTemperatureDerivs<T>::get_hess(unsigned i, unsigned j)
 {
   // Convenience vars
   const Real U0 = _data._rho[_data._qp];
@@ -94,7 +97,7 @@ Real NSTemperatureDerivs<T>::get_hess(unsigned i, unsigned j)
   const Real rho2 = U0 * U0;
   const Real rho3 = rho2 * U0;
   const Real rho4 = rho3 * U0;
-  const Real mom2 = U1*U1 + U2*U2 + U3*U3;
+  const Real mom2 = U1 * U1 + U2 * U2 + U3 * U3;
 
   const Real cv = _data._fp.cv();
   const Real tmp = -1.0 / rho2 / cv;

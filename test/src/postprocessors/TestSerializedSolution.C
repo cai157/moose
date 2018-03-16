@@ -1,21 +1,23 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "TestSerializedSolution.h"
 
-template<>
-InputParameters validParams<TestSerializedSolution>()
+#include "SystemBase.h"
+
+#include "libmesh/numeric_vector.h"
+
+registerMooseObject("MooseTestApp", TestSerializedSolution);
+
+template <>
+InputParameters
+validParams<TestSerializedSolution>()
 {
   InputParameters params = validParams<GeneralPostprocessor>();
 
@@ -26,17 +28,20 @@ InputParameters validParams<TestSerializedSolution>()
   return params;
 }
 
-TestSerializedSolution::TestSerializedSolution(const InputParameters & parameters) :
-    GeneralPostprocessor(parameters),
-    _test_sys(getParam<MooseEnum>("system") == 0 ? (SystemBase &)_fe_problem.getNonlinearSystemBase() : (SystemBase &)_fe_problem.getAuxiliarySystem()),
+TestSerializedSolution::TestSerializedSolution(const InputParameters & parameters)
+  : GeneralPostprocessor(parameters),
+    _test_sys(getParam<MooseEnum>("system") == 0
+                  ? (SystemBase &)_fe_problem.getNonlinearSystemBase()
+                  : (SystemBase &)_fe_problem.getAuxiliarySystem()),
     _serialized_solution(_test_sys.serializedSolution()),
     _sum(0)
-{}
+{
+}
 
 void
 TestSerializedSolution::initialize()
 {
-  _sum=0;
+  _sum = 0;
 }
 
 void
@@ -46,7 +51,7 @@ TestSerializedSolution::execute()
     mooseError("Serialized solution vector doesn't contain the correct number of entries!");
 
   // Sum up all entries in the solution vector
-  for (unsigned int i=0; i<_serialized_solution.size(); i++)
+  for (unsigned int i = 0; i < _serialized_solution.size(); i++)
     _sum += _serialized_solution(i);
 
   // Verify that every processor got the same value

@@ -9,7 +9,7 @@
 [Functions]
   [./ic_u]
     type = PiecewiseConstant
-    axis = 0
+    axis = x
     direction = right
     xy_data = '0.1 0.0
                0.6 1.0
@@ -41,7 +41,7 @@
 [DGKernels]
   [./dg_advection_u]
     implicit = false
-    type = DGAdvection
+    type = DGConvection
     variable = u
     velocity = '1 0 0'
   [../]

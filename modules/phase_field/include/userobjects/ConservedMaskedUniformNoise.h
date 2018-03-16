@@ -1,14 +1,23 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 #ifndef CONSERVEDMASKEDUNIFORMNOISE_H
 #define CONSERVEDMASKEDUNIFORMNOISE_H
 
 #include "ConservedMaskedNoiseBase.h"
 #include "ConservedUniformNoiseVeneer.h"
 
-//Forward delcarations
+// Forward delcarations
 class ConservedMaskedUniformNoise;
 
-template<>
-InputParameters validParams<ConservedMaskedUniformNoise>()
+template <>
+InputParameters
+validParams<ConservedMaskedUniformNoise>()
 {
   return validParams<ConservedMaskedNoiseBase>();
 }
@@ -23,8 +32,10 @@ InputParameters validParams<ConservedMaskedUniformNoise>()
 class ConservedMaskedUniformNoise : public ConservedUniformNoiseVeneer<ConservedMaskedNoiseBase>
 {
 public:
-  ConservedMaskedUniformNoise(const InputParameters & parameters) :
-      ConservedUniformNoiseVeneer<ConservedMaskedNoiseBase>(parameters) {}
+  ConservedMaskedUniformNoise(const InputParameters & parameters)
+    : ConservedUniformNoiseVeneer<ConservedMaskedNoiseBase>(parameters)
+  {
+  }
 };
 
-#endif //CONSERVEDMASKEDUNIFORMNOISE_H
+#endif // CONSERVEDMASKEDUNIFORMNOISE_H

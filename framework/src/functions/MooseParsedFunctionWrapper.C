@@ -1,38 +1,33 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "MooseParsedFunctionWrapper.h"
+
 #include "FEProblem.h"
+#include "MooseVariableScalar.h"
 
 MooseParsedFunctionWrapper::MooseParsedFunctionWrapper(FEProblemBase & feproblem,
-                                                     const std::string & function_str,
-                                                     const std::vector<std::string> & vars,
-                                                     const std::vector<std::string> & vals,
-                                                     const THREAD_ID tid) :
-    _feproblem(feproblem),
-    _function_str(function_str),
-    _vars(vars),
-    _vals_input(vals),
-    _tid(tid)
+                                                       const std::string & function_str,
+                                                       const std::vector<std::string> & vars,
+                                                       const std::vector<std::string> & vals,
+                                                       const THREAD_ID tid)
+  : _feproblem(feproblem), _function_str(function_str), _vars(vars), _vals_input(vals), _tid(tid)
 {
   // Initialize (prepares Postprocessor values)
   initialize();
 
   // Create the libMesh::ParsedFunction
-  _function_ptr = new ParsedFunction<Real,RealGradient>(_function_str, &_vars, &_vals);
+  _function_ptr =
+      libmesh_make_unique<ParsedFunction<Real, RealGradient>>(_function_str, &_vars, &_vals);
 
-  // Loop through the Postprocessor and Scalar variables and point the libMesh::ParsedFunction to the PostprocessorValue
+  // Loop through the Postprocessor and Scalar variables and point the libMesh::ParsedFunction to
+  // the PostprocessorValue
   for (const auto & index : _pp_index)
     _addr.push_back(&_function_ptr->getVarAddress(_vars[index]));
 
@@ -40,12 +35,9 @@ MooseParsedFunctionWrapper::MooseParsedFunctionWrapper(FEProblemBase & feproblem
     _addr.push_back(&_function_ptr->getVarAddress(_vars[index]));
 }
 
-MooseParsedFunctionWrapper::~MooseParsedFunctionWrapper()
-{
-  delete _function_ptr;
-}
+MooseParsedFunctionWrapper::~MooseParsedFunctionWrapper() {}
 
-template<>
+template <>
 Real
 MooseParsedFunctionWrapper::evaluate(Real t, const Point & p)
 {
@@ -56,7 +48,7 @@ MooseParsedFunctionWrapper::evaluate(Real t, const Point & p)
   return (*_function_ptr)(p, t);
 }
 
-template<>
+template <>
 DenseVector<Real>
 MooseParsedFunctionWrapper::evaluate(Real t, const Point & p)
 {
@@ -66,20 +58,22 @@ MooseParsedFunctionWrapper::evaluate(Real t, const Point & p)
   return output;
 }
 
-template<>
+template <>
 RealVectorValue
 MooseParsedFunctionWrapper::evaluate(Real t, const Point & p)
 {
-  DenseVector<Real> output = evaluate<DenseVector<Real> >(t, p);
+  DenseVector<Real> output = evaluate<DenseVector<Real>>(t, p);
 
   return RealVectorValue(output(0)
 #if LIBMESH_DIM > 1
-                      , output(1)
+                             ,
+                         output(1)
 #endif
 #if LIBMESH_DIM > 2
-                      , output(2)
+                             ,
+                         output(2)
 #endif
-    );
+                             );
 }
 
 RealGradient
@@ -106,10 +100,11 @@ void
 MooseParsedFunctionWrapper::initialize()
 {
   // Loop through all the input values supplied by the users.
-  for (unsigned int i=0; i < _vals_input.size(); ++i)
+  for (unsigned int i = 0; i < _vals_input.size(); ++i)
   {
     Real tmp; // desired type
-    std::istringstream ss(_vals_input[i]); // istringstream object for conversion from std::string to Real
+    std::istringstream ss(
+        _vals_input[i]); // istringstream object for conversion from std::string to Real
 
     // Case when a Postprocessor is found by the name given in the input values
     if (_feproblem.hasPostprocessor(_vals_input[i]))
@@ -146,9 +141,13 @@ MooseParsedFunctionWrapper::initialize()
     // Case when a Real is supplied, convert std::string to Real
     else
     {
-      // Use istringstream to convert, if it fails produce an error, otherwise add the variable to the _vals variable
-      if (!(ss >> tmp))
-        mooseError("The input value '" << _vals_input[i] << "' was not understood, it must be a Real Number, Postprocessor, or Scalar Variable");
+      // Use istringstream to convert, if it fails produce an error, otherwise add the variable to
+      // the _vals variable
+      if (!(ss >> tmp) || !ss.eof())
+        mooseError(
+            "The input value '",
+            _vals_input[i],
+            "' was not understood, it must be a Real Number, Postprocessor, or Scalar Variable");
       else
         _vals.push_back(tmp);
     }

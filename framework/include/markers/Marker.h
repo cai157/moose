@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MARKER_H
 #define MARKER_H
@@ -32,24 +27,26 @@ class SubProblem;
 class FEProblemBase;
 class SystemBase;
 class Assembly;
-class MooseVariable;
+template <typename>
+class MooseVariableField;
+typedef MooseVariableField<Real> MooseVariable;
+typedef MooseVariableField<VectorValue<Real>> VectorMooseVariable;
 class Marker;
 class Adaptivity;
 
-template<>
+template <>
 InputParameters validParams<Marker>();
 
-class Marker :
-  public MooseObject,
-  public BlockRestrictable,
-  public SetupInterface,
-  public DependencyResolverInterface,
-  public MooseVariableDependencyInterface,
-  public UserObjectInterface,
-  public Restartable,
-  public PostprocessorInterface,
-  public MeshChangedInterface,
-  public OutputInterface
+class Marker : public MooseObject,
+               public BlockRestrictable,
+               public SetupInterface,
+               public DependencyResolverInterface,
+               public MooseVariableDependencyInterface,
+               public UserObjectInterface,
+               public Restartable,
+               public PostprocessorInterface,
+               public MeshChangedInterface,
+               public OutputInterface
 {
 public:
   Marker(const InputParameters & parameters);
@@ -66,7 +63,8 @@ public:
 
   /**
    * Helper function for getting the valid refinement flag states a marker can use as a MooseEnum.
-   * @return A MooseEnum that is filled with the valid states.  These are perfectly transferable to libMesh Elem::RefinementStates.
+   * @return A MooseEnum that is filled with the valid states.  These are perfectly transferable to
+   * libMesh Elem::RefinementStates.
    */
   static MooseEnum markerStates();
 
@@ -84,7 +82,6 @@ public:
   virtual const std::set<std::string> & getSuppliedItems() override;
 
 protected:
-
   virtual MarkerValue computeElementMarker() = 0;
 
   /**
@@ -97,13 +94,14 @@ protected:
   ErrorVector & getErrorVector(std::string indicator);
 
   /**
-   * This is used to get the values of _other_ Markers.  This is useful for making combo-markers that
+   * This is used to get the values of _other_ Markers.  This is useful for making combo-markers
+   * that
    * take multiple markers and combine them to make one.
    *
    * @param name The name of the _other_ Marker that you want to have access to.
    * @return A _reference_ that will hold the value of the marker in it's 0 (zeroth) position.
    */
-  const VariableValue & getMarkerValue(std::string name);
+  const MooseArray<Real> & getMarkerValue(std::string name);
 
   SubProblem & _subproblem;
   FEProblemBase & _fe_problem;
@@ -114,8 +112,8 @@ protected:
 
   Assembly & _assembly;
 
-  MooseVariable & _field_var;
-  const Elem * & _current_elem;
+  MooseVariableFE & _field_var;
+  const Elem *& _current_elem;
 
   MooseMesh & _mesh;
 

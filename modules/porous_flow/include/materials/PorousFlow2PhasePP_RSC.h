@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOW2PHASEPP_RSC_H
 #define POROUSFLOW2PHASEPP_RSC_H
@@ -11,10 +13,10 @@
 #include "PorousFlow2PhasePP.h"
 #include "PorousFlowRogersStallybrassClements.h"
 
-//Forward Declarations
+// Forward Declarations
 class PorousFlow2PhasePP_RSC;
 
-template<>
+template <>
 InputParameters validParams<PorousFlow2PhasePP_RSC>();
 
 /**
@@ -47,4 +49,4 @@ protected:
   const Real _scale;
 };
 
-#endif //POROUSFLOW2PHASEPP_RSC_H
+#endif // POROUSFLOW2PHASEPP_RSC_H

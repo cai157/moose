@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef INSPROJECTION_H
 #define INSPROJECTION_H
 
@@ -12,7 +15,7 @@
 // Forward Declarations
 class INSProjection;
 
-template<>
+template <>
 InputParameters validParams<INSProjection>();
 
 /**
@@ -27,7 +30,7 @@ class INSProjection : public Kernel
 public:
   INSProjection(const InputParameters & parameters);
 
-  virtual ~INSProjection(){}
+  virtual ~INSProjection() {}
 
 protected:
   virtual Real computeQpResidual();
@@ -48,12 +51,11 @@ protected:
   unsigned _a3_var_number;
   unsigned _p_var_number;
 
-  // Material properties
-  Real _rho;
-
   // Parameters
   unsigned _component;
-};
 
+  // Material properties
+  const MaterialProperty<Real> & _rho;
+};
 
 #endif // INSPROJECTION_H

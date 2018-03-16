@@ -1,40 +1,37 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ConvectionDiffusionAction.h"
 #include "Factory.h"
 #include "Parser.h"
 #include "FEProblem.h"
 
-template<>
-InputParameters validParams<ConvectionDiffusionAction>()
+registerMooseAction("ExampleApp", ConvectionDiffusionAction, "add_kernel");
+
+template <>
+InputParameters
+validParams<ConvectionDiffusionAction>()
 {
   InputParameters params = validParams<Action>();
-  params.addRequiredParam<std::vector<NonlinearVariableName> >("variables", "The names of the convection and diffusion variables in the simulation");
+  params.addRequiredParam<std::vector<NonlinearVariableName>>(
+      "variables", "The names of the convection and diffusion variables in the simulation");
 
   return params;
 }
 
-ConvectionDiffusionAction::ConvectionDiffusionAction(InputParameters params) :
-    Action(params)
-{
-}
+ConvectionDiffusionAction::ConvectionDiffusionAction(InputParameters params) : Action(params) {}
 
 void
 ConvectionDiffusionAction::act()
 {
-  std::vector<NonlinearVariableName> variables = getParam<std::vector<NonlinearVariableName> > ("variables");
+  std::vector<NonlinearVariableName> variables =
+      getParam<std::vector<NonlinearVariableName>>("variables");
   std::vector<VariableName> vel_vec_variable;
 
   /**
@@ -57,9 +54,9 @@ ConvectionDiffusionAction::act()
   {
     InputParameters params = _factory.getValidParams("ExampleConvection");
     params.set<NonlinearVariableName>("variable") = variables[0];
-//    params.addCoupledVar("some_variable", "The gradient of this var");
+    //    params.addCoupledVar("some_variable", "The gradient of this var");
     vel_vec_variable.push_back(variables[1]);
-    params.set<std::vector<VariableName> >("some_variable") = vel_vec_variable;
+    params.set<std::vector<VariableName>>("some_variable") = vel_vec_variable;
     _problem->addKernel("ExampleConvection", "conv", params);
   }
 
@@ -70,4 +67,3 @@ ConvectionDiffusionAction::act()
     _problem->addKernel("Diffusion", "diff_v", params);
   }
 }
-

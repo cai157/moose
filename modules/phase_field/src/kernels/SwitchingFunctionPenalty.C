@@ -1,25 +1,31 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "SwitchingFunctionPenalty.h"
 
-template<>
-InputParameters validParams<SwitchingFunctionPenalty>()
+template <>
+InputParameters
+validParams<SwitchingFunctionPenalty>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addClassDescription("Penalty kernel to constrain the sum of all switching functions in a multiphase system.");
-  params.addParam<std::vector<MaterialPropertyName> >("h_names", "Switching Function Materials that provide h(eta_i)");
+  params.addClassDescription(
+      "Penalty kernel to constrain the sum of all switching functions in a multiphase system.");
+  params.addParam<std::vector<MaterialPropertyName>>(
+      "h_names", "Switching Function Materials that provide h(eta_i)");
   params.addRequiredCoupledVar("etas", "eta_i order parameters, one for each h");
   params.addParam<Real>("penalty", 1.0, "Penalty scaling factor");
   return params;
 }
 
-SwitchingFunctionPenalty::SwitchingFunctionPenalty(const InputParameters & parameters) :
-    DerivativeMaterialInterface<Kernel>(parameters),
-    _h_names(getParam<std::vector<MaterialPropertyName> >("h_names")),
+SwitchingFunctionPenalty::SwitchingFunctionPenalty(const InputParameters & parameters)
+  : DerivativeMaterialInterface<Kernel>(parameters),
+    _h_names(getParam<std::vector<MaterialPropertyName>>("h_names")),
     _num_h(_h_names.size()),
     _h(_num_h),
     _dh(_num_h),
@@ -30,13 +36,13 @@ SwitchingFunctionPenalty::SwitchingFunctionPenalty(const InputParameters & param
 {
   // parameter check. We need exactly one eta per h
   if (_num_h != coupledComponents("etas"))
-    mooseError("Need to pass in as many h_names as etas in SwitchingFunctionPenalty kernel " << name());
+    paramError("h_names", "Need to pass in as many h_names as etas");
 
   // fetch switching functions (for the residual) and h derivatives (for the Jacobian)
   for (unsigned int i = 0; i < _num_h; ++i)
   {
     _h[i] = &getMaterialPropertyByName<Real>(_h_names[i]);
-    _dh[i]  = &getMaterialPropertyDerivative<Real>(_h_names[i], getVar("etas", i)->name());
+    _dh[i] = &getMaterialPropertyDerivative<Real>(_h_names[i], getVar("etas", i)->name());
 
     // generate the lookup table from j_var -> eta index
     unsigned int num = coupled("etas", i);
@@ -49,7 +55,7 @@ SwitchingFunctionPenalty::SwitchingFunctionPenalty(const InputParameters & param
   }
 
   if (_a < 0)
-    mooseError("Kernel variable must be listed in etas for SwitchingFunctionPenalty kernel " << name());
+    paramError("etas", "Kernel variable must be listed in etas");
 
   _d2h = &getMaterialPropertyDerivative<Real>(_h_names[_a], _var.name(), _var.name());
 }
@@ -71,7 +77,8 @@ SwitchingFunctionPenalty::computeQpJacobian()
   for (unsigned int i = 0; i < _num_h; ++i)
     g += (*_h[i])[_qp];
 
-  return _test[_i][_qp] * _penalty * _phi[_j][_qp] * 2.0 * ((*_dh[_a])[_qp] * (*_dh[_a])[_qp] + g * (*_d2h)[_qp]);
+  return _test[_i][_qp] * _penalty * _phi[_j][_qp] * 2.0 *
+         ((*_dh[_a])[_qp] * (*_dh[_a])[_qp] + g * (*_d2h)[_qp]);
 }
 
 Real
@@ -84,4 +91,3 @@ SwitchingFunctionPenalty::computeQpOffDiagJacobian(unsigned int j_var)
   else
     return 0.0;
 }
-

@@ -1,23 +1,17 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#ifndef COMPUTERESIDUALTHREAD_H
-#define COMPUTERESIDUALTHREAD_H
+#ifndef COMPUTEMATERIALOBJECTTHREAD_H
+#define COMPUTEMATERIALOBJECTTHREAD_H
 
 #include "ThreadedElementLoop.h"
 
-// libMesh includes
 #include "libmesh/elem_range.h"
 
 // Forward declarations
@@ -31,9 +25,9 @@ class ComputeMaterialsObjectThread : public ThreadedElementLoop<ConstElemRange>
 {
 public:
   ComputeMaterialsObjectThread(FEProblemBase & fe_problem,
-                               std::vector<MooseSharedPointer<MaterialData> > & material_data,
-                               std::vector<MooseSharedPointer<MaterialData> > & bnd_material_data,
-                               std::vector<MooseSharedPointer<MaterialData> > & neighbor_material_data,
+                               std::vector<std::shared_ptr<MaterialData>> & material_data,
+                               std::vector<std::shared_ptr<MaterialData>> & bnd_material_data,
+                               std::vector<std::shared_ptr<MaterialData>> & neighbor_material_data,
                                MaterialPropertyStorage & material_props,
                                MaterialPropertyStorage & bnd_material_props,
                                std::vector<Assembly *> & assembly);
@@ -54,9 +48,9 @@ public:
 protected:
   FEProblemBase & _fe_problem;
   NonlinearSystemBase & _nl;
-  std::vector<MooseSharedPointer<MaterialData> > & _material_data;
-  std::vector<MooseSharedPointer<MaterialData> > & _bnd_material_data;
-  std::vector<MooseSharedPointer<MaterialData> > & _neighbor_material_data;
+  std::vector<std::shared_ptr<MaterialData>> & _material_data;
+  std::vector<std::shared_ptr<MaterialData>> & _bnd_material_data;
+  std::vector<std::shared_ptr<MaterialData>> & _neighbor_material_data;
   MaterialPropertyStorage & _material_props;
   MaterialPropertyStorage & _bnd_material_props;
 
@@ -71,4 +65,4 @@ protected:
   const bool _has_bnd_stateful_props;
 };
 
-#endif //COMPUTERESIDUALTHREAD_H
+#endif // COMPUTERESIDUALTHREAD_H

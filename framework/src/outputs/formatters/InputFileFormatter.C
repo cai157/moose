@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "InputFileFormatter.h"
 #include "MooseUtils.h"
@@ -19,16 +14,14 @@
 #include <vector>
 #include <iomanip>
 
-InputFileFormatter::InputFileFormatter(bool dump_mode) :
-    SyntaxTree(),
-    _dump_mode(dump_mode)
-{
-}
+InputFileFormatter::InputFileFormatter(bool dump_mode) : SyntaxTree(), _dump_mode(dump_mode) {}
 
 std::string
-InputFileFormatter::printBlockOpen(const std::string &name, short depth, const std::string & /*doc*/) const
+InputFileFormatter::printBlockOpen(const std::string & name,
+                                   short depth,
+                                   const std::string & /*doc*/)
 {
-  std::string indent(depth*2, ' ');
+  std::string indent(depth * 2, ' ');
   std::string opening_string;
 
   if (depth)
@@ -40,7 +33,7 @@ InputFileFormatter::printBlockOpen(const std::string &name, short depth, const s
 std::string
 InputFileFormatter::printBlockClose(const std::string & /*name*/, short depth) const
 {
-  std::string indent(depth*2, ' ');
+  std::string indent(depth * 2, ' ');
   std::string closing_string;
 
   if (depth)
@@ -59,11 +52,11 @@ InputFileFormatter::printParams(const std::string & /*prefix*/,
 {
   std::stringstream oss;
 
-  std::string quotes   = "";
-  std::string spacing  = "";
-  std::string forward  = "";
+  std::string quotes = "";
+  std::string spacing = "";
+  std::string forward = "";
   std::string backdots = "";
-  int         offset   = 30;
+  int offset = 30;
   for (int i = 0; i < depth; ++i)
   {
     spacing += "  ";
@@ -93,12 +86,15 @@ InputFileFormatter::printParams(const std::string & /*prefix*/,
     }
 
     // See if we match the search string
-    if (wildCardMatch(iter.first, search_string) || wildCardMatch(value, search_string))
+    if (MooseUtils::wildCardMatch(iter.first, search_string) ||
+        MooseUtils::wildCardMatch(value, search_string))
     {
-      // Don't print active if it is the default all, that means it's not in the input file - unless of course we are in dump mode
+      // Don't print active if it is the default all, that means it's not in the input file - unless
+      // of course we are in dump mode
       if (!_dump_mode && iter.first == "active")
       {
-        libMesh::Parameters::Parameter<std::vector<std::string> > * val = dynamic_cast<libMesh::Parameters::Parameter<std::vector<std::string> >*>(iter.second);
+        libMesh::Parameters::Parameter<std::vector<std::string>> * val =
+            dynamic_cast<libMesh::Parameters::Parameter<std::vector<std::string>> *>(iter.second);
         const std::vector<std::string> & active = val->get();
         if (val != NULL && active.size() == 1 && active[0] == "__all__")
           continue;
@@ -110,7 +106,8 @@ InputFileFormatter::printParams(const std::string & /*prefix*/,
       // Don't print type if it is blank
       if (iter.first == "type")
       {
-        libMesh::Parameters::Parameter<std::string> * val = dynamic_cast<libMesh::Parameters::Parameter<std::string>*>(iter.second);
+        libMesh::Parameters::Parameter<std::string> * val =
+            dynamic_cast<libMesh::Parameters::Parameter<std::string> *>(iter.second);
         const std::string & active = val->get();
         if (val != NULL && active == "")
           continue;
@@ -153,14 +150,16 @@ InputFileFormatter::printParams(const std::string & /*prefix*/,
             MooseUtils::escape(element);
 
           oss << std::right << std::setw(l_offset) << "# " << elements[0];
-          for (unsigned int i=1; i<elements.size(); ++i)
-            oss << " ...\n" << "  " << std::setw(63) << "# " << elements[i];
+          for (unsigned int i = 1; i < elements.size(); ++i)
+            oss << " ...\n"
+                << "  " << std::setw(63) << "# " << elements[i];
         }
         const std::string group = params.getGroupName(iter.first);
         if (!group.empty())
         {
           if (MooseUtils::trim(doc) != "")
-            oss << " ...\n" << "  " << std::setw(70) << "# Group: " << group;
+            oss << " ...\n"
+                << "  " << std::setw(70) << "# Group: " << group;
           else
             oss << std::right << std::setw(l_offset) << "# Group: " << group;
         }

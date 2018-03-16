@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef LSTABLEDIRK3_H
 #define LSTABLEDIRK3_H
@@ -19,7 +14,7 @@
 
 class LStableDirk3;
 
-template<>
+template <>
 InputParameters validParams<LStableDirk3>();
 
 /**
@@ -32,7 +27,8 @@ InputParameters validParams<LStableDirk3>();
  * ------------------------------------------------------------------------------------------
  *             | (1/4)*(-6*gamma**2 + 16*gamma - 1)  (1/4)*(6*gamma**2 - 20*gamma + 5)  gamma
  *
- * where gamma = -sqrt(2)*cos(atan(sqrt(2)/4)/3)/2 + sqrt(6)*sin(atan(sqrt(2)/4)/3)/2 + 1  ~ .435866521508459
+ * where gamma = -sqrt(2)*cos(atan(sqrt(2)/4)/3)/2 + sqrt(6)*sin(atan(sqrt(2)/4)/3)/2 + 1  ~
+ * .435866521508459
  *
  * The stability function for this method is:
  * R(z) = (1.90128552647780115*z**2 + 2.46079651620301599*z - 8) /
@@ -51,12 +47,11 @@ class LStableDirk3 : public TimeIntegrator
 {
 public:
   LStableDirk3(const InputParameters & parameters);
-  virtual ~LStableDirk3();
 
-  virtual int order() { return 3; }
-  virtual void computeTimeDerivatives();
-  virtual void solve();
-  virtual void postStep(NumericVector<Number> & residual);
+  virtual int order() override { return 3; }
+  virtual void computeTimeDerivatives() override;
+  virtual void solve() override;
+  virtual void postResidual(NumericVector<Number> & residual) override;
 
 protected:
   // Indicates the current stage.
@@ -79,6 +74,5 @@ protected:
   // 1.2084966491760099, -0.6443631706844688, 0.4358665215084589
   Real _a[3][3];
 };
-
 
 #endif /* LSTABLEDIRK3_H */

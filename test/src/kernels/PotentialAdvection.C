@@ -1,29 +1,32 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "PotentialAdvection.h"
 
-template<>
-InputParameters validParams<PotentialAdvection>()
+registerMooseObject("MooseTestApp", PotentialAdvection);
+
+template <>
+InputParameters
+validParams<PotentialAdvection>()
 {
   InputParameters params = validParams<Kernel>();
   params.addCoupledVar("potential", "The potential responsible for charge advection");
-  params.addParam<bool>("positive_charge", true, "Whether the potential is advecting positive charges. Should be set to false if charges are negative.");
+  params.addParam<bool>("positive_charge",
+                        true,
+                        "Whether the potential is advecting positive "
+                        "charges. Should be set to false if charges are "
+                        "negative.");
   return params;
 }
 
-PotentialAdvection::PotentialAdvection(const InputParameters & parameters) :
-    Kernel(parameters),
+PotentialAdvection::PotentialAdvection(const InputParameters & parameters)
+  : Kernel(parameters),
     _potential_id(coupled("potential")),
     _sgn(getParam<bool>("positive_charge") ? 1 : -1),
     _default(_fe_problem.getMaxQps(), RealGradient(-1.)),
@@ -31,10 +34,7 @@ PotentialAdvection::PotentialAdvection(const InputParameters & parameters) :
 {
 }
 
-PotentialAdvection::~PotentialAdvection()
-{
-  _default.release();
-}
+PotentialAdvection::~PotentialAdvection() { _default.release(); }
 
 Real
 PotentialAdvection::computeQpResidual()
@@ -52,7 +52,7 @@ Real
 PotentialAdvection::computeQpOffDiagJacobian(unsigned int jvar)
 {
   if (jvar == _potential_id)
-      return -_grad_test[_i][_qp] * _sgn * -_grad_phi[_j][_qp] * _u[_qp];
+    return -_grad_test[_i][_qp] * _sgn * -_grad_phi[_j][_qp] * _u[_qp];
   else
     return 0;
 }

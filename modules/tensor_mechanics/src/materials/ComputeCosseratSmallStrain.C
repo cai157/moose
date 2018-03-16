@@ -1,17 +1,22 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ComputeCosseratSmallStrain.h"
 
-// libmesh includes
+// MOOSE includes
+#include "PermutationTensor.h"
+
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<ComputeCosseratSmallStrain>()
+template <>
+InputParameters
+validParams<ComputeCosseratSmallStrain>()
 {
   InputParameters params = validParams<ComputeStrainBase>();
   params.addClassDescription("Compute small Cosserat strains");
@@ -19,15 +24,16 @@ InputParameters validParams<ComputeCosseratSmallStrain>()
   return params;
 }
 
-ComputeCosseratSmallStrain::ComputeCosseratSmallStrain(const InputParameters & parameters) :
-    ComputeStrainBase(parameters),
+ComputeCosseratSmallStrain::ComputeCosseratSmallStrain(const InputParameters & parameters)
+  : ComputeStrainBase(parameters),
     _curvature(declareProperty<RankTwoTensor>("curvature")),
     _nrots(coupledComponents("Cosserat_rotations")),
     _wc(_nrots),
     _grad_wc(_nrots)
 {
   if (_nrots != 3)
-    mooseError("ComputeCosseratSmallStrain: This Material is only defined for 3-dimensional simulations so 3 Cosserat rotation variables are needed");
+    mooseError("ComputeCosseratSmallStrain: This Material is only defined for 3-dimensional "
+               "simulations so 3 Cosserat rotation variables are needed");
   for (unsigned i = 0; i < _nrots; ++i)
   {
     _wc[i] = &coupledValue("Cosserat_rotations", i);

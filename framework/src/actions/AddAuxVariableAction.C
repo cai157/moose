@@ -1,22 +1,20 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "AddAuxVariableAction.h"
 #include "FEProblem.h"
 
-template<>
-InputParameters validParams<AddAuxVariableAction>()
+registerMooseAction("MooseApp", AddAuxVariableAction, "add_aux_variable");
+
+template <>
+InputParameters
+validParams<AddAuxVariableAction>()
 {
   MooseEnum families(AddAuxVariableAction::getAuxVariableFamilies());
   MooseEnum orders(AddAuxVariableAction::getAuxVariableOrders());
@@ -24,18 +22,20 @@ InputParameters validParams<AddAuxVariableAction>()
   InputParameters params = validParams<Action>();
   params += validParams<OutputInterface>();
 
-  params.addParam<MooseEnum>("family", families, "Specifies the family of FE shape functions to use for this variable");
-  params.addParam<MooseEnum>("order", orders,  "Specifies the order of the FE shape function to use for this variable (additional orders not listed are allowed)");
+  params.addParam<MooseEnum>(
+      "family", families, "Specifies the family of FE shape functions to use for this variable");
+  params.addParam<MooseEnum>("order",
+                             orders,
+                             "Specifies the order of the FE shape function to use "
+                             "for this variable (additional orders not listed are "
+                             "allowed)");
   params.addParam<Real>("initial_condition", "Specifies the initial condition for this variable");
-  params.addParam<std::vector<SubdomainName> >("block", "The block id where this variable lives");
+  params.addParam<std::vector<SubdomainName>>("block", "The block id where this variable lives");
 
   return params;
 }
 
-AddAuxVariableAction::AddAuxVariableAction(InputParameters params) :
-    AddVariableAction(params)
-{
-}
+AddAuxVariableAction::AddAuxVariableAction(InputParameters params) : AddVariableAction(params) {}
 
 MooseEnum
 AddAuxVariableAction::getAuxVariableFamilies()
@@ -46,7 +46,8 @@ AddAuxVariableAction::getAuxVariableFamilies()
 MooseEnum
 AddAuxVariableAction::getAuxVariableOrders()
 {
-  return MooseEnum("CONSTANT FIRST SECOND THIRD FOURTH FIFTH SIXTH SEVENTH EIGHTH NINTH", "FIRST", true);
+  return MooseEnum(
+      "CONSTANT FIRST SECOND THIRD FOURTH FIFTH SIXTH SEVENTH EIGHTH NINTH", "FIRST", true);
 }
 
 void
@@ -67,7 +68,10 @@ AddAuxVariableAction::act()
   {
     // Check that the order is valid (CONSTANT, FIRST, or SECOND)
     if (_fe_type.order > 9)
-      mooseError("Non-scalar AuxVariables must be CONSTANT, FIRST, SECOND, THIRD, FOURTH, FIFTH, SIXTH, SEVENTH, EIGHTH or NINTH order (" << _fe_type.order << " supplied)");
+      mooseError("Non-scalar AuxVariables must be CONSTANT, FIRST, SECOND, THIRD, FOURTH, FIFTH, "
+                 "SIXTH, SEVENTH, EIGHTH or NINTH order (",
+                 _fe_type.order,
+                 " supplied)");
 
     if (blocks.empty())
       _problem->addAuxVariable(var_name, _fe_type);

@@ -1,28 +1,23 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef GRIDDEDDATA_H
 #define GRIDDEDDATA_H
 
-// C++ includes
-#include <vector>
-#include <fstream>
-#include <sstream>
-#include <string>
-
-// libMesh includes
 #include "libmesh/libmesh_common.h" // Real
+
+using namespace libMesh;
+
+// C++ includes
+#include <iosfwd>
+#include <string>
+#include <vector>
 
 /**
  * Container for holding a function defined on a grid of arbitrary dimension.
@@ -68,7 +63,7 @@ public:
    * Yields the grid.
    * grid[i] = a vector of Reals that define the i_th axis of the grid.
    */
-  void getGrid(std::vector<std::vector<Real> > & grid);
+  void getGrid(std::vector<std::vector<Real>> & grid);
 
   /**
    * Yields the values defined at the grid points.
@@ -77,20 +72,26 @@ public:
 
   /**
    * Evaluates the function at a given grid point.
-   * For instance, evaluateFcn({n,m}) = value at (grid[0][n], grid[1][m]), for a function defined on a 2D grid
+   * For instance, evaluateFcn({n,m}) = value at (grid[0][n], grid[1][m]), for a function defined on
+   * a 2D grid
    */
   Real evaluateFcn(const std::vector<unsigned int> & ijk);
 
 private:
   unsigned int _dim;
   std::vector<int> _axes;
-  std::vector<std::vector<Real> > _grid;
+  std::vector<std::vector<Real>> _grid;
   std::vector<Real> _fcn;
   std::vector<unsigned int> _step;
 
-  void parse(unsigned int & dim, std::vector<int> & axes, std::vector<std::vector<Real> > & grid, std::vector<Real> & f, std::vector<unsigned int> & step, std::string file_name);
+  void parse(unsigned int & dim,
+             std::vector<int> & axes,
+             std::vector<std::vector<Real>> & grid,
+             std::vector<Real> & f,
+             std::vector<unsigned int> & step,
+             std::string file_name);
   bool getSignificantLine(std::ifstream & file_stream, std::string & line);
   void splitToRealVec(const std::string & input_string, std::vector<Real> & output_vec);
 };
 
-#endif //GRIDDEDDATA_H
+#endif // GRIDDEDDATA_H

@@ -1,33 +1,35 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "RandomAux.h"
 #include "RandomElementalUserObject.h"
 
-template<>
-InputParameters validParams<RandomAux>()
+registerMooseObject("MooseTestApp", RandomAux);
+
+template <>
+InputParameters
+validParams<RandomAux>()
 {
   InputParameters params = validParams<AuxKernel>();
-  params.addParam<UserObjectName>("random_user_object", "The RandomElementalUserObject to optionally use");
-  params.addParam<bool>("generate_integers", false, "Tells this object to use ints instead of Reals");
+  params.addParam<UserObjectName>("random_user_object",
+                                  "The RandomElementalUserObject to optionally use");
+  params.addParam<bool>(
+      "generate_integers", false, "Tells this object to use ints instead of Reals");
 
   return params;
 }
 
-RandomAux::RandomAux(const InputParameters & params) :
-    AuxKernel(params),
-    _random_uo(params.isParamValid("random_user_object") ? &getUserObject<RandomElementalUserObject>("random_user_object") : NULL),
+RandomAux::RandomAux(const InputParameters & params)
+  : AuxKernel(params),
+    _random_uo(params.isParamValid("random_user_object")
+                   ? &getUserObject<RandomElementalUserObject>("random_user_object")
+                   : NULL),
     _generate_ints(getParam<bool>("generate_integers"))
 {
   /**
@@ -45,9 +47,7 @@ RandomAux::RandomAux(const InputParameters & params) :
   }
 }
 
-RandomAux::~RandomAux()
-{
-}
+RandomAux::~RandomAux() {}
 
 Real
 RandomAux::computeValue()

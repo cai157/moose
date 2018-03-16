@@ -1,34 +1,36 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef TENSORMECHANICSPLASTICSIMPLETESTER_H
 #define TENSORMECHANICSPLASTICSIMPLETESTER_H
 
 #include "TensorMechanicsPlasticModel.h"
 
-
 class TensorMechanicsPlasticSimpleTester;
 
-
-template<>
+template <>
 InputParameters validParams<TensorMechanicsPlasticSimpleTester>();
 
 /**
  * Class that can be used for testing multi-surface plasticity models.
- * Yield function = a*stress_yy + b*stress_zz + c*stress_xx + d*(stress_xy + stress_yx)/2 + e*(stress_xz + stress_zx)/2 + f*(stress_yz + stress_zy)/2 - strength
+ * Yield function = a*stress_yy + b*stress_zz + c*stress_xx + d*(stress_xy + stress_yx)/2 +
+ * e*(stress_xz + stress_zx)/2 + f*(stress_yz + stress_zy)/2 - strength
  * No hardening/softening.  Associative.
  */
 class TensorMechanicsPlasticSimpleTester : public TensorMechanicsPlasticModel
 {
- public:
+public:
   TensorMechanicsPlasticSimpleTester(const InputParameters & parameters);
 
   virtual std::string modelName() const override;
 
- protected:
+protected:
   Real yieldFunction(const RankTwoTensor & stress, Real intnl) const override;
 
   RankTwoTensor dyieldFunction_dstress(const RankTwoTensor & stress, Real intnl) const override;

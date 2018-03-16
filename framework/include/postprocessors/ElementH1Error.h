@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef ELEMENTH1ERROR_H
 #define ELEMENTH1ERROR_H
@@ -20,7 +15,7 @@
 // Forward Declarations
 class ElementH1Error;
 
-template<>
+template <>
 InputParameters validParams<ElementH1Error>();
 
 /**
@@ -30,11 +25,10 @@ InputParameters validParams<ElementH1Error>();
  *
  * ||u-f||_{H^1} = sqrt( \int ( |u-f|^2 + |grad u - grad f|^2 ) dx )
  */
-class ElementH1Error :
-  public ElementW1pError
+class ElementH1Error : public ElementW1pError
 {
 public:
   ElementH1Error(const InputParameters & parameters);
 };
 
-#endif //ELEMENTH1ERROR_H
+#endif // ELEMENTH1ERROR_H

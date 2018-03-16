@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef VOLUMENODE_H
 #define VOLUMENODE_H
@@ -12,25 +14,22 @@ class EFANode;
 
 class EFAVolumeNode
 {
-  public:
-
-  EFAVolumeNode(EFANode* node, double xi, double eta, double zeta);
+public:
+  EFAVolumeNode(EFANode * node, double xi, double eta, double zeta);
   EFAVolumeNode(const EFAVolumeNode & other_vol_node);
 
   ~EFAVolumeNode();
 
-  private:
-
+private:
   EFANode * _node;
   double _xi;
   double _eta;
   double _zeta;
 
-  public:
-
+public:
   EFANode * getNode();
   double getParametricCoordinates(unsigned int i);
-  void switchNode(EFANode* new_old, EFANode* old_node);
+  void switchNode(EFANode * new_old, EFANode * old_node);
 };
 
 #endif

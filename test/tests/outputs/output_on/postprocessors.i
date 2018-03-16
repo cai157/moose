@@ -39,14 +39,13 @@
 
 [Postprocessors]
   [./sum]
-    type = RunTime
-    time_type = 'alive'
+    type = PerformanceData
+    event = 'alive'
     execute_on = 'initial nonlinear timestep_end'
   [../]
 []
 
 [Executioner]
-  # Preconditioned JFNK (default)
   type = Transient
   num_steps = 2
   dt = 0.1

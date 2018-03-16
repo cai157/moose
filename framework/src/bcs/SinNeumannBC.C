@@ -1,35 +1,38 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SinNeumannBC.h"
 
-template<>
-InputParameters validParams<SinNeumannBC>()
+registerMooseObject("MooseApp", SinNeumannBC);
+
+template <>
+InputParameters
+validParams<SinNeumannBC>()
 {
   InputParameters params = validParams<IntegratedBC>();
   params.addParam<Real>("initial", 0.0, "The initial value of the gradient on the boundary");
-  params.addParam<Real>("final", 0.0,   "The final value of the gradient on the boundary");
+  params.addParam<Real>("final", 0.0, "The final value of the gradient on the boundary");
   params.addParam<Real>("duration", 0.0, "The duration of the ramp");
+  params.addClassDescription("Imposes a time-varying flux boundary condition $\\frac{\\partial "
+                             "u}{\\partial n}=g(t)$, where $g(t)$ "
+                             "varies from an given initial value at time $t=0$ to a given final "
+                             "value over a specified duration.");
   return params;
 }
 
-SinNeumannBC::SinNeumannBC(const InputParameters & parameters) :
-    IntegratedBC(parameters),
+SinNeumannBC::SinNeumannBC(const InputParameters & parameters)
+  : IntegratedBC(parameters),
     _initial(getParam<Real>("initial")),
     _final(getParam<Real>("final")),
     _duration(getParam<Real>("duration"))
-{}
+{
+}
 
 Real
 SinNeumannBC::computeQpResidual()
@@ -37,11 +40,9 @@ SinNeumannBC::computeQpResidual()
   Real value;
 
   if (_t < _duration)
-    value = _initial + (_final-_initial) * std::sin((0.5/_duration) * libMesh::pi * _t);
+    value = _initial + (_final - _initial) * std::sin((0.5 / _duration) * libMesh::pi * _t);
   else
     value = _final;
 
-  return -_test[_i][_qp]*value;
+  return -_test[_i][_qp] * value;
 }
-
-

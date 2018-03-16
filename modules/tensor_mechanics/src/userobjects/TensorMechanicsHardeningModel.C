@@ -1,46 +1,46 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 //  Hardening model base class.
 //
 #include "TensorMechanicsHardeningModel.h"
 
-template<>
-InputParameters validParams<TensorMechanicsHardeningModel>()
+template <>
+InputParameters
+validParams<TensorMechanicsHardeningModel>()
 {
   InputParameters params = validParams<GeneralUserObject>();
-  params.addClassDescription("Hardening Model base class.  Override the virtual functions in your class");
+  params.addClassDescription(
+      "Hardening Model base class.  Override the virtual functions in your class");
   return params;
 }
 
-TensorMechanicsHardeningModel::TensorMechanicsHardeningModel(const InputParameters & parameters) :
-  GeneralUserObject(parameters)
+TensorMechanicsHardeningModel::TensorMechanicsHardeningModel(const InputParameters & parameters)
+  : GeneralUserObject(parameters)
 {
 }
 
 void
 TensorMechanicsHardeningModel::initialize()
-{}
+{
+}
 
 void
 TensorMechanicsHardeningModel::execute()
-{}
-
-void TensorMechanicsHardeningModel::finalize()
-{}
-
-Real
-TensorMechanicsHardeningModel::value(Real /*intnl*/) const
 {
-  return 1.0;
 }
 
-Real
-TensorMechanicsHardeningModel::derivative(Real /*intnl*/) const
+void
+TensorMechanicsHardeningModel::finalize()
 {
-  return 0.0;
 }
 
+Real TensorMechanicsHardeningModel::value(Real /*intnl*/) const { return 1.0; }
+
+Real TensorMechanicsHardeningModel::derivative(Real /*intnl*/) const { return 0.0; }

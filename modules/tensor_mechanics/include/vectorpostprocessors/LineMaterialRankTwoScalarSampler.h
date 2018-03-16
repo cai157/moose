@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef LINEMATERIALRANKTWOSCALARSAMPLER_H
 #define LINEMATERIALRANKTWOSCALARSAMPLER_H
@@ -11,10 +13,10 @@
 #include "LineMaterialSamplerBase.h"
 #include "RankTwoTensor.h"
 
-//Forward Declarations
+// Forward Declarations
 class LineMaterialRankTwoScalarSampler;
 
-template<>
+template <>
 InputParameters validParams<LineMaterialRankTwoScalarSampler>();
 
 /**
@@ -22,8 +24,7 @@ InputParameters validParams<LineMaterialRankTwoScalarSampler>();
  * in all elements that are intersected by a user-defined line.  It provides
  * access to the full set of options for reducing the RankTwoTensor to a scalar
  */
-class LineMaterialRankTwoScalarSampler :
-  public LineMaterialSamplerBase<RankTwoTensor>
+class LineMaterialRankTwoScalarSampler : public LineMaterialSamplerBase<RankTwoTensor>
 {
 public:
   /**
@@ -51,4 +52,4 @@ protected:
   Point _direction;
 };
 
-#endif //LINEMATERIALRANKTWOSCALARSAMPLER_H
+#endif // LINEMATERIALRANKTWOSCALARSAMPLER_H

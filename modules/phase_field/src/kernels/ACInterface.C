@@ -1,25 +1,33 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "ACInterface.h"
 
-template<>
-InputParameters validParams<ACInterface>()
+template <>
+InputParameters
+validParams<ACInterface>()
 {
   InputParameters params = validParams<Kernel>();
   params.addClassDescription("Gradient energy Allen-Cahn Kernel");
   params.addParam<MaterialPropertyName>("mob_name", "L", "The mobility used with the kernel");
   params.addParam<MaterialPropertyName>("kappa_name", "kappa_op", "The kappa used with the kernel");
   params.addCoupledVar("args", "Vector of nonlinear variable arguments this object depends on");
-  params.addParam<bool>("variable_L", true, "The mobility is a function of any MOOSE variable (if this is set to false L must be constant over the entire domain!)");
+  params.addParam<bool>("variable_L",
+                        true,
+                        "The mobility is a function of any MOOSE variable (if "
+                        "this is set to false L must be constant over the "
+                        "entire domain!)");
   return params;
 }
 
-ACInterface::ACInterface(const InputParameters & parameters) :
-    DerivativeMaterialInterface<JvarMapKernelInterface<Kernel> >(parameters),
+ACInterface::ACInterface(const InputParameters & parameters)
+  : DerivativeMaterialInterface<JvarMapKernelInterface<Kernel>>(parameters),
     _L(getMaterialProperty<Real>("mob_name")),
     _kappa(getMaterialProperty<Real>("kappa_name")),
     _variable_L(getParam<bool>("variable_L")),
@@ -36,10 +44,11 @@ ACInterface::ACInterface(const InputParameters & parameters) :
   // Get mobility and kappa derivatives and coupled variable gradients
   for (unsigned int i = 0; i < _nvar; ++i)
   {
-    MooseVariable * ivar = _coupled_moose_vars[i];
+    MooseVariable * ivar = _coupled_standard_moose_vars[i];
     const VariableName iname = ivar->name();
     if (iname == _var.name())
-      mooseError("The kernel variable should not be specified in the coupled `args` parameter.");
+      paramError("args",
+                 "The kernel variable should not be specified in the coupled `args` parameter.");
 
     _dLdarg[i] = &getMaterialPropertyDerivative<Real>("mob_name", iname);
     _dkappadarg[i] = &getMaterialPropertyDerivative<Real>("kappa_name", iname);
@@ -50,7 +59,8 @@ ACInterface::ACInterface(const InputParameters & parameters) :
 
     _d2Ldarg2[i].resize(_nvar);
     for (unsigned int j = 0; j < _nvar; ++j)
-      _d2Ldarg2[i][j] = &getMaterialPropertyDerivative<Real>("mob_name", iname, _coupled_moose_vars[j]->name());
+      _d2Ldarg2[i][j] =
+          &getMaterialPropertyDerivative<Real>("mob_name", iname, _coupled_moose_vars[j]->name());
   }
 }
 
@@ -92,13 +102,14 @@ Real
 ACInterface::computeQpJacobian()
 {
   // dsum is the derivative \f$ \frac\partial{\partial \eta} \left( \nabla (L\psi) \right) \f$
-  RealGradient dsum = (_dkappadop[_qp] * _L[_qp] + _kappa[_qp] * _dLdop[_qp]) * _phi[_j][_qp] * _grad_test[_i][_qp];
+  RealGradient dsum =
+      (_dkappadop[_qp] * _L[_qp] + _kappa[_qp] * _dLdop[_qp]) * _phi[_j][_qp] * _grad_test[_i][_qp];
 
   // compute the derivative of the gradient of the mobility
   if (_variable_L)
   {
-    RealGradient dgradL =   _grad_phi[_j][_qp] * _dLdop[_qp]
-                          + _grad_u[_qp] * _phi[_j][_qp] * _d2Ldop2[_qp];
+    RealGradient dgradL =
+        _grad_phi[_j][_qp] * _dLdop[_qp] + _grad_u[_qp] * _phi[_j][_qp] * _d2Ldop2[_qp];
 
     for (unsigned int i = 0; i < _nvar; ++i)
       dgradL += (*_gradarg[i])[_qp] * _phi[_j][_qp] * (*_d2Ldargdop[i])[_qp];
@@ -116,13 +127,14 @@ ACInterface::computeQpOffDiagJacobian(unsigned int jvar)
   const unsigned int cvar = mapJvarToCvar(jvar);
 
   // dsum is the derivative \f$ \frac\partial{\partial \eta} \left( \nabla (L\psi) \right) \f$
-  RealGradient dsum = ((*_dkappadarg[cvar])[_qp] * _L[_qp] + _kappa[_qp] * (*_dLdarg[cvar])[_qp]) * _phi[_j][_qp] * _grad_test[_i][_qp];
+  RealGradient dsum = ((*_dkappadarg[cvar])[_qp] * _L[_qp] + _kappa[_qp] * (*_dLdarg[cvar])[_qp]) *
+                      _phi[_j][_qp] * _grad_test[_i][_qp];
 
   // compute the derivative of the gradient of the mobility
   if (_variable_L)
   {
-    RealGradient dgradL =   _grad_phi[_j][_qp] * (*_dLdarg[cvar])[_qp]
-                          + _grad_u[_qp] * _phi[_j][_qp] * (*_d2Ldargdop[cvar])[_qp];
+    RealGradient dgradL = _grad_phi[_j][_qp] * (*_dLdarg[cvar])[_qp] +
+                          _grad_u[_qp] * _phi[_j][_qp] * (*_d2Ldargdop[cvar])[_qp];
 
     for (unsigned int i = 0; i < _nvar; ++i)
       dgradL += (*_gradarg[i])[_qp] * _phi[_j][_qp] * (*_d2Ldarg2[cvar][i])[_qp];

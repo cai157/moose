@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef COMPUTEVARIABLEBASEEIGENSTRAIN_H
 #define COMPUTEVARIABLEBASEEIGENSTRAIN_H
 
@@ -13,11 +16,12 @@
 
 class ComputeVariableBaseEigenStrain;
 
-template<>
+template <>
 InputParameters validParams<ComputeVariableBaseEigenStrain>();
 
 /**
- * ComputeVariableBaseEigenstrain computes an Eigenstrain based on a real tensor value material property base (a),
+ * ComputeVariableBaseEigenstrain computes an Eigenstrain based on a real tensor value material
+ * property base (a),
  * a real material property prefactor (p) and a rank two tensor offset tensor (b)
  * p * a + b
  */

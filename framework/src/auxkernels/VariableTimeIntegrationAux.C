@@ -1,31 +1,30 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "VariableTimeIntegrationAux.h"
 
-template<>
-InputParameters validParams<VariableTimeIntegrationAux>()
+registerMooseObject("MooseApp", VariableTimeIntegrationAux);
+
+template <>
+InputParameters
+validParams<VariableTimeIntegrationAux>()
 {
   InputParameters params = validParams<AuxKernel>();
   params.addRequiredCoupledVar("variable_to_integrate", "The variable to be integrated");
   params.addParam<Real>("coefficient", 1.0, "A simple coefficient");
-  params.addParam<unsigned int>("order", 2, "The order of global truncation error: midpoint=1, trapazoidal=2, Simpson=3");
+  params.addParam<unsigned int>(
+      "order", 2, "The order of global truncation error: midpoint=1, trapazoidal=2, Simpson=3");
   return params;
 }
 
-VariableTimeIntegrationAux::VariableTimeIntegrationAux(const InputParameters & parameters) :
-    AuxKernel(parameters),
+VariableTimeIntegrationAux::VariableTimeIntegrationAux(const InputParameters & parameters)
+  : AuxKernel(parameters),
     _coef(getParam<Real>("coefficient")),
     _order(getParam<unsigned int>("order"))
 {
@@ -42,9 +41,9 @@ VariableTimeIntegrationAux::VariableTimeIntegrationAux(const InputParameters & p
       _coupled_vars.push_back(&coupledValueOld("variable_to_integrate"));
       break;
     case 3:
-      _integration_coef.push_back(1.0/3.0);
-      _integration_coef.push_back(4.0/3.0);
-      _integration_coef.push_back(1.0/3.0);
+      _integration_coef.push_back(1.0 / 3.0);
+      _integration_coef.push_back(4.0 / 3.0);
+      _integration_coef.push_back(1.0 / 3.0);
       _coupled_vars.push_back(&coupledValue("variable_to_integrate"));
       _coupled_vars.push_back(&coupledValueOld("variable_to_integrate"));
       _coupled_vars.push_back(&coupledValueOlder("variable_to_integrate"));
@@ -60,9 +59,9 @@ VariableTimeIntegrationAux::computeValue()
   Real integral = getIntegralValue();
 
   if (_order == 3)
-    return _u_older[_qp] + _coef*integral;
+    return _u_older[_qp] + _coef * integral;
 
-  return _u_old[_qp] + _coef*integral;
+  return _u_old[_qp] + _coef * integral;
 }
 
 Real
@@ -88,10 +87,10 @@ VariableTimeIntegrationAux::getIntegralValue()
     Real y0 = (*_coupled_vars[2])[_qp];
     Real y1 = (*_coupled_vars[1])[_qp];
     Real y2 = (*_coupled_vars[0])[_qp];
-    Real term1 = (x2 - x0)*(y0 + (x2-x0)*(y1-y0)/(2.0*(x1-x0)));
-    Real term2 = (2.0*x2*x2 - x0*x2 - x0*x0 + 3.0*x0*x1 - 3.0*x1*x2)/6.0;
-    Real term3 = (y2-y1)/(x2-x1) - (y1-y0)/(x1-x0);
-    integral_value = term1 + term2*term3;
+    Real term1 = (x2 - x0) * (y0 + (x2 - x0) * (y1 - y0) / (2.0 * (x1 - x0)));
+    Real term2 = (2.0 * x2 * x2 - x0 * x2 - x0 * x0 + 3.0 * x0 * x1 - 3.0 * x1 * x2) / 6.0;
+    Real term3 = (y2 - y1) / (x2 - x1) - (y1 - y0) / (x1 - x0);
+    integral_value = term1 + term2 * term3;
   }
 
   return integral_value;

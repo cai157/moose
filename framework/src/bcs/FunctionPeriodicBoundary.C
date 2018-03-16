@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "FunctionPeriodicBoundary.h"
@@ -23,8 +18,9 @@
 // currently not thread-safe.
 Threads::spin_mutex parsed_function_mutex;
 
-FunctionPeriodicBoundary::FunctionPeriodicBoundary(FEProblemBase & feproblem, std::vector<std::string> fn_names) :
-    _dim(fn_names.size()),
+FunctionPeriodicBoundary::FunctionPeriodicBoundary(FEProblemBase & feproblem,
+                                                   std::vector<std::string> fn_names)
+  : _dim(fn_names.size()),
     _tr_x(&feproblem.getFunction(fn_names[0])),
     _tr_y(_dim > 1 ? &feproblem.getFunction(fn_names[1]) : NULL),
     _tr_z(_dim > 2 ? &feproblem.getFunction(fn_names[2]) : NULL)
@@ -38,12 +34,8 @@ FunctionPeriodicBoundary::FunctionPeriodicBoundary(FEProblemBase & feproblem, st
   init();
 }
 
-FunctionPeriodicBoundary::FunctionPeriodicBoundary(const FunctionPeriodicBoundary & o) :
-    PeriodicBoundaryBase(o),
-    _dim(o._dim),
-    _tr_x(o._tr_x),
-    _tr_y(o._tr_y),
-    _tr_z(o._tr_z)
+FunctionPeriodicBoundary::FunctionPeriodicBoundary(const FunctionPeriodicBoundary & o)
+  : PeriodicBoundaryBase(o), _dim(o._dim), _tr_x(o._tr_x), _tr_y(o._tr_y), _tr_z(o._tr_z)
 {
   // Initialize the functions (i.e., call thier initialSetup methods)
   init();
@@ -59,32 +51,33 @@ FunctionPeriodicBoundary::get_corresponding_pos(const Point & pt) const
   Point p;
   switch (_dim)
   {
-  case 1:
-    return Point(_tr_x->value(t, pt));
+    case 1:
+      return Point(_tr_x->value(t, pt));
 
-  case 2:
-    mooseAssert(_tr_y, "Must provide a function to map y in 2D.");
-    return Point(_tr_x->value(t, pt), _tr_y->value(t, pt));
+    case 2:
+      mooseAssert(_tr_y, "Must provide a function to map y in 2D.");
+      return Point(_tr_x->value(t, pt), _tr_y->value(t, pt));
 
-  case 3:
-    mooseAssert(_tr_y, "Must provide a function to map y in 2D.");
-    mooseAssert(_tr_z, "Must provide a function to map z in 3D.");
-    return Point(_tr_x->value(t, pt), _tr_y->value(t, pt), _tr_z->value(t, pt));
+    case 3:
+      mooseAssert(_tr_y, "Must provide a function to map y in 2D.");
+      mooseAssert(_tr_z, "Must provide a function to map z in 3D.");
+      return Point(_tr_x->value(t, pt), _tr_y->value(t, pt), _tr_z->value(t, pt));
 
-  default:
-    mooseError("Unsupported dimension");
-    break;
+    default:
+      mooseError("Unsupported dimension");
+      break;
   }
 
   return pt;
 }
 
-std::unique_ptr<PeriodicBoundaryBase> FunctionPeriodicBoundary::clone(TransformationType t) const
+std::unique_ptr<PeriodicBoundaryBase>
+FunctionPeriodicBoundary::clone(TransformationType t) const
 {
-  if (t==INVERSE)
+  if (t == INVERSE)
     mooseError("No way to automatically clone() an inverse FunctionPeriodicBoundary object");
 
-  return std::unique_ptr<PeriodicBoundaryBase>(new FunctionPeriodicBoundary(*this));
+  return libmesh_make_unique<FunctionPeriodicBoundary>(*this);
 }
 
 void
@@ -92,20 +85,20 @@ FunctionPeriodicBoundary::init()
 {
   switch (_dim)
   {
-  case 1:
-    _tr_x->initialSetup();
-    break;
-  case 2:
-    _tr_x->initialSetup();
-    _tr_y->initialSetup();
-    break;
-  case 3:
-    _tr_x->initialSetup();
-    _tr_y->initialSetup();
-    _tr_z->initialSetup();
-    break;
-  default:
-    mooseError("Unsupported dimension");
-    break;
+    case 1:
+      _tr_x->initialSetup();
+      break;
+    case 2:
+      _tr_x->initialSetup();
+      _tr_y->initialSetup();
+      break;
+    case 3:
+      _tr_x->initialSetup();
+      _tr_y->initialSetup();
+      _tr_z->initialSetup();
+      break;
+    default:
+      mooseError("Unsupported dimension");
+      break;
   }
 }

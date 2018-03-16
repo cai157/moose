@@ -1,30 +1,29 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "Receiver.h"
 
-template<>
-InputParameters validParams<Receiver>()
+registerMooseObject("MooseApp", Receiver);
+
+template <>
+InputParameters
+validParams<Receiver>()
 {
   InputParameters params = validParams<GeneralPostprocessor>();
   params.addParam<Real>("default", "The default value");
-  params.addParam<bool>("initialize_old", true, "Initialize the old postprocessor value with the default value");
+  params.addParam<bool>(
+      "initialize_old", true, "Initialize the old postprocessor value with the default value");
   return params;
 }
 
-Receiver::Receiver(const InputParameters & params) :
-    GeneralPostprocessor(params),
+Receiver::Receiver(const InputParameters & params)
+  : GeneralPostprocessor(params),
     _initialize_old(getParam<bool>("initialize_old")),
     _my_value(getPostprocessorValueByName(name()))
 {
@@ -51,4 +50,3 @@ Receiver::initialSetup()
     }
   }
 }
-

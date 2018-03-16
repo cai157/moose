@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef ACINTERFACEKOBAYASHI1_H
 #define ACINTERFACEKOBAYASHI1_H
 
@@ -13,7 +16,7 @@
 
 class ACInterfaceKobayashi1;
 
-template<>
+template <>
 InputParameters validParams<ACInterfaceKobayashi1>();
 
 /**
@@ -22,13 +25,12 @@ InputParameters validParams<ACInterfaceKobayashi1>();
  * doi:10.1016/0167-2789(93)90120-P
  * This kernel implements the first two terms on the right side of eq. (3) of the paper.
  */
-class ACInterfaceKobayashi1 : public DerivativeMaterialInterface<JvarMapKernelInterface<KernelGrad> >
+class ACInterfaceKobayashi1 : public DerivativeMaterialInterface<JvarMapKernelInterface<KernelGrad>>
 {
 public:
   ACInterfaceKobayashi1(const InputParameters & parameters);
 
 protected:
-
   /// Enum of computeDFDOP inputs
   virtual RealGradient precomputeQpResidual();
   virtual RealGradient precomputeQpJacobian();
@@ -48,4 +50,4 @@ protected:
   std::vector<const MaterialProperty<Real> *> _ddepsdarg;
 };
 
-#endif //ACINTERFACEKOBAYASHI1_H
+#endif // ACINTERFACEKOBAYASHI1_H

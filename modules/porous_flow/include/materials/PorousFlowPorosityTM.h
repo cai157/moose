@@ -1,61 +1,31 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWPOROSITYTM_H
 #define POROUSFLOWPOROSITYTM_H
 
-#include "PorousFlowPorosityBase.h"
+#include "PorousFlowPorosity.h"
 
-//Forward Declarations
+// Forward Declarations
 class PorousFlowPorosityTM;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowPorosityTM>();
 
 /**
  * Material designed to provide the porosity in thermo-mechanical simulations
- * biot + (phi0 - biot)*exp(-vol_strain + thermal_exp_coeff * temperature)
+ * biot + (phi0 - biot)*exp(-vol_strain + thermal_exp_coeff * (temperature - reference_temperature))
  */
-class PorousFlowPorosityTM : public PorousFlowPorosityBase
+class PorousFlowPorosityTM : public PorousFlowPorosity
 {
 public:
   PorousFlowPorosityTM(const InputParameters & parameters);
-
-protected:
-  virtual void initQpStatefulProperties() override;
-
-  virtual void computeQpProperties() override;
-
-  /// porosity at zero strain and zero temperature
-  const VariableValue & _phi0;
-
-  /// thermal expansion coefficient of the solid porous skeleton
-  const Real _exp_coeff;
-
-  /// drained bulk modulus of the porous skeleton
-  const Real _solid_bulk;
-
-  /// number of displacement variables
-  const unsigned int _ndisp;
-
-  /// variable number of the displacements variables
-  std::vector<unsigned int> _disp_var_num;
-
-  /// strain
-  const MaterialProperty<Real> & _vol_strain_qp;
-
-  /// d(strain)/(dvar)
-  const MaterialProperty<std::vector<RealGradient> > & _dvol_strain_qp_dvar;
-
-  /// temperature at quadpoints or nodes
-  const MaterialProperty<Real> & _temperature;
-
-  /// d(temperature)/(d porflow variable)
-  const MaterialProperty<std::vector<Real> > & _dtemperature_dvar;
 };
 
-#endif //POROUSFLOWPOROSITYTM_H
+#endif // POROUSFLOWPOROSITYTM_H

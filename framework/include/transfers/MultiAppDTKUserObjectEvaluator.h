@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MULTIAPPDTKUSEROBJECTEVALUATOR_H
 #define MULTIAPPDTKUSEROBJECTEVALUATOR_H
@@ -33,8 +28,9 @@ class MultiApp;
 /**
  * Evaluates the specified UserObject and returns the result in a DTK FieldContainer.
  */
-class MultiAppDTKUserObjectEvaluator :
-  public DataTransferKit::FieldEvaluator<long unsigned int, DataTransferKit::FieldContainer<double> >
+class MultiAppDTKUserObjectEvaluator
+    : public DataTransferKit::FieldEvaluator<long unsigned int,
+                                             DataTransferKit::FieldContainer<double>>
 {
 public:
   MultiAppDTKUserObjectEvaluator(MultiApp & multi_app, const std::string & user_object_name);
@@ -43,9 +39,11 @@ public:
 
   typedef long unsigned int GlobalOrdinal;
 
-  DataTransferKit::FieldContainer<double> evaluate(const Teuchos::ArrayRCP<GlobalOrdinal>& bids, const Teuchos::ArrayRCP<double>& coords);
+  DataTransferKit::FieldContainer<double> evaluate(const Teuchos::ArrayRCP<GlobalOrdinal> & bids,
+                                                   const Teuchos::ArrayRCP<double> & coords);
 
-  Teuchos::RCP<DataTransferKit::GeometryManager<DataTransferKit::Box,GlobalOrdinal> > createSourceGeometry(const Teuchos::RCP<const Teuchos::Comm<int> >& comm);
+  Teuchos::RCP<DataTransferKit::GeometryManager<DataTransferKit::Box, GlobalOrdinal>>
+  createSourceGeometry(const Teuchos::RCP<const Teuchos::Comm<int>> & comm);
 
 private:
   /// The MultiAppUserObject object this object will be evaluating
@@ -58,6 +56,5 @@ private:
   Teuchos::ArrayRCP<GlobalOrdinal> _box_ids;
 };
 
-
-#endif //LIBMESH_TRILINOS_HAVE_DTK
-#endif //MULTIAPPDTKUSEROBJECTEVALUATOR_H
+#endif // LIBMESH_TRILINOS_HAVE_DTK
+#endif // MULTIAPPDTKUSEROBJECTEVALUATOR_H

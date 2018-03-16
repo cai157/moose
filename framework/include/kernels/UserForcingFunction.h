@@ -1,52 +1,30 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef USERFORCINGFUNCTION_H
 #define USERFORCINGFUNCTION_H
 
-#include "Kernel.h"
-
-//Forward Declarations
-class UserForcingFunction;
-class Function;
-
-template<>
-InputParameters validParams<UserForcingFunction>();
+#include "BodyForce.h"
 
 /**
- * Define the Kernel for a user defined forcing function that looks like:
- *
- * test function * forcing function
+ * Deprecated, use BodyForce.
  */
-class UserForcingFunction : public Kernel
+class UserForcingFunction : public BodyForce
 {
 public:
-
   UserForcingFunction(const InputParameters & parameters);
 
 protected:
-  /**
-   * Evaluate f at the current quadrature point.
-   */
   Real f();
-
-  /**
-   * Computes test function * forcing function.
-   */
-  virtual Real computeQpResidual() override;
-
-  Function & _func;
 };
 
-#endif //USERFORCINGFUNCTION_H
+template <>
+InputParameters validParams<UserForcingFunction>();
+
+#endif

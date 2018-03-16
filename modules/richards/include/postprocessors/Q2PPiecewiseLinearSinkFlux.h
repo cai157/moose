@@ -1,10 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef Q2PPIECEWISELINEARSINKFLUX_H
 #define Q2PPIECEWISELINEARSINKFLUX_H
@@ -16,10 +17,10 @@
 
 class Function;
 
-//Forward Declarations
+// Forward Declarations
 class Q2PPiecewiseLinearSinkFlux;
 
-template<>
+template <>
 InputParameters validParams<Q2PPiecewiseLinearSinkFlux>();
 
 /**
@@ -31,8 +32,7 @@ InputParameters validParams<Q2PPiecewiseLinearSinkFlux>();
  * and if density and viscosity are given, this integrand is multiplied by density*knn/viscosity,
  *      where knn is n.permeability.n where n is the normal to the boundary
  */
-class Q2PPiecewiseLinearSinkFlux:
-  public SideIntegralPostprocessor
+class Q2PPiecewiseLinearSinkFlux : public SideIntegralPostprocessor
 {
 public:
   Q2PPiecewiseLinearSinkFlux(const InputParameters & parameters);

@@ -1,28 +1,28 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SetupQuadratureAction.h"
 #include "Conversion.h"
 #include "FEProblem.h"
 #include "MooseEnum.h"
 
-template<>
-InputParameters validParams<SetupQuadratureAction>()
+registerMooseAction("MooseApp", SetupQuadratureAction, "setup_quadrature");
+
+template <>
+InputParameters
+validParams<SetupQuadratureAction>()
 {
   MooseEnum types("CLOUGH CONICAL GAUSS GRID MONOMIAL SIMPSON TRAP GAUSS_LOBATTO", "GAUSS");
   MooseEnum order("AUTO CONSTANT FIRST SECOND THIRD FOURTH FIFTH SIXTH SEVENTH EIGHTH NINTH TENTH "
-                  "ELEVENTH TWELFTH THIRTEENTH FOURTEENTH FIFTEENTH SIXTEENTH SEVENTEENTH EIGHTTEENTH NINTEENTH TWENTIETH", "AUTO");
+                  "ELEVENTH TWELFTH THIRTEENTH FOURTEENTH FIFTEENTH SIXTEENTH SEVENTEENTH "
+                  "EIGHTTEENTH NINTEENTH TWENTIETH",
+                  "AUTO");
 
   InputParameters params = validParams<Action>();
 
@@ -34,8 +34,8 @@ InputParameters validParams<SetupQuadratureAction>()
   return params;
 }
 
-SetupQuadratureAction::SetupQuadratureAction(InputParameters parameters) :
-    Action(parameters),
+SetupQuadratureAction::SetupQuadratureAction(InputParameters parameters)
+  : Action(parameters),
     _type(Moose::stringToEnum<QuadratureType>(getParam<MooseEnum>("type"))),
     _order(Moose::stringToEnum<Order>(getParam<MooseEnum>("order"))),
     _element_order(Moose::stringToEnum<Order>(getParam<MooseEnum>("element_order"))),

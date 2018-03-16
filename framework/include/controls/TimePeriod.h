@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef TIMEPERIOD_H
 #define TIMEPERIOD_H
@@ -22,7 +17,7 @@
 class TimePeriod;
 class Function;
 
-template<>
+template <>
 InputParameters validParams<TimePeriod>();
 
 /**
@@ -31,7 +26,6 @@ InputParameters validParams<TimePeriod>();
 class TimePeriod : public Control
 {
 public:
-
   /**
    * Class constructor
    * @param parameters Input parameters for this Control object
@@ -41,14 +35,12 @@ public:
   virtual void execute() override;
 
 protected:
-
   /**
    * If enabled, this injects the start/end times into the TimeStepper sync times.
    */
   void initialSetup() override;
 
 private:
-
   /// List of objects to enable
   const std::vector<std::string> & _enable;
 

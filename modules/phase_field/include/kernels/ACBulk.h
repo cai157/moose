@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef ACBULK_H
 #define ACBULK_H
 
@@ -18,8 +21,8 @@
  * Note that the function computeDFDOP MUST be overridden in any kernel that inherits from
  * ACBulk.
  */
-template<typename T>
-class ACBulk : public DerivativeMaterialInterface<JvarMapKernelInterface<KernelValue> >
+template <typename T>
+class ACBulk : public DerivativeMaterialInterface<JvarMapKernelInterface<KernelValue>>
 {
 public:
   ACBulk(const InputParameters & parameters);
@@ -50,10 +53,9 @@ protected:
   std::vector<const MaterialProperty<T> *> _dLdarg;
 };
 
-
-template<typename T>
-ACBulk<T>::ACBulk(const InputParameters & parameters) :
-    DerivativeMaterialInterface<JvarMapKernelInterface<KernelValue> >(parameters),
+template <typename T>
+ACBulk<T>::ACBulk(const InputParameters & parameters)
+  : DerivativeMaterialInterface<JvarMapKernelInterface<KernelValue>>(parameters),
     _L(getMaterialProperty<T>("mob_name")),
     _dLdop(getMaterialPropertyDerivative<T>("mob_name", _var.name()))
 {
@@ -68,7 +70,7 @@ ACBulk<T>::ACBulk(const InputParameters & parameters) :
     _dLdarg[i] = &getMaterialPropertyDerivative<T>("mob_name", _coupled_moose_vars[i]->name());
 }
 
-template<typename T>
+template <typename T>
 InputParameters
 ACBulk<T>::validParams()
 {
@@ -79,14 +81,14 @@ ACBulk<T>::validParams()
   return params;
 }
 
-template<typename T>
+template <typename T>
 void
 ACBulk<T>::initialSetup()
 {
   validateNonlinearCoupling<Real>("mob_name");
 }
 
-template<typename T>
+template <typename T>
 Real
 ACBulk<T>::precomputeQpResidual()
 {
@@ -94,10 +96,10 @@ ACBulk<T>::precomputeQpResidual()
   Real dFdop = computeDFDOP(Residual);
 
   // Set residual
-  return  _L[_qp] * dFdop;
+  return _L[_qp] * dFdop;
 }
 
-template<typename T>
+template <typename T>
 Real
 ACBulk<T>::precomputeQpJacobian()
 {
@@ -110,7 +112,7 @@ ACBulk<T>::precomputeQpJacobian()
   return _L[_qp] * JdFdop + _dLdop[_qp] * _phi[_j][_qp] * dFdop;
 }
 
-template<typename T>
+template <typename T>
 Real
 ACBulk<T>::computeQpOffDiagJacobian(unsigned int jvar)
 {
@@ -121,4 +123,4 @@ ACBulk<T>::computeQpOffDiagJacobian(unsigned int jvar)
   return (*_dLdarg[cvar])[_qp] * _phi[_j][_qp] * computeDFDOP(Residual) * _test[_i][_qp];
 }
 
-#endif //ACBULK_H
+#endif // ACBULK_H

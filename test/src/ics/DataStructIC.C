@@ -1,40 +1,38 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "DataStructIC.h"
 
-template<>
-InputParameters validParams<DataStructIC>()
+registerMooseObject("MooseTestApp", DataStructIC);
+
+template <>
+InputParameters
+validParams<DataStructIC>()
 {
   InputParameters params = validParams<InitialCondition>();
   return params;
 }
 
-DataStructIC::DataStructIC(const InputParameters & parameters) :
-    InitialCondition(parameters),
-    _mesh(_fe_problem.mesh())
+DataStructIC::DataStructIC(const InputParameters & parameters)
+  : InitialCondition(parameters), _mesh(_fe_problem.mesh())
 {
 }
 
-DataStructIC::~DataStructIC()
-{
-}
+DataStructIC::~DataStructIC() {}
 
 void
 DataStructIC::initialSetup()
 {
   MeshBase::const_element_iterator elem_end = _mesh.activeLocalElementsEnd();
-  for (MeshBase::const_element_iterator elem_it = _mesh.activeLocalElementsBegin(); elem_it != elem_end; ++elem_it)
+  for (MeshBase::const_element_iterator elem_it = _mesh.activeLocalElementsBegin();
+       elem_it != elem_end;
+       ++elem_it)
   {
     const Elem * current_elem = *elem_it;
 
@@ -60,5 +58,5 @@ DataStructIC::value(const Point & /*p*/)
   if (it != _data.end())
     return it->second;
 
-  mooseError("The following id is not in the data structure: " << _current_node->id());
+  mooseError("The following id is not in the data structure: ", _current_node->id());
 }

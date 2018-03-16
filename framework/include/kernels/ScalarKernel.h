@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef SCALARKERNEL_H
 #define SCALARKERNEL_H
@@ -22,7 +17,6 @@
 #include "UserObjectInterface.h"
 #include "PostprocessorInterface.h"
 #include "TransientInterface.h"
-#include "ZeroInterface.h"
 #include "MeshChangedInterface.h"
 #include "VectorPostprocessorInterface.h"
 
@@ -35,20 +29,18 @@ class Assembly;
 class MooseVariableScalar;
 class SubProblem;
 
-template<>
+template <>
 InputParameters validParams<ScalarKernel>();
 
-class ScalarKernel :
-  public MooseObject,
-  public ScalarCoupleable,
-  public SetupInterface,
-  public FunctionInterface,
-  public UserObjectInterface,
-  public PostprocessorInterface,
-  public TransientInterface,
-  public ZeroInterface,
-  public MeshChangedInterface,
-  protected VectorPostprocessorInterface
+class ScalarKernel : public MooseObject,
+                     public ScalarCoupleable,
+                     public SetupInterface,
+                     public FunctionInterface,
+                     public UserObjectInterface,
+                     public PostprocessorInterface,
+                     public TransientInterface,
+                     public MeshChangedInterface,
+                     protected VectorPostprocessorInterface
 {
 public:
   ScalarKernel(const InputParameters & parameters);

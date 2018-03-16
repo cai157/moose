@@ -1,19 +1,21 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWPERMEABILITYKOZENYCARMAN_H
 #define POROUSFLOWPERMEABILITYKOZENYCARMAN_H
 
 #include "PorousFlowPermeabilityBase.h"
 
-//Forward Declarations
+// Forward Declarations
 class PorousFlowPermeabilityKozenyCarman;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowPermeabilityKozenyCarman>();
 
 /**
@@ -63,16 +65,16 @@ protected:
   const MaterialProperty<Real> & _porosity_qp;
 
   /// d(quadpoint porosity)/d(PorousFlow variable)
-  const MaterialProperty<std::vector<Real> > & _dporosity_qp_dvar;
+  const MaterialProperty<std::vector<Real>> & _dporosity_qp_dvar;
 
   /// d(quadpoint porosity)/d(grad(PorousFlow variable))
-  const MaterialProperty<std::vector<RealGradient> > & _dporosity_qp_dgradvar;
+  const MaterialProperty<std::vector<RealGradient>> & _dporosity_qp_dgradvar;
 
   /// Name of porosity-permeability relationship
-  const MooseEnum _poroperm_function;
+  const enum class PoropermFunction { kozeny_carman_fd2, kozeny_carman_phi0 } _poroperm_function;
 
   /// Multiplying factor in k = k_ijk * A * phi^n / (1 - phi)^m
   Real _A;
 };
 
-#endif //POROUSFLOWPERMEABILITYKOZENYCARMAN_H
+#endif // POROUSFLOWPERMEABILITYKOZENYCARMAN_H

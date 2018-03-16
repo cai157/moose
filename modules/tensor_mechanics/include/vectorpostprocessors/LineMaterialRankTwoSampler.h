@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef LINEMATERIALRANKTWOSAMPLER_H
 #define LINEMATERIALRANKTWOSAMPLER_H
@@ -11,18 +13,17 @@
 #include "LineMaterialSamplerBase.h"
 #include "RankTwoTensor.h"
 
-//Forward Declarations
+// Forward Declarations
 class LineMaterialRankTwoSampler;
 
-template<>
+template <>
 InputParameters validParams<LineMaterialRankTwoSampler>();
 
 /**
  * This class samples components of RankTwoTensor material properties for the integration points
  * in all elements that are intersected by a user-defined line.
  */
-class LineMaterialRankTwoSampler :
-  public LineMaterialSamplerBase<RankTwoTensor>
+class LineMaterialRankTwoSampler : public LineMaterialSamplerBase<RankTwoTensor>
 {
 public:
   /**
@@ -45,4 +46,4 @@ public:
   const unsigned int _j;
 };
 
-#endif //LINEMATERIALRANKTWOSAMPLER
+#endif // LINEMATERIALRANKTWOSAMPLER

@@ -1,16 +1,12 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef ITERATIONADAPTIVEDT_H
 #define ITERATIONADAPTIVEDT_H
 
@@ -19,11 +15,12 @@
 #include "PostprocessorInterface.h"
 
 class Function;
-class Piecewise;
+class PiecewiseBase;
 
 /**
  * Adjust the timestep based on the number of iterations.
- * The user can specitfy an optimal_iterations number of non-linear iterations and an iteration_window.
+ * The user can specitfy an optimal_iterations number of non-linear iterations and an
+ * iteration_window.
  * The time stepper attempts to increase the time step if the non-linear iteration count is below
  * optimal_iterations - iteration_window and it attempts to reduce the time step if the non-linear
  * iteration count is above optimal_iterations + iteration_window. Similar rules apply to the number
@@ -32,9 +29,7 @@ class Piecewise;
  * This time stepper allows the user to specify a function that limits the maximal time step change.
  * This time stepper allows the user to specify a limiting time step length through a postprocessor.
  */
-class IterationAdaptiveDT :
-  public TimeStepper,
-  public PostprocessorInterface
+class IterationAdaptiveDT : public TimeStepper, public PostprocessorInterface
 {
 public:
   IterationAdaptiveDT(const InputParameters & parameters);
@@ -45,7 +40,7 @@ public:
   virtual void rejectStep() override;
   virtual void acceptStep() override;
 
-  virtual bool constrainStep(Real &dt) override;
+  virtual bool constrainStep(Real & dt) override;
 
 protected:
   virtual Real computeInitialDT() override;
@@ -78,7 +73,7 @@ protected:
   const PostprocessorValue * _pps_value;
 
   Function * _timestep_limiting_function;
-  Piecewise * _piecewise_timestep_limiting_function;
+  PiecewiseBase * _piecewise_timestep_limiting_function;
   /// time point defined in the piecewise function
   std::vector<Real> _times;
 
@@ -88,7 +83,7 @@ protected:
 
   std::set<Real> _tfunc_times;
 
-  /// Piecewise linear definition of time stepping
+  /// PiecewiseBase linear definition of time stepping
   LinearInterpolation _time_ipol;
   /// true if we want to use piecewise-defined time stepping
   const bool _use_time_ipol;
@@ -107,7 +102,7 @@ protected:
   bool _at_function_point;
 };
 
-template<>
+template <>
 InputParameters validParams<IterationAdaptiveDT>();
 
 #endif /* ITERATIONADAPTIVEDT_H */

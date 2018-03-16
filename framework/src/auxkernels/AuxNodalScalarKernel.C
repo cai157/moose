@@ -1,36 +1,32 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "AuxNodalScalarKernel.h"
 #include "SystemBase.h"
 
-template<>
-InputParameters validParams<AuxNodalScalarKernel>()
+template <>
+InputParameters
+validParams<AuxNodalScalarKernel>()
 {
   InputParameters params = validParams<AuxScalarKernel>();
-  params.addRequiredParam<std::vector<dof_id_type> >("nodes", "Node ids");
+  params.addRequiredParam<std::vector<dof_id_type>>("nodes", "Node ids");
   return params;
 }
 
-AuxNodalScalarKernel::AuxNodalScalarKernel(const InputParameters & parameters) :
-    AuxScalarKernel(parameters),
+AuxNodalScalarKernel::AuxNodalScalarKernel(const InputParameters & parameters)
+  : AuxScalarKernel(parameters),
     Coupleable(this, true),
     MooseVariableDependencyInterface(),
-    _node_ids(getParam<std::vector<dof_id_type> >("nodes"))
+    _node_ids(getParam<std::vector<dof_id_type>>("nodes"))
 {
   // Fill in the MooseVariable dependencies
-  const std::vector<MooseVariable *> & coupled_vars = getCoupledMooseVars();
+  const std::vector<MooseVariableFE *> & coupled_vars = getCoupledMooseVars();
   for (const auto & var : coupled_vars)
     addMooseVariableDependency(var);
 }
@@ -38,6 +34,6 @@ AuxNodalScalarKernel::AuxNodalScalarKernel(const InputParameters & parameters) :
 void
 AuxNodalScalarKernel::compute()
 {
-  _subproblem.reinitNodes(_node_ids, _tid);        // compute variables at nodes
+  _subproblem.reinitNodes(_node_ids, _tid); // compute variables at nodes
   AuxScalarKernel::compute();
 }

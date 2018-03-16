@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MESHEXTRUDER_H
 #define MESHEXTRUDER_H
@@ -20,7 +15,7 @@
 
 class MeshExtruder;
 
-template<>
+template <>
 InputParameters validParams<MeshExtruder>();
 
 class MeshExtruder : public MeshModifier
@@ -38,7 +33,8 @@ protected:
   std::vector<unsigned int> _new_ids;
 
   /**
-   * This class is used during the mesh construction (extrusion) to set element ids as they are created.
+   * This class is used during the mesh construction (extrusion) to set element ids as they are
+   * created.
    */
   class QueryElemSubdomainID : public MeshTools::Generation::QueryElemSubdomainIDBase
   {
@@ -53,10 +49,13 @@ protected:
 
   private:
     /// Data structure for holding the old -> new id mapping based on the layer number
-    std::map<unsigned int, std::map<SubdomainID, unsigned int> > _layer_data;
+    std::map<unsigned int, std::map<SubdomainID, unsigned int>> _layer_data;
 
-    /// The total number of layers in the extrusion
+/// The total number of layers in the extrusion.  This is
+/// currently only used for a sanity check in dbg mode.
+#ifndef NDEBUG
     unsigned int _num_layers;
+#endif
   };
 
 private:

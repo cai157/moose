@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef OUTPUTTESTMATERIAL_H
 #define OUTPUTTESTMATERIAL_H
@@ -21,7 +16,7 @@
 // Forward declarations
 class OutputTestMaterial;
 
-template<>
+template <>
 InputParameters validParams<OutputTestMaterial>();
 
 /**
@@ -30,7 +25,6 @@ InputParameters validParams<OutputTestMaterial>();
 class OutputTestMaterial : public Material
 {
 public:
-
   /**
    * Class constructor
    * @param prop_name
@@ -38,7 +32,7 @@ public:
   OutputTestMaterial(const InputParameters & parameters);
 
   // Used for testing if hidden compiler warning shows up
-  virtual void computeProperties(){ Material::computeProperties(); }
+  virtual void computeProperties() { Material::computeProperties(); }
 
   /**
    * Class destructor
@@ -55,4 +49,4 @@ protected:
   const VariableValue & _variable;
 };
 
-#endif //OUTPUTTESTMATERIAL_H
+#endif // OUTPUTTESTMATERIAL_H

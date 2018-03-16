@@ -1,25 +1,22 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "FlagElementsThread.h"
 
+// MOOSE includes
 #include "AuxiliarySystem.h"
-#include "Problem.h"
+#include "DisplacedProblem.h"
 #include "FEProblem.h"
 #include "Marker.h"
-#include "DisplacedProblem.h"
+#include "MooseVariableField.h"
+#include "Problem.h"
 
-// libmesh includes
 #include "libmesh/threads.h"
 
 // C++ includes
@@ -28,8 +25,8 @@
 FlagElementsThread::FlagElementsThread(FEProblemBase & fe_problem,
                                        std::vector<Number> & serialized_solution,
                                        unsigned int max_h_level,
-                                       const std::string & marker_name) :
-    ThreadedElementLoop<ConstElemRange>(fe_problem),
+                                       const std::string & marker_name)
+  : ThreadedElementLoop<ConstElemRange>(fe_problem),
     _fe_problem(fe_problem),
     _displaced_problem(_fe_problem.getDisplacedProblem()),
     _aux_sys(fe_problem.getAuxiliarySystem()),
@@ -43,8 +40,8 @@ FlagElementsThread::FlagElementsThread(FEProblemBase & fe_problem,
 }
 
 // Splitting Constructor
-FlagElementsThread::FlagElementsThread(FlagElementsThread & x, Threads::split split) :
-    ThreadedElementLoop<ConstElemRange>(x, split),
+FlagElementsThread::FlagElementsThread(FlagElementsThread & x, Threads::split split)
+  : ThreadedElementLoop<ConstElemRange>(x, split),
     _fe_problem(x._fe_problem),
     _displaced_problem(x._displaced_problem),
     _aux_sys(x._aux_sys),
@@ -58,9 +55,10 @@ FlagElementsThread::FlagElementsThread(FlagElementsThread & x, Threads::split sp
 }
 
 void
-FlagElementsThread::onElement(const Elem *elem)
+FlagElementsThread::onElement(const Elem * elem)
 {
-  // By default do nothing, and only grab the marker from the solution if the current variable is active
+  // By default do nothing, and only grab the marker from the solution if the current variable is
+  // active
   // on the element subdomain.
   Marker::MarkerValue marker_value = Marker::DO_NOTHING;
   if (_field_var.activeOnSubdomain(elem->subdomain_id()))
@@ -71,8 +69,8 @@ FlagElementsThread::onElement(const Elem *elem)
     marker_value = static_cast<Marker::MarkerValue>(round(_serialized_solution[dof_number]));
 
     // Make sure we aren't masking an issue in the Marker system by rounding its values.
-    if (std::abs(marker_value - _serialized_solution[dof_number]) > TOLERANCE*TOLERANCE)
-      mooseError("Invalid Marker value detected: " << _serialized_solution[dof_number]);
+    if (std::abs(marker_value - _serialized_solution[dof_number]) > TOLERANCE * TOLERANCE)
+      mooseError("Invalid Marker value detected: ", _serialized_solution[dof_number]);
   }
 
   // If no Markers cared about what happened to this element let's just leave it alone
@@ -86,7 +84,9 @@ FlagElementsThread::onElement(const Elem *elem)
   const_cast<Elem *>(elem)->set_refinement_flag((Elem::RefinementState)marker_value);
 
   if (_displaced_problem)
-    _displaced_problem->mesh().elemPtr(elem->id())->set_refinement_flag((Elem::RefinementState)marker_value);
+    _displaced_problem->mesh()
+        .elemPtr(elem->id())
+        ->set_refinement_flag((Elem::RefinementState)marker_value);
 }
 
 void

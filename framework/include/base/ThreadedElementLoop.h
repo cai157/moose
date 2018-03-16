@@ -1,22 +1,18 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef THREADEDELEMENTLOOP_H
 #define THREADEDELEMENTLOOP_H
 
 #include "ParallelUniqueId.h"
-#include "FEProblem.h"
+#include "FEProblemBase.h"
+#include "Assembly.h"
 #include "ThreadedElementLoopBase.h"
 
 // Forward declarations
@@ -34,7 +30,7 @@ static Threads::spin_mutex threaded_element_mutex;
 /**
  * Base class for assembly-like calculations.
  */
-template<typename RangeType>
+template <typename RangeType>
 class ThreadedElementLoop : public ThreadedElementLoopBase<RangeType>
 {
 public:
@@ -47,31 +43,36 @@ public:
   virtual void caughtMooseException(MooseException & e) override;
 
   virtual bool keepGoing() override { return !_fe_problem.hasException(); }
+
+  virtual void preElement(const Elem * elem) override;
+
+  virtual void preInternalSide(const Elem * elem, unsigned int side) override;
+
+  virtual void neighborSubdomainChanged() override;
+
 protected:
   FEProblemBase & _fe_problem;
 };
 
-
-template<typename RangeType>
-ThreadedElementLoop<RangeType>::ThreadedElementLoop(FEProblemBase & fe_problem) :
-    ThreadedElementLoopBase<RangeType>(fe_problem.mesh()),
-    _fe_problem(fe_problem)
+template <typename RangeType>
+ThreadedElementLoop<RangeType>::ThreadedElementLoop(FEProblemBase & fe_problem)
+  : ThreadedElementLoopBase<RangeType>(fe_problem.mesh()), _fe_problem(fe_problem)
 {
 }
 
-template<typename RangeType>
-ThreadedElementLoop<RangeType>::ThreadedElementLoop(ThreadedElementLoop & x, Threads::split /*split*/) :
-    ThreadedElementLoopBase<RangeType>(x),
-    _fe_problem(x._fe_problem)
+template <typename RangeType>
+ThreadedElementLoop<RangeType>::ThreadedElementLoop(ThreadedElementLoop & x,
+                                                    Threads::split /*split*/)
+  : ThreadedElementLoopBase<RangeType>(x), _fe_problem(x._fe_problem)
 {
 }
 
-template<typename RangeType>
+template <typename RangeType>
 ThreadedElementLoop<RangeType>::~ThreadedElementLoop()
 {
 }
 
-template<typename RangeType>
+template <typename RangeType>
 void
 ThreadedElementLoop<RangeType>::caughtMooseException(MooseException & e)
 {
@@ -81,5 +82,26 @@ ThreadedElementLoop<RangeType>::caughtMooseException(MooseException & e)
   _fe_problem.setException(what);
 }
 
+template <typename RangeType>
+void
+ThreadedElementLoop<RangeType>::preElement(const Elem * el)
+{
+  _fe_problem.setCurrentSubdomainID(el, ThreadedElementLoopBase<RangeType>::_tid);
+}
 
-#endif //THREADEDELEMENTLOOP_H
+template <typename RangeType>
+void
+ThreadedElementLoop<RangeType>::preInternalSide(const Elem * el, unsigned int side)
+{
+  _fe_problem.setNeighborSubdomainID(el, side, ThreadedElementLoopBase<RangeType>::_tid);
+}
+
+template <typename RangeType>
+void
+ThreadedElementLoop<RangeType>::neighborSubdomainChanged()
+{
+  _fe_problem.neighborSubdomainSetup(ThreadedElementLoopBase<RangeType>::_neighbor_subdomain,
+                                     ThreadedElementLoopBase<RangeType>::_tid);
+}
+
+#endif // THREADEDELEMENTLOOP_H

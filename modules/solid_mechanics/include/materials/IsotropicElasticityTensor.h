@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef ISOTROPICELASTICITYTENSOR_H
 #define ISOTROPICELASTICITYTENSOR_H
 
@@ -66,7 +69,6 @@ public:
   virtual ~IsotropicElasticityTensor() {}
 
 protected:
-
   bool _lambda_set, _mu_set, _E_set, _nu_set, _k_set;
 
   Real _lambda, _mu, _E, _nu, _k;
@@ -91,4 +93,4 @@ protected:
   Real isotropicEntry(const unsigned int i, const unsigned j, const unsigned k, const unsigned l);
 };
 
-#endif //ISOTROPICELASTICITYTENSOR_H
+#endif // ISOTROPICELASTICITYTENSOR_H

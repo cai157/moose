@@ -1,30 +1,49 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "MovingPlanarFront.h"
 
-template<>
-InputParameters validParams<MovingPlanarFront>()
+template <>
+InputParameters
+validParams<MovingPlanarFront>()
 {
   InputParameters params = validParams<Function>();
   params.addRequiredParam<RealVectorValue>("start_posn", "Initial position of the front");
   params.addRequiredParam<RealVectorValue>("end_posn", "Final position of the front");
-  params.addRequiredParam<FunctionName>("distance", "The front is an infinite plane with normal pointing from start_posn to end_posn.  The front's distance from start_posn is defined by distance.  You should ensure that distance is positive");
-  params.addRequiredParam<Real>("active_length", "This function will return true_value at a point if: (a) t >= activation_time; (b) t < deactivation_time; (c) the point lies in the domain between start_posn and the front position; (d) the distance between the point and the front position <= active_length.");
+  params.addRequiredParam<FunctionName>(
+      "distance",
+      "The front is an infinite plane with normal pointing from start_posn to "
+      "end_posn.  The front's distance from start_posn is defined by distance.  You "
+      "should ensure that distance is positive");
+  params.addRequiredParam<Real>(
+      "active_length",
+      "This function will return true_value at a point if: (a) t >= "
+      "activation_time; (b) t < deactivation_time; (c) the point lies in the "
+      "domain between start_posn and the front position; (d) the distance between "
+      "the point and the front position <= active_length.");
   params.addParam<Real>("true_value", 1.0, "Return this value if a point is in the active zone.");
-  params.addParam<Real>("false_value", 0.0, "Return this value if a point is not in the active zone.");
-  params.addParam<Real>("activation_time", std::numeric_limits<Real>::lowest(), "This function will return false_value when t < activation_time");
-  params.addParam<Real>("deactivation_time", std::numeric_limits<Real>::max(), "This function will return false_value when t >= deactivation_time");
-  params.addClassDescription("This function defines the position of a moving front.  The front is an infinite plane with normal pointing from start_posn to end_posn.  The front's distance from start_posn is defined by distance");
+  params.addParam<Real>(
+      "false_value", 0.0, "Return this value if a point is not in the active zone.");
+  params.addParam<Real>("activation_time",
+                        std::numeric_limits<Real>::lowest(),
+                        "This function will return false_value when t < activation_time");
+  params.addParam<Real>("deactivation_time",
+                        std::numeric_limits<Real>::max(),
+                        "This function will return false_value when t >= deactivation_time");
+  params.addClassDescription("This function defines the position of a moving front.  The front is "
+                             "an infinite plane with normal pointing from start_posn to end_posn.  "
+                             "The front's distance from start_posn is defined by distance");
   return params;
 }
 
-MovingPlanarFront::MovingPlanarFront(const InputParameters & parameters) :
-    Function(parameters),
+MovingPlanarFront::MovingPlanarFront(const InputParameters & parameters)
+  : Function(parameters),
     FunctionInterface(this),
     _start_posn(getParam<RealVectorValue>("start_posn")),
     _end_posn(getParam<RealVectorValue>("end_posn")),
@@ -40,7 +59,6 @@ MovingPlanarFront::MovingPlanarFront(const InputParameters & parameters) :
     mooseError("MovingPlanarFront: start_posn and end_posn must be different points");
   _front_normal /= _front_normal.size();
 }
-
 
 Real
 MovingPlanarFront::value(Real t, const Point & p)
@@ -62,7 +80,7 @@ MovingPlanarFront::value(Real t, const Point & p)
   if (distance_ahead_of_front > 0)
     return _false_value;
 
-  if (distance_ahead_of_front < - _active_length)
+  if (distance_ahead_of_front < -_active_length)
     // point is too far behind front
     return _false_value;
 

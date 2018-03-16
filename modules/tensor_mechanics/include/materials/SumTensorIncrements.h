@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef SUMTENSORINCREMENTS_H
 #define SUMTENSORINCREMENTS_H
 
@@ -11,7 +14,10 @@
 #include "RankTwoTensor.h"
 #include "DerivativeMaterialInterface.h"
 
-class SumStraubIncrements;
+class SumTensorIncrements;
+
+template <>
+InputParameters validParams<SumTensorIncrements>();
 
 /**
  * SumTensorIncrements update a tensor by summing tensor increments passed as property
@@ -29,10 +35,10 @@ protected:
   unsigned int _num_property;
 
   MaterialProperty<RankTwoTensor> & _tensor;
-  MaterialProperty<RankTwoTensor> & _tensor_old;
+  const MaterialProperty<RankTwoTensor> & _tensor_old;
   MaterialProperty<RankTwoTensor> & _tensor_increment;
 
-  std::vector<const MaterialProperty<RankTwoTensor> * > _coupled_tensor_increments;
+  std::vector<const MaterialProperty<RankTwoTensor> *> _coupled_tensor_increments;
 };
 
 #endif

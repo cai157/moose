@@ -1,32 +1,44 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "FileRangeBuilder.h"
+
+// MOOSE includes
+#include "InputParameters.h"
+
 #include "pcrecpp.h"
 #include "tinydir.h"
 
-template<>
-InputParameters validParams<FileRangeBuilder>()
+template <>
+InputParameters
+validParams<FileRangeBuilder>()
 {
   InputParameters params = emptyInputParameters();
-  params.addParam<FileName>("file", "Name of single image file to extract mesh parameters from.  If provided, a 2D mesh is created.");
-  params.addParam<FileNameNoExtension>("file_base", "Image file base to open, use this option when a stack of images must be read (ignored if 'file' is given)");
-  params.addParam<std::vector<unsigned int> >("file_range", "Range of images to analyze, used with 'file_base' (ignored if 'file' is given)");
+  params.addParam<FileName>("file",
+                            "Name of single image file to extract mesh parameters from.  "
+                            "If provided, a 2D mesh is created.");
+  params.addParam<FileNameNoExtension>("file_base",
+                                       "Image file base to open, use this option when "
+                                       "a stack of images must be read (ignored if "
+                                       "'file' is given)");
+  params.addParam<std::vector<unsigned int>>(
+      "file_range",
+      "Range of images to analyze, used with 'file_base' (ignored if 'file' is given)");
   params.addParam<std::string>("file_suffix", "Suffix of the file to open, e.g. 'png'");
   return params;
 }
 
-FileRangeBuilder::FileRangeBuilder(const InputParameters & params) :
-    _status(0)
+FileRangeBuilder::FileRangeBuilder(const InputParameters & params) : _status(0)
 {
-  bool
-    has_file = params.isParamValid("file"),
-    has_file_base = params.isParamValid("file_base"),
-    has_file_range = params.isParamValid("file_range"),
-    has_file_suffix = params.isParamValid("file_suffix");
+  bool has_file = params.isParamValid("file"), has_file_base = params.isParamValid("file_base"),
+       has_file_range = params.isParamValid("file_range"),
+       has_file_suffix = params.isParamValid("file_suffix");
 
   // Variables to be (possibly) used below...
   std::string file;
@@ -43,7 +55,7 @@ FileRangeBuilder::FileRangeBuilder(const InputParameters & params) :
   if (has_file_base)
     file_base = params.get<FileNameNoExtension>("file_base");
   if (has_file_range)
-    file_range = params.get<std::vector<unsigned int> >("file_range");
+    file_range = params.get<std::vector<unsigned int>>("file_range");
   if (has_file_suffix)
     _file_suffix = params.get<std::string>("file_suffix");
 
@@ -143,25 +155,25 @@ FileRangeBuilder::FileRangeBuilder(const InputParameters & params) :
   // If we made it here, there were no errors
 }
 
-
-
 void
 FileRangeBuilder::errorCheck()
 {
   switch (_status)
   {
-  case 0:
-    return;
-  case 1:
-    mooseError("Cannot provide both file and file_base parameters");
-    break;
-  case 2:
-    mooseError("You must provide a valid value for either the 'file' parameter or the 'file_base' parameter.");
-    break;
-  case 3:
-    mooseError("If you provide a 'file_base', you must also provide a valid 'file_suffix', e.g. 'png'.");
-    break;
-  default:
-    mooseError("Unknown error code!");
+    case 0:
+      return;
+    case 1:
+      mooseError("Cannot provide both file and file_base parameters");
+      break;
+    case 2:
+      mooseError("You must provide a valid value for either the 'file' parameter or the "
+                 "'file_base' parameter.");
+      break;
+    case 3:
+      mooseError(
+          "If you provide a 'file_base', you must also provide a valid 'file_suffix', e.g. 'png'.");
+      break;
+    default:
+      mooseError("Unknown error code!");
   }
 }

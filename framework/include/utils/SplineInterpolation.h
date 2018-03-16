@@ -1,25 +1,17 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef SPLINEINTERPOLATION_H
 #define SPLINEINTERPOLATION_H
 
 #include "SplineInterpolationBase.h"
-#include <fstream>
-#include <sstream>
 #include <string>
-
 
 /**
  * This class interpolates tabulated functions with cubic splines
@@ -39,14 +31,20 @@ public:
    *
    * If yp1, ypn are not specified or greater or equal that _deriv_bound, we use natural spline
    */
-  SplineInterpolation(const std::vector<Real> & x, const std::vector<Real> & y, Real yp1 = _deriv_bound, Real ypn = _deriv_bound);
+  SplineInterpolation(const std::vector<Real> & x,
+                      const std::vector<Real> & y,
+                      Real yp1 = _deriv_bound,
+                      Real ypn = _deriv_bound);
 
   virtual ~SplineInterpolation() = default;
 
   /**
    * Set the x-, y- values and first derivatives
    */
-  void setData(const std::vector<Real> & x, const std::vector<Real> & y, Real yp1 = _deriv_bound, Real ypn = _deriv_bound);
+  void setData(const std::vector<Real> & x,
+               const std::vector<Real> & y,
+               Real yp1 = _deriv_bound,
+               Real ypn = _deriv_bound);
 
   void errorCheck();
 
@@ -64,10 +62,17 @@ public:
    * This function will dump GNUPLOT input files that can be run to show the data points and
    * function fits
    */
-  void dumpSampleFile(std::string base_name, std::string x_label="X", std::string y_label="Y", float xmin=0, float xmax=0, float ymin=0, float ymax=0);
+  void dumpSampleFile(std::string base_name,
+                      std::string x_label = "X",
+                      std::string y_label = "Y",
+                      float xmin = 0,
+                      float xmax = 0,
+                      float ymin = 0,
+                      float ymax = 0);
 
   /**
-   * This function returns the size of the array holding the points, i.e. the number of sample points
+   * This function returns the size of the array holding the points, i.e. the number of sample
+   * points
    */
   unsigned int getSampleSize();
 
@@ -87,4 +92,4 @@ protected:
   static int _file_number;
 };
 
-#endif //LINEARINTERPOLATION_H
+#endif // LINEARINTERPOLATION_H

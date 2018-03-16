@@ -1,42 +1,38 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOOSETYPES_H
 #define MOOSETYPES_H
 
 #include "Moose.h"
 
-// libMesh includes
 #include "libmesh/libmesh.h"
 #include "libmesh/id_types.h"
 #include "libmesh/stored_range.h"
 #include "libmesh/elem.h"
 #include "libmesh/petsc_macro.h"
 #include "libmesh/boundary_info.h"
+#include "libmesh/parameters.h"
+#include "libmesh/vector_value.h"
+#include "libmesh/tensor_value.h"
+#include "libmesh/type_n_tensor.h"
+
+// BOOST include
+#include "bitmask_operators.h"
 
 #include <string>
 #include <vector>
+#include <memory>
 
-#ifdef LIBMESH_HAVE_CXX11_SHARED_PTR
-#  include <memory>
-#  define MooseSharedPointer std::shared_ptr
-#  define MooseSharedNamespace std
-#else
-#  include "boost/shared_ptr.hpp"
-#  define MooseSharedPointer boost::shared_ptr
-#  define MooseSharedNamespace boost
-#endif
+// DO NOT USE (Deprecated)
+#define MooseSharedPointer std::shared_ptr
+#define MooseSharedNamespace std
 
 /**
  * Macro for inferring the proper type of a normal loop index compatible
@@ -51,73 +47,102 @@
 #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #endif
 
-#define beginIndex_0()        ERROR --> "beginIndex() requires one or two arguments"
-#define beginIndex_1(A)       decltype(A.size())(0)
-#define beginIndex_2(A,B)     decltype(A.size())(B)
-#define beginIndex_3(A,B,C)   ERROR --> "beginIndex() requires one or two arguments"
-#define beginIndex_4(A,B,C,D) ERROR --> "beginIndex() requires one or two arguments"
+#define beginIndex_0() ERROR-- > "beginIndex() requires one or two arguments"
+#define beginIndex_1(A) decltype(A.size())(0)
+#define beginIndex_2(A, B) decltype(A.size())(B)
+#define beginIndex_3(A, B, C) ERROR-- > "beginIndex() requires one or two arguments"
+#define beginIndex_4(A, B, C, D) ERROR-- > "beginIndex() requires one or two arguments"
 
 // The interim macro that simply strips the excess and ends up with the required macro
-#define beginIndex_X(x,A,B,C,D,FUNC, ...)  FUNC
+#define beginIndex_X(x, A, B, C, D, FUNC, ...) FUNC
 
 // The macro that the programmer uses
-#define beginIndex(...)    beginIndex_X(,##__VA_ARGS__,\
-                           beginIndex_4(__VA_ARGS__),\
-                           beginIndex_3(__VA_ARGS__),\
-                           beginIndex_2(__VA_ARGS__),\
-                           beginIndex_1(__VA_ARGS__),\
-                           beginIndex_0(__VA_ARGS__)\
-                           )
+#define beginIndex(...)                                                                            \
+  beginIndex_X(,                                                                                   \
+               ##__VA_ARGS__,                                                                      \
+               beginIndex_4(__VA_ARGS__),                                                          \
+               beginIndex_3(__VA_ARGS__),                                                          \
+               beginIndex_2(__VA_ARGS__),                                                          \
+               beginIndex_1(__VA_ARGS__),                                                          \
+               beginIndex_0(__VA_ARGS__))
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
 
+/**
+ * forward declarations
+ */
+template <typename>
+class MooseArray;
 
 /**
  * MOOSE typedefs
  */
-typedef Real                     PostprocessorValue;
-typedef std::vector<Real>        VectorPostprocessorValue;
-typedef boundary_id_type         BoundaryID;
-typedef unsigned int             InterfaceID;
-typedef subdomain_id_type        SubdomainID;
-typedef unsigned int             MooseObjectID;
-typedef unsigned int             THREAD_ID;
-
+typedef Real PostprocessorValue;
+typedef std::vector<Real> VectorPostprocessorValue;
+typedef boundary_id_type BoundaryID;
+typedef unsigned int InterfaceID;
+typedef subdomain_id_type SubdomainID;
+typedef unsigned int MooseObjectID;
+typedef unsigned int THREAD_ID;
 
 typedef StoredRange<std::vector<dof_id_type>::iterator, dof_id_type> NodeIdRange;
 typedef StoredRange<std::vector<const Elem *>::iterator, const Elem *> ConstElemPointerRange;
 
-/// Execution flags - when is the object executed/evaluated
-// Note: If this enum is changed, make sure to modify:
-//   (1) the local function populateExecTypes in Moose.C.
-//   (2) the function in Conversion.C: initExecStoreType()
-//   (3) the method SetupInterface::getExecuteOptions
-//   (4) the function Output::getExecuteOptions
-enum ExecFlagType {
-  EXEC_NONE              = 0x00, // 0
-  /// Object is evaluated only once at the beginning of the simulation
-  EXEC_INITIAL           = 0x01, // 1
-  /// Object is evaluated in every residual computation
-  EXEC_LINEAR            = 0x02, // 2
-  /// Object is evaluated in every jacobian computation
-  EXEC_NONLINEAR         = 0x04, // 4
-  /// Object is evaluated at the end of every time step
-  EXEC_TIMESTEP_END      = 0x08, // 8
-  /// Object is evaluated at the beginning of every time step
-  EXEC_TIMESTEP_BEGIN    = 0x10, // 16
-  /// Object is evaluated at the end of the simulations (output only)
-  EXEC_FINAL             = 0x20, // 32
-  /// Forces execution to occur (output only)
-  EXEC_FORCED            = 0x40, // 64
-  /// Forces execution on failed solve (output only)
-  EXEC_FAILED            = 0x80, // 128
-  /// For use with custom executioners that want to fire objects at a specific time
-  EXEC_CUSTOM            = 0x100, // 256
-  /// Objects is evaluated on subdomain
-  EXEC_SUBDOMAIN         = 0x200  // 512
+template <typename OutputType>
+struct OutputTools
+{
+  typedef OutputType OutputShape;
+  typedef OutputType OutputValue;
+  typedef typename TensorTools::IncrementRank<OutputShape>::type OutputGradient;
+  typedef typename TensorTools::IncrementRank<OutputGradient>::type OutputSecond;
+  typedef typename TensorTools::DecrementRank<OutputShape>::type OutputDivergence;
+
+  typedef MooseArray<OutputShape> VariableValue;
+  typedef MooseArray<OutputGradient> VariableGradient;
+  typedef MooseArray<OutputSecond> VariableSecond;
+  typedef MooseArray<OutputShape> VariableCurl;
+  typedef MooseArray<OutputDivergence> VariableDivergence;
+
+  typedef MooseArray<std::vector<OutputShape>> VariablePhiValue;
+  typedef MooseArray<std::vector<OutputGradient>> VariablePhiGradient;
+  typedef MooseArray<std::vector<OutputSecond>> VariablePhiSecond;
+  typedef MooseArray<std::vector<OutputShape>> VariablePhiCurl;
+  typedef MooseArray<std::vector<OutputDivergence>> VariablePhiDivergence;
+
+  typedef MooseArray<std::vector<OutputShape>> VariableTestValue;
+  typedef MooseArray<std::vector<OutputGradient>> VariableTestGradient;
+  typedef MooseArray<std::vector<OutputSecond>> VariableTestSecond;
+  typedef MooseArray<std::vector<OutputShape>> VariableTestCurl;
+  typedef MooseArray<std::vector<OutputDivergence>> VariableTestDivergence;
 };
 
+typedef MooseArray<Real> VariableValue;
+typedef MooseArray<VectorValue<Real>> VariableGradient;
+typedef MooseArray<TensorValue<Real>> VariableSecond;
+
+typedef MooseArray<std::vector<Real>> VariablePhiValue;
+typedef MooseArray<std::vector<VectorValue<Real>>> VariablePhiGradient;
+typedef MooseArray<std::vector<TensorValue<Real>>> VariablePhiSecond;
+
+typedef MooseArray<std::vector<Real>> VariableTestValue;
+typedef MooseArray<std::vector<VectorValue<Real>>> VariableTestGradient;
+typedef MooseArray<std::vector<TensorValue<Real>>> VariableTestSecond;
+
+typedef MooseArray<VectorValue<Real>> VectorVariableValue;
+typedef MooseArray<TensorValue<Real>> VectorVariableGradient;
+typedef MooseArray<TypeNTensor<3, Real>> VectorVariableSecond;
+typedef MooseArray<VectorValue<Real>> VectorVariableCurl;
+
+typedef MooseArray<std::vector<VectorValue<Real>>> VectorVariablePhiValue;
+typedef MooseArray<std::vector<TensorValue<Real>>> VectorVariablePhiGradient;
+typedef MooseArray<std::vector<TypeNTensor<3, Real>>> VectorVariablePhiSecond;
+typedef MooseArray<std::vector<VectorValue<Real>>> VectorVariablePhiCurl;
+
+typedef MooseArray<std::vector<VectorValue<Real>>> VectorVariableTestValue;
+typedef MooseArray<std::vector<TensorValue<Real>>> VectorVariableTestGradient;
+typedef MooseArray<std::vector<TypeNTensor<3, Real>>> VectorVariableTestSecond;
+typedef MooseArray<std::vector<VectorValue<Real>>> VectorVariableTestCurl;
 
 namespace Moose
 {
@@ -125,13 +150,16 @@ const SubdomainID ANY_BLOCK_ID = libMesh::Elem::invalid_subdomain_id - 1;
 const SubdomainID INVALID_BLOCK_ID = libMesh::Elem::invalid_subdomain_id;
 const BoundaryID ANY_BOUNDARY_ID = static_cast<BoundaryID>(-1);
 const BoundaryID INVALID_BOUNDARY_ID = libMesh::BoundaryInfo::invalid_id;
+const std::set<SubdomainID> EMPTY_BLOCK_IDS = {};
+const std::set<BoundaryID> EMPTY_BOUNDARY_IDS = {};
 
 /**
  * MaterialData types
  *
  * @see FEProblemBase, MaterialPropertyInterface
  */
-enum MaterialDataType {
+enum MaterialDataType
+{
   BLOCK_MATERIAL_DATA,
   BOUNDARY_MATERIAL_DATA,
   FACE_MATERIAL_DATA,
@@ -139,19 +167,15 @@ enum MaterialDataType {
 };
 
 /**
- * Flag for AuxKernel related exeuction type.
+ * Flag for AuxKernel related execution type.
  */
 enum AuxGroup
 {
-  PRE_AUX = 0,
-  POST_AUX = 1,
-  ALL = 2
+  PRE_IC = 0,
+  PRE_AUX = 1,
+  POST_AUX = 2,
+  ALL = 3
 };
-
-/**
- * A static list of all the exec types.
- */
-extern const std::vector<ExecFlagType> exec_types;
 
 /**
  * Framework-wide stuff
@@ -166,6 +190,8 @@ enum KernelType
 {
   KT_TIME = 0,
   KT_NONTIME = 1,
+  KT_NONEIGEN = 2,
+  KT_EIGEN = 3,
   KT_ALL
 };
 
@@ -224,7 +250,20 @@ enum PCSideType
 {
   PCS_LEFT,
   PCS_RIGHT,
-  PCS_SYMMETRIC
+  PCS_SYMMETRIC,
+  PCS_DEFAULT ///< Use whatever we have in PETSc
+};
+
+/**
+ * Norm type for converge test
+ */
+enum MooseKSPNormType
+{
+  KSPN_NONE,
+  KSPN_PRECONDITIONED,
+  KSPN_UNPRECONDITIONED,
+  KSPN_NATURAL,
+  KSPN_DEFAULT ///< Use whatever we have in PETSc
 };
 
 /**
@@ -232,11 +271,72 @@ enum PCSideType
  */
 enum SolveType
 {
-  ST_PJFNK,            ///< Preconditioned Jacobian-Free Newton Krylov
-  ST_JFNK,             ///< Jacobian-Free Newton Krylov
-  ST_NEWTON,           ///< Full Newton Solve
-  ST_FD,               ///< Use finite differences to compute Jacobian
-  ST_LINEAR            ///< Solving a linear problem
+  ST_PJFNK,  ///< Preconditioned Jacobian-Free Newton Krylov
+  ST_JFNK,   ///< Jacobian-Free Newton Krylov
+  ST_NEWTON, ///< Full Newton Solve
+  ST_FD,     ///< Use finite differences to compute Jacobian
+  ST_LINEAR  ///< Solving a linear problem
+};
+
+/**
+ * Type of the eigen solve
+ */
+enum EigenSolveType
+{
+  EST_POWER,              ///< Power / Inverse / RQI
+  EST_ARNOLDI,            ///< Arnoldi
+  EST_KRYLOVSCHUR,        ///< Krylov-Schur
+  EST_JACOBI_DAVIDSON,    ///< Jacobi-Davidson
+  EST_NONLINEAR_POWER,    ///< Nonlinear inverse power
+  EST_MF_NONLINEAR_POWER, ///< Matrix-free nonlinear inverse power
+  EST_MONOLITH_NEWTON,    ///< Newton-based eigen solver
+  EST_MF_MONOLITH_NEWTON, ///< Matrix-free Newton-based eigen solver
+};
+
+/**
+ * Type of the eigen problem
+ */
+enum EigenProblemType
+{
+  EPT_HERMITIAN,             ///< Hermitian
+  EPT_NON_HERMITIAN,         ///< Non-Hermitian
+  EPT_GEN_HERMITIAN,         ///< Generalized Hermitian
+  EPT_GEN_INDEFINITE,        ///< Generalized Hermitian indefinite
+  EPT_GEN_NON_HERMITIAN,     ///< Generalized Non-Hermitian
+  EPT_POS_GEN_NON_HERMITIAN, ///< Generalized Non-Hermitian with positive (semi-)definite B
+  EPT_SLEPC_DEFAULT          ///< use whatever SLPEC has by default
+};
+
+/**
+ * Which eigen pairs
+ */
+enum WhichEigenPairs
+{
+  WEP_LARGEST_MAGNITUDE,  ///< largest magnitude
+  WEP_SMALLEST_MAGNITUDE, ///< smallest magnitude
+  WEP_LARGEST_REAL,       ///< largest real
+  WEP_SMALLEST_REAL,      ///< smallest real
+  WEP_LARGEST_IMAGINARY,  ///< largest imaginary
+  WEP_SMALLEST_IMAGINARY, ///< smallest imaginary
+  WEP_TARGET_MAGNITUDE,   ///< target magnitude
+  WEP_TARGET_REAL,        ///< target real
+  WEP_TARGET_IMAGINARY,   ///< target imaginary
+  WEP_ALL_EIGENVALUES,    ///< all eigenvalues
+  WEP_SLEPC_DEFAULT       ///< use whatever we have in SLEPC
+};
+
+/**
+ * Time integrators
+ */
+enum TimeIntegratorType
+{
+  TI_IMPLICIT_EULER,
+  TI_EXPLICIT_EULER,
+  TI_CRANK_NICOLSON,
+  TI_BDF2,
+  TI_EXPLICIT_MIDPOINT,
+  TI_LSTABLE_DIRK2,
+  TI_EXPLICIT_TVD_RK_2,
 };
 
 /**
@@ -252,12 +352,12 @@ enum ConstraintFormulationType
  */
 enum LineSearchType
 {
-  LS_INVALID,           ///< means not set
+  LS_INVALID, ///< means not set
   LS_DEFAULT,
   LS_NONE,
   LS_BASIC,
 #ifdef LIBMESH_HAVE_PETSC
-#if PETSC_VERSION_LESS_THAN(3,3,0)
+#if PETSC_VERSION_LESS_THAN(3, 3, 0)
   LS_CUBIC,
   LS_QUADRATIC,
   LS_BASICNONORMS,
@@ -270,29 +370,80 @@ enum LineSearchType
 #endif
 };
 
+/**
+ * Type of the matrix-free finite-differencing parameter
+ */
+enum MffdType
+{
+  MFFD_INVALID, ///< means not set
+  MFFD_WP,
+  MFFD_DS
+};
+
+/**
+ * Type of patch update strategy for modeling node-face constraints or contact
+ */
+enum PatchUpdateType
+{
+  Never,
+  Always,
+  Auto,
+  Iteration
+};
+
+/**
+ * Main types of Relationship Managers
+ */
+enum class RelationshipManagerType : unsigned char
+{
+  Invalid = 0x0,
+  Geometric = 0x1,
+  Algebraic = 0x2
+};
+
+std::string stringify(const Moose::RelationshipManagerType & t);
 }
+
+namespace libMesh
+{
+template <>
+inline void
+print_helper(std::ostream & os, const Moose::RelationshipManagerType * param)
+{
+  // Specialization so that we don't print out unprintable characters
+  os << Moose::stringify(*param);
+}
+}
+
+template <>
+struct enable_bitmask_operators<Moose::RelationshipManagerType>
+{
+  static const bool enable = true;
+};
 
 /**
  * This Macro is used to generate std::string derived types useful for
  * strong type checking and special handling in the GUI.  It does not
  * extend std::string in any way so it is generally "safe"
  */
-#define DerivativeStringClass(TheName)                                  \
-  class TheName : public std::string                                    \
-  {                                                                     \
-  public:                                                               \
-    TheName(): std::string() {}                                         \
-    TheName(const std::string& str): std::string(str) {}                \
-    TheName(const std::string& str, size_t pos, size_t n = npos):       \
-      std::string(str, pos, n) {}                                       \
-    TheName(const char * s, size_t n): std::string(s,n) {}              \
-    TheName(const char * s): std::string(s) {}                          \
-    TheName(size_t n, char c): std::string(n, c) {}                     \
+#define DerivativeStringClass(TheName)                                                             \
+  class TheName : public std::string                                                               \
+  {                                                                                                \
+  public:                                                                                          \
+    TheName() : std::string() {}                                                                   \
+    TheName(const std::string & str) : std::string(str) {}                                         \
+    TheName(const std::string & str, size_t pos, size_t n = npos) : std::string(str, pos, n) {}    \
+    TheName(const char * s, size_t n) : std::string(s, n) {}                                       \
+    TheName(const char * s) : std::string(s) {}                                                    \
+    TheName(size_t n, char c) : std::string(n, c) {}                                               \
   } /* No semicolon here because this is a macro */
 
 // Instantiate new Types
 
-/// This type is for expected filenames, it can be used to trigger open file dialogs in the GUI
+/// This type is for expected (i.e. input) file names or paths that your simulation needs.  If
+/// relative paths are assigned to this type, they are treated/modified to be relative to the
+/// location of the simulation's main input file's directory.  It can be used to trigger open file
+/// dialogs in the GUI.
 DerivativeStringClass(FileName);
 
 /// This type is for expected filenames where the extension is unwanted, it can be used to trigger open file dialogs in the GUI
@@ -327,6 +478,12 @@ DerivativeStringClass(VectorPostprocessorName);
 
 /// This type is used for objects that expect Moose Function objects
 DerivativeStringClass(FunctionName);
+
+/// This type is used for objects that expect Moose Distribution objects
+DerivativeStringClass(DistributionName);
+
+/// This type is used for objects that expect Moose Sampler objects
+DerivativeStringClass(SamplerName);
 
 /// This type is used for objects that expect "UserObject" names
 DerivativeStringClass(UserObjectName);

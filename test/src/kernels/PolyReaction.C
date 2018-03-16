@@ -1,28 +1,25 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "PolyReaction.h"
 
-template<>
-InputParameters validParams<PolyReaction>()
+registerMooseObject("MooseTestApp", PolyReaction);
+
+template <>
+InputParameters
+validParams<PolyReaction>()
 {
   InputParameters params = validParams<Kernel>();
   return params;
 }
 
-PolyReaction::PolyReaction(const InputParameters & parameters) :
-    Kernel(parameters)
-{}
+PolyReaction::PolyReaction(const InputParameters & parameters) : Kernel(parameters) {}
 
 Real
 PolyReaction::computeQpResidual()
@@ -34,12 +31,12 @@ PolyReaction::computeQpResidual()
   Real y = _q_point[_qp](1);
   Real z = _q_point[_qp](2);
   Real t = _t;
-  Real u = a*x*x*x*y*t+b*y*y*z+e*x*y*z*z*z*z;
-  return _test[_i][_qp]*2*u*u;
+  Real u = a * x * x * x * y * t + b * y * y * z + e * x * y * z * z * z * z;
+  return _test[_i][_qp] * 2 * u * u;
 }
 
 Real
 PolyReaction::computeQpJacobian()
 {
-  return 0; //We have no grad u.
+  return 0; // We have no grad u.
 }

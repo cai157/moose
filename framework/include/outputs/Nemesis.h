@@ -1,23 +1,17 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef NEMESIS_H
 #define NEMESIS_H
 
 // MOOSE includes
 #include "AdvancedOutput.h"
-#include "OversampleOutput.h"
 
 // Forward declarations
 class Nemesis;
@@ -28,16 +22,15 @@ namespace libMesh
 class Nemesis_IO;
 }
 
-template<>
+template <>
 InputParameters validParams<Nemesis>();
 
 /**
  * Class for output data to the Nemesis format
  */
-class Nemesis : public AdvancedOutput<OversampleOutput>
+class Nemesis : public AdvancedOutput
 {
 public:
-
   /**
    * Class constructor
    */
@@ -49,12 +42,6 @@ public:
   virtual ~Nemesis();
 
   /**
-   * Overload the Output::output method, this is required for Nemesis
-   * output due to the method utilized for outputing single/global parameters
-   */
-  virtual void output(const ExecFlagType & type) override;
-
-  /**
    * Sets up the libMesh::NemesisII_IO object used for outputting to the Nemesis format
    */
   virtual void initialSetup() override;
@@ -64,8 +51,12 @@ public:
    */
   virtual void meshChanged() override;
 
-
 protected:
+  /**
+   * Overload the Output::output method, this is required for Nemesis
+   * output due to the method utilized for outputing single/global parameters
+   */
+  virtual void output(const ExecFlagType & type) override;
 
   /**
    * Writes postprocessor values to global output parameters
@@ -85,7 +76,7 @@ protected:
   virtual std::string filename() override;
 
   /// Pointer to the libMesh::NemesisII_IO object that performs the actual data output
-  Nemesis_IO * _nemesis_io_ptr;
+  std::unique_ptr<Nemesis_IO> _nemesis_io_ptr;
 
   /// Storage for scalar values (postprocessors and scalar AuxVariables)
   std::vector<Real> _global_values;
@@ -97,13 +88,11 @@ protected:
   unsigned int _file_num;
 
 private:
-
   /// Count of outputs per exodus file
   unsigned int _nemesis_num;
 
   /// Flag if the output has been initialized
   bool _nemesis_initialized;
-
 };
 
 #endif /* NEMESIS_H */

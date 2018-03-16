@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWMASSVOLUMETRICEXPANSION_H
 #define POROUSFLOWMASSVOLUMETRICEXPANSION_H
@@ -15,12 +17,13 @@
 // Forward Declarations
 class PorousFlowMassVolumetricExpansion;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowMassVolumetricExpansion>();
 
 /**
  * Kernel = mass_component * d(volumetric_strain)/dt
- * where mass_component = porosity*sum_phases(density_phase*saturation_phase*massfrac_phase^component)
+ * where mass_component =
+ * porosity*sum_phases(density_phase*saturation_phase*massfrac_phase^component)
  * which is lumped to the nodes
  */
 class PorousFlowMassVolumetricExpansion : public TimeKernel
@@ -55,37 +58,37 @@ protected:
   const MaterialProperty<Real> & _porosity;
 
   /// d(porosity)/d(porous-flow variable)
-  const MaterialProperty<std::vector<Real> > & _dporosity_dvar;
+  const MaterialProperty<std::vector<Real>> & _dporosity_dvar;
 
   /// d(porosity)/d(grad porous-flow variable)
-  const MaterialProperty<std::vector<RealGradient> > & _dporosity_dgradvar;
+  const MaterialProperty<std::vector<RealGradient>> & _dporosity_dgradvar;
 
   /// the nearest qp to the node
   const MaterialProperty<unsigned int> * const _nearest_qp;
 
   /// fluid density
-  const MaterialProperty<std::vector<Real> > & _fluid_density;
+  const MaterialProperty<std::vector<Real>> & _fluid_density;
 
   /// d(fluid density)/d(porous-flow variable)
-  const MaterialProperty<std::vector<std::vector<Real> > > & _dfluid_density_dvar;
+  const MaterialProperty<std::vector<std::vector<Real>>> & _dfluid_density_dvar;
 
   /// fluid saturation
-  const MaterialProperty<std::vector<Real> > & _fluid_saturation;
+  const MaterialProperty<std::vector<Real>> & _fluid_saturation;
 
   /// d(fluid saturation)/d(porous-flow variable)
-  const MaterialProperty<std::vector<std::vector<Real> > > & _dfluid_saturation_dvar;
+  const MaterialProperty<std::vector<std::vector<Real>>> & _dfluid_saturation_dvar;
 
   /// mass fraction
-  const MaterialProperty<std::vector<std::vector<Real> > > & _mass_frac;
+  const MaterialProperty<std::vector<std::vector<Real>>> & _mass_frac;
 
   /// d(mass fraction)/d(porous-flow variable)
-  const MaterialProperty<std::vector<std::vector<std::vector<Real> > > > & _dmass_frac_dvar;
+  const MaterialProperty<std::vector<std::vector<std::vector<Real>>>> & _dmass_frac_dvar;
 
   /// strain rate
   const MaterialProperty<Real> & _strain_rate_qp;
 
   /// d(strain rate)/d(porous-flow variable)
-  const MaterialProperty<std::vector<RealGradient> > & _dstrain_rate_qp_dvar;
+  const MaterialProperty<std::vector<RealGradient>> & _dstrain_rate_qp_dvar;
 
   /**
    * Derivative of mass part of the residual with respect to the Variable
@@ -93,15 +96,16 @@ protected:
    * This is used by both computeQpJacobian and computeQpOffDiagJacobian
    * @param jvar take the derivative of the mass part of the residual wrt this variable number
    */
-  Real computedMassQpJac(unsigned int jvar);
+  Real computedMassQpJac(unsigned int jvar) const;
 
   /**
    * Derivative of volumetric-strain part of the residual with respect to the Variable
    * with variable number jvar.
    * This is used by both computeQpJacobian and computeQpOffDiagJacobian
-   * @param jvar take the derivative of the volumetric-strain part of the residual wrt this variable number
+   * @param jvar take the derivative of the volumetric-strain part of the residual wrt this variable
+   * number
    */
-  Real computedVolQpJac(unsigned int jvar);
+  Real computedVolQpJac(unsigned int jvar) const;
 };
 
-#endif //POROUSFLOWMASSVOLUMETRICEXPANSION_H
+#endif // POROUSFLOWMASSVOLUMETRICEXPANSION_H

@@ -1,25 +1,29 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "NewmarkVelAux.h"
 
-template<>
-InputParameters validParams<NewmarkVelAux>()
+template <>
+InputParameters
+validParams<NewmarkVelAux>()
 {
   InputParameters params = validParams<AuxKernel>();
-    params.addRequiredCoupledVar("acceleration","acceleration variable");
-    params.addRequiredParam<Real>("gamma","gamma parameter");
+  params.addRequiredCoupledVar("acceleration", "acceleration variable");
+  params.addRequiredParam<Real>("gamma", "gamma parameter");
   return params;
 }
 
-NewmarkVelAux::NewmarkVelAux(const InputParameters & parameters) :
-  AuxKernel(parameters),
-   _accel_old(coupledValueOld("acceleration")),
-   _accel(coupledValue("acceleration")),
-   _gamma(getParam<Real>("gamma"))
+NewmarkVelAux::NewmarkVelAux(const InputParameters & parameters)
+  : AuxKernel(parameters),
+    _accel_old(coupledValueOld("acceleration")),
+    _accel(coupledValue("acceleration")),
+    _gamma(getParam<Real>("gamma"))
 {
 }
 
@@ -30,5 +34,5 @@ NewmarkVelAux::computeValue()
   if (!isNodal())
     mooseError("must run on a nodal variable");
   // Calculates Velocity using Newmark time integration scheme
-  return vel_old + (_dt*(1-_gamma))*_accel_old[_qp] + _gamma*_dt*_accel[_qp];
+  return vel_old + (_dt * (1 - _gamma)) * _accel_old[_qp] + _gamma * _dt * _accel[_qp];
 }

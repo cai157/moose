@@ -1,21 +1,19 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "EqualValueNodalConstraint.h"
 
-template<>
-InputParameters validParams<EqualValueNodalConstraint>()
+registerMooseObject("MooseTestApp", EqualValueNodalConstraint);
+
+template <>
+InputParameters
+validParams<EqualValueNodalConstraint>()
 {
   InputParameters params = validParams<NodalConstraint>();
   params.addRequiredParam<unsigned int>("master", "The ID of the master node");
@@ -24,28 +22,25 @@ InputParameters validParams<EqualValueNodalConstraint>()
   return params;
 }
 
-EqualValueNodalConstraint::EqualValueNodalConstraint(const InputParameters & parameters) :
-    NodalConstraint(parameters),
-    _penalty(getParam<Real>("penalty"))
+EqualValueNodalConstraint::EqualValueNodalConstraint(const InputParameters & parameters)
+  : NodalConstraint(parameters), _penalty(getParam<Real>("penalty"))
 {
   _connected_nodes.push_back(getParam<unsigned int>("slave"));
   _master_node_vector.push_back(getParam<unsigned int>("master"));
 }
 
-EqualValueNodalConstraint::~EqualValueNodalConstraint()
-{
-}
+EqualValueNodalConstraint::~EqualValueNodalConstraint() {}
 
 Real
 EqualValueNodalConstraint::computeQpResidual(Moose::ConstraintType type)
 {
   switch (type)
   {
-  case Moose::Master:
-    return (_u_master[_j] - _u_slave[_i]) * _penalty;
+    case Moose::Master:
+      return (_u_master[_j] - _u_slave[_i]) * _penalty;
 
-  case Moose::Slave:
-    return (_u_slave[_i] - _u_master[_j]) * _penalty;
+    case Moose::Slave:
+      return (_u_slave[_i] - _u_master[_j]) * _penalty;
   }
 
   return 0.;
@@ -56,17 +51,17 @@ EqualValueNodalConstraint::computeQpJacobian(Moose::ConstraintJacobianType type)
 {
   switch (type)
   {
-  case Moose::MasterMaster:
-    return _penalty;
+    case Moose::MasterMaster:
+      return _penalty;
 
-  case Moose::MasterSlave:
-    return -_penalty;
+    case Moose::MasterSlave:
+      return -_penalty;
 
-  case Moose::SlaveSlave:
-    return _penalty;
+    case Moose::SlaveSlave:
+      return _penalty;
 
-  case Moose::SlaveMaster:
-    return -_penalty;
+    case Moose::SlaveMaster:
+      return -_penalty;
   }
 
   return 0.;

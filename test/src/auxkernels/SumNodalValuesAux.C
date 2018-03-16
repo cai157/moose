@@ -1,21 +1,19 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SumNodalValuesAux.h"
 
-template<>
-InputParameters validParams<SumNodalValuesAux>()
+registerMooseObject("MooseTestApp", SumNodalValuesAux);
+
+template <>
+InputParameters
+validParams<SumNodalValuesAux>()
 {
   InputParameters params = validParams<AuxNodalScalarKernel>();
   params.addRequiredCoupledVar("sum_var", "Variable to be summed");
@@ -23,25 +21,23 @@ InputParameters validParams<SumNodalValuesAux>()
   return params;
 }
 
-SumNodalValuesAux::SumNodalValuesAux(const InputParameters & parameters) :
-    AuxNodalScalarKernel(parameters),
-    _sum_var(coupledValue("sum_var"))
+SumNodalValuesAux::SumNodalValuesAux(const InputParameters & parameters)
+  : AuxNodalScalarKernel(parameters), _sum_var(coupledValue("sum_var"))
 {
 }
 
-SumNodalValuesAux::~SumNodalValuesAux()
-{
-}
+SumNodalValuesAux::~SumNodalValuesAux() {}
 
 void
 SumNodalValuesAux::compute()
 {
-  _subproblem.reinitNodes(_node_ids, _tid);        // compute variables at nodes
+  _subproblem.reinitNodes(_node_ids, _tid); // compute variables at nodes
   for (_i = 0; _i < _var.order(); ++_i)
   {
     Real value = computeValue();
     _communicator.sum(value);
-    _var.setValue(_i, value);                  // update variable data, which is referenced by other kernels, so the value is up-to-date
+    _var.setValue(_i, value); // update variable data, which is referenced by other kernels, so the
+                              // value is up-to-date
   }
 }
 

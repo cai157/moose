@@ -1,11 +1,14 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-#ifndef ACInterface_H
-#define ACInterface_H
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
+#ifndef ACINTERFACE_H
+#define ACINTERFACE_H
 
 #include "Kernel.h"
 #include "JvarMapInterface.h"
@@ -13,14 +16,14 @@
 
 class ACInterface;
 
-template<>
+template <>
 InputParameters validParams<ACInterface>();
 
 /**
  * Compute the Allen-Cahn interface term with the weak form residual
  * \f$ \left( \kappa_i \nabla\eta_i, \nabla (L_i \psi) \right) \f$
  */
-class ACInterface : public DerivativeMaterialInterface<JvarMapKernelInterface<Kernel> >
+class ACInterface : public DerivativeMaterialInterface<JvarMapKernelInterface<Kernel>>
 {
 public:
   ACInterface(const InputParameters & parameters);
@@ -59,7 +62,7 @@ protected:
   /// @{ Mobility derivative w.r.t. other coupled variables
   std::vector<const MaterialProperty<Real> *> _dLdarg;
   std::vector<const MaterialProperty<Real> *> _d2Ldargdop;
-  std::vector<std::vector<const MaterialProperty<Real> *> > _d2Ldarg2;
+  std::vector<std::vector<const MaterialProperty<Real> *>> _d2Ldarg2;
   /// @}
 
   /// kappa derivative w.r.t. other coupled variables
@@ -69,4 +72,4 @@ protected:
   std::vector<const VariableGradient *> _gradarg;
 };
 
-#endif //ACInterface_H
+#endif // ACINTERFACE_H

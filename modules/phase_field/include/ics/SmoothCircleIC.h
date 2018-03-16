@@ -1,22 +1,21 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef SMOOTHCIRCLEIC_H
 #define SMOOTHCIRCLEIC_H
 
-#include "Kernel.h"
 #include "SmoothCircleBaseIC.h"
-
-// System includes
-#include <string>
 
 // Forward Declarations
 class SmoothCircleIC;
 
-template<>
+template <>
 InputParameters validParams<SmoothCircleIC>();
 
 /**
@@ -27,23 +26,12 @@ InputParameters validParams<SmoothCircleIC>();
 class SmoothCircleIC : public SmoothCircleBaseIC
 {
 public:
-  /**
-   * Constructor
-   *
-   * @param parameters The parameters object holding data for the class to use.
-   */
   SmoothCircleIC(const InputParameters & parameters);
 
-  /**
-   * The value of the variable at a point.
-   *
-   * This must be overriden by derived classes.
-   */
+protected:
   virtual void computeCircleRadii();
-
   virtual void computeCircleCenters();
 
-protected:
   Real _x1;
   Real _y1;
   Real _z1;
@@ -51,4 +39,4 @@ protected:
   Point _center;
 };
 
-#endif //SMOOTHCIRCLEIC_H
+#endif // SMOOTHCIRCLEIC_H

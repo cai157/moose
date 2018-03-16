@@ -1,22 +1,21 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef RICHARDSVARNAMES_H
 #define RICHARDSVARNAMES_H
 
 #include "GeneralUserObject.h"
 #include "Coupleable.h"
-#include "ZeroInterface.h"
 
 class RichardsVarNames;
 
-
-template<>
+template <>
 InputParameters validParams<RichardsVarNames>();
 
 /**
@@ -24,12 +23,9 @@ InputParameters validParams<RichardsVarNames>();
  * used in RichardsMaterial and kernels, etc, and the
  * variable number used internally by MOOSE
  */
-class RichardsVarNames :
-  public GeneralUserObject,
-  public Coupleable,
-  public ZeroInterface
+class RichardsVarNames : public GeneralUserObject, public Coupleable
 {
- public:
+public:
   RichardsVarNames(const InputParameters & parameters);
 
   void initialize();
@@ -107,9 +103,7 @@ class RichardsVarNames :
   /// return the _var_types string
   std::string var_types() const;
 
-
- protected:
-
+protected:
   /// number of richards variables
   unsigned int _num_v;
 
@@ -123,13 +117,15 @@ class RichardsVarNames :
   std::vector<unsigned int> _ps_var_num;
 
   /// moose_var_value[i] = values of richards variable i
-  std::vector<const VariableValue *> _moose_var_value; // this is a vector of pointers to VariableValues
+  std::vector<const VariableValue *>
+      _moose_var_value; // this is a vector of pointers to VariableValues
 
   /// moose_var_value_old[i] = old values of richards variable i
   std::vector<const VariableValue *> _moose_var_value_old;
 
   /// moose_var_value[i] = values of richards variable i
-  std::vector<const VariableValue *> _moose_nodal_var_value; // this is a vector of pointers to VariableValues
+  std::vector<const VariableValue *>
+      _moose_nodal_var_value; // this is a vector of pointers to VariableValues
 
   /// moose_var_value_old[i] = old values of richards variable i
   std::vector<const VariableValue *> _moose_nodal_var_value_old;

@@ -1,32 +1,31 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "OneDEqualValueConstraintBC.h"
 
-template<>
-InputParameters validParams<OneDEqualValueConstraintBC>()
+registerMooseObject("MooseApp", OneDEqualValueConstraintBC);
+
+template <>
+InputParameters
+validParams<OneDEqualValueConstraintBC>()
 {
   InputParameters params = validParams<IntegratedBC>();
   params.addRequiredCoupledVar("lambda", "Lagrange multiplier");
   params.addRequiredParam<unsigned int>("component", "Component of the Lagrange multiplier");
-  params.addRequiredParam<Real>("vg", "Variation of the constraint g wrt this surface (+1 or -1). Note: g = value1 - value2 = 0 ");
+  params.addRequiredParam<Real>(
+      "vg",
+      "Variation of the constraint g wrt this surface (+1 or -1). Note: g = value1 - value2 = 0 ");
   return params;
 }
 
-
-OneDEqualValueConstraintBC::OneDEqualValueConstraintBC(const InputParameters & parameters) :
-    IntegratedBC(parameters),
+OneDEqualValueConstraintBC::OneDEqualValueConstraintBC(const InputParameters & parameters)
+  : IntegratedBC(parameters),
     _lambda(coupledScalarValue("lambda")),
     _lambda_var_number(coupledScalar("lambda")),
     _component(getParam<unsigned int>("component")),

@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef PLC_LSH_H
 #define PLC_LSH_H
 
@@ -12,7 +15,7 @@
 // Forward declarations
 class PLC_LSH;
 
-template<>
+template <>
 InputParameters validParams<PLC_LSH>();
 
 /**
@@ -20,14 +23,12 @@ InputParameters validParams<PLC_LSH>();
  * Power law creep is specified by the time-hardening form
  * edot = A(sigma)**n * exp(-Q/(RT)) * t**m
  */
-
 class PLC_LSH : public SolidModel
 {
 public:
-  PLC_LSH( const InputParameters & parameters);
+  PLC_LSH(const InputParameters & parameters);
 
 protected:
-
   virtual void initQpStatefulProperties();
 
   Real _coefficient;
@@ -47,13 +48,13 @@ protected:
   Real _absolute_stress_tolerance;
 
   MaterialProperty<SymmTensor> & _creep_strain;
-  MaterialProperty<SymmTensor> & _creep_strain_old;
+  const MaterialProperty<SymmTensor> & _creep_strain_old;
 
   MaterialProperty<SymmTensor> & _plastic_strain;
-  MaterialProperty<SymmTensor> & _plastic_strain_old;
+  const MaterialProperty<SymmTensor> & _plastic_strain_old;
 
   MaterialProperty<Real> & _hardening_variable;
-  MaterialProperty<Real> & _hardening_variable_old;
+  const MaterialProperty<Real> & _hardening_variable_old;
 
   const PostprocessorValue * const _output;
 
@@ -62,13 +63,12 @@ protected:
 
   void computeCreep(const SymmTensor & strain_increment,
                     SymmTensor & creep_strain_increment,
-                    SymmTensor & stress_new );
-  void computeLSH( const SymmTensor & strain_increment,
-                   SymmTensor & plastic_strain_increment,
-                   SymmTensor & stress_new );
+                    SymmTensor & stress_new);
+  void computeLSH(const SymmTensor & strain_increment,
+                  SymmTensor & plastic_strain_increment,
+                  SymmTensor & stress_new);
 
 private:
-
 };
 
-#endif //PLC_LSHMATERIAL_H
+#endif // PLC_LSHMATERIAL_H

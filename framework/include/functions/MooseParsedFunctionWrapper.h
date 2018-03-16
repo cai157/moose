@@ -1,30 +1,24 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOOSEPARSEDFUNCTIONWRAPPER_H
 #define MOOSEPARSEDFUNCTIONWRAPPER_H
 
-// std includes
+// MOOSE includes
+#include "MooseError.h"
+#include "MooseTypes.h"
+
+#include "libmesh/parsed_function.h"
+
+// C++ includes
 #include <string>
 #include <vector>
-
-// MOOSE includes
-#include "ParallelUniqueId.h"
-#include "MooseError.h"
-
-// libMesh includes
-#include "libmesh/parsed_function.h"
 
 // Forward declarations
 class FEProblemBase;
@@ -39,7 +33,6 @@ class FEProblemBase;
 class MooseParsedFunctionWrapper
 {
 public:
-
   /**
    * Class constructor
    * @param feproblem Reference to the FEProblemBase object (provides access to Postprocessors)
@@ -48,10 +41,10 @@ public:
    * @param vals A vector of variable values, matching the variables defined in vars
    */
   MooseParsedFunctionWrapper(FEProblemBase & feproblem,
-                              const std::string & function_str,
-                              const std::vector<std::string> & vars,
-                              const std::vector<std::string> & vals,
-                              const THREAD_ID tid = 0);
+                             const std::string & function_str,
+                             const std::vector<std::string> & vars,
+                             const std::vector<std::string> & vals,
+                             const THREAD_ID tid = 0);
 
   /**
    * Class destruction
@@ -65,7 +58,7 @@ public:
    * Within the source two specializations exists for returning a scalar or vector; template
    * specialization was utilized to allow for generic expansion.
    */
-  template<typename T>
+  template <typename T>
   T evaluate(Real t, const Point & p);
 
   /**
@@ -81,7 +74,6 @@ public:
   Real evaluateDot(Real t, const Point & p);
 
 private:
-
   /// Reference to the FEProblemBase object
   FEProblemBase & _feproblem;
 
@@ -98,7 +90,7 @@ private:
   std::vector<Real> _vals;
 
   /// Pointer to the libMesh::ParsedFunction object
-  ParsedFunction<Real> * _function_ptr;
+  std::unique_ptr<ParsedFunction<Real>> _function_ptr;
 
   /// Stores the relative location of variables (in _vars) that are connected to Postprocessors
   std::vector<unsigned int> _pp_index;
@@ -136,10 +128,20 @@ private:
 /**
  * The general evaluation method is not defined.
  */
-template<typename T>
-T evaluate(Real /*t*/, const Point & /*p*/)
+template <typename T>
+T
+evaluate(Real /*t*/, const Point & /*p*/)
 {
   mooseError("The evaluate method is not defined for this type.");
 }
+
+template <>
+Real MooseParsedFunctionWrapper::evaluate(Real t, const Point & p);
+
+template <>
+DenseVector<Real> MooseParsedFunctionWrapper::evaluate(Real t, const Point & p);
+
+template <>
+RealVectorValue MooseParsedFunctionWrapper::evaluate(Real t, const Point & p);
 
 #endif // MOOOSEPARSEDFUNCTIONWRAPPER_H

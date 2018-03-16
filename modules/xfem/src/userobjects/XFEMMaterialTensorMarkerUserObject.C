@@ -1,28 +1,34 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "XFEMMaterialTensorMarkerUserObject.h"
 
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<XFEMMaterialTensorMarkerUserObject>()
+template <>
+InputParameters
+validParams<XFEMMaterialTensorMarkerUserObject>()
 {
-  InputParameters params = validParams<XFEMMarkerUserObject>();
+  InputParameters params = validParams<XFEMMaterialStateMarkerBase>();
   params += validParams<MaterialTensorCalculator>();
   params.addRequiredParam<std::string>("tensor", "The material tensor name.");
   params.addRequiredParam<Real>("threshold", "The threshold for crack growth.");
-  params.addRequiredParam<bool>("average", "Should the tensor quantity be averaged over the quadruature points?");
-  params.addParam<Real>("random_range",0.0,"Range of a uniform random distribution for the threshold");
+  params.addRequiredParam<bool>(
+      "average", "Should the tensor quantity be averaged over the quadruature points?");
+  params.addParam<Real>(
+      "random_range", 0.0, "Range of a uniform random distribution for the threshold");
   return params;
 }
 
-XFEMMaterialTensorMarkerUserObject::XFEMMaterialTensorMarkerUserObject(const InputParameters & parameters) :
-    XFEMMarkerUserObject(parameters),
+XFEMMaterialTensorMarkerUserObject::XFEMMaterialTensorMarkerUserObject(
+    const InputParameters & parameters)
+  : XFEMMaterialStateMarkerBase(parameters),
     _material_tensor_calculator(parameters),
     _tensor(getMaterialProperty<SymmTensor>(getParam<std::string>("tensor"))),
     _threshold(getParam<Real>("threshold")),
@@ -33,23 +39,24 @@ XFEMMaterialTensorMarkerUserObject::XFEMMaterialTensorMarkerUserObject(const Inp
 }
 
 bool
-XFEMMaterialTensorMarkerUserObject::doesElementCrack(RealVectorValue &direction)
+XFEMMaterialTensorMarkerUserObject::doesElementCrack(RealVectorValue & direction)
 {
   bool does_it_crack = false;
   unsigned int numqp = _qrule->n_points();
 
-  Real rnd_mult = (1.0 - _random_range/2.0) + _random_range*getRandomReal();
+  Real rnd_mult = (1.0 - _random_range / 2.0) + _random_range * getRandomReal();
 
   if (_average)
   {
     SymmTensor average_tensor;
-    for ( unsigned int qp = 0; qp < numqp; ++qp )
+    for (unsigned int qp = 0; qp < numqp; ++qp)
     {
       average_tensor += _tensor[qp];
     }
-    average_tensor *= 1.0/(Real)numqp;
-    Real tensor_quantity = _material_tensor_calculator.getTensorQuantity(average_tensor,_q_point[0],direction);
-    if (tensor_quantity > _threshold*rnd_mult)
+    average_tensor *= 1.0 / (Real)numqp;
+    Real tensor_quantity =
+        _material_tensor_calculator.getTensorQuantity(average_tensor, _q_point[0], direction);
+    if (tensor_quantity > _threshold * rnd_mult)
       does_it_crack = true;
   }
   else
@@ -60,12 +67,11 @@ XFEMMaterialTensorMarkerUserObject::doesElementCrack(RealVectorValue &direction)
     Real max_quantity = 0;
     std::vector<RealVectorValue> directions;
     directions.resize(numqp);
-    for ( unsigned int qp = 0; qp < numqp; ++qp )
+    for (unsigned int qp = 0; qp < numqp; ++qp)
     {
-      tensor_quantities[qp] = _material_tensor_calculator.getTensorQuantity(_tensor[qp],_q_point[qp],directions[qp]);
-      if (directions[qp](0) == 0 &&
-          directions[qp](1) == 0 &&
-          directions[qp](2) == 0)
+      tensor_quantities[qp] =
+          _material_tensor_calculator.getTensorQuantity(_tensor[qp], _q_point[qp], directions[qp]);
+      if (directions[qp](0) == 0 && directions[qp](1) == 0 && directions[qp](2) == 0)
       {
         mooseError("Direction has zero length in XFEMMaterialTensorMarkerUserObject");
       }
@@ -75,7 +81,7 @@ XFEMMaterialTensorMarkerUserObject::doesElementCrack(RealVectorValue &direction)
         max_index = qp;
       }
     }
-    if (max_quantity > _threshold*rnd_mult)
+    if (max_quantity > _threshold * rnd_mult)
     {
       does_it_crack = true;
       direction = directions[max_index];

@@ -1,27 +1,26 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef PATTERNEDMESH_H
 #define PATTERNEDMESH_H
 
 #include "MooseMesh.h"
 
-#include "libmesh/serial_mesh.h"
-
+// Forward declarations
 class PatternedMesh;
 
-template<>
+namespace libMesh
+{
+class ReplicatedMesh;
+}
+
+template <>
 InputParameters validParams<PatternedMesh>();
 
 /**
@@ -50,13 +49,16 @@ protected:
   const std::vector<MeshFileName> & _files;
 
   // The pattern, starting with the upper left corner
-  const std::vector<std::vector<unsigned int> > & _pattern;
+  const std::vector<std::vector<unsigned int>> & _pattern;
+
+  // Pointer to the original "row" mesh to be repeated and stitched
+  ReplicatedMesh * _original_mesh;
 
   // Holds the pointers to the meshes
-  std::vector<ReplicatedMesh *> _meshes;
+  std::vector<std::unique_ptr<ReplicatedMesh>> _meshes;
 
   // Holds a mesh for each row, these will be stitched together in the end
-  std::vector<ReplicatedMesh *> _row_meshes;
+  std::vector<std::unique_ptr<ReplicatedMesh>> _row_meshes;
 
   const Real _x_width;
   const Real _y_width;

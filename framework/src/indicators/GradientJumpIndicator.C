@@ -1,37 +1,33 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "GradientJumpIndicator.h"
 
-template<>
-InputParameters validParams<GradientJumpIndicator>()
+registerMooseObject("MooseApp", GradientJumpIndicator);
+
+template <>
+InputParameters
+validParams<GradientJumpIndicator>()
 {
   InputParameters params = validParams<InternalSideIndicator>();
   return params;
 }
 
-
-GradientJumpIndicator::GradientJumpIndicator(const InputParameters & parameters) :
-    InternalSideIndicator(parameters)
+GradientJumpIndicator::GradientJumpIndicator(const InputParameters & parameters)
+  : InternalSideIndicator(parameters)
 {
 }
-
 
 Real
 GradientJumpIndicator::computeQpIntegral()
 {
-  Real jump = (_grad_u[_qp] - _grad_u_neighbor[_qp])*_normals[_qp];
+  Real jump = (_grad_u[_qp] - _grad_u_neighbor[_qp]) * _normals[_qp];
 
-  return jump*jump;
+  return jump * jump;
 }

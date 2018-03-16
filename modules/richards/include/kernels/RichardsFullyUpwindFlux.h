@@ -1,10 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef RICHARDSFULLYUPWINDFLUX
 #define RICHARDSFULLYUPWINDFLUX
@@ -19,7 +20,7 @@
 // Forward Declarations
 class RichardsFullyUpwindFlux;
 
-template<>
+template <>
 InputParameters validParams<RichardsFullyUpwindFlux>();
 
 /**
@@ -47,12 +48,9 @@ InputParameters validParams<RichardsFullyUpwindFlux>();
 class RichardsFullyUpwindFlux : public Kernel
 {
 public:
-
   RichardsFullyUpwindFlux(const InputParameters & parameters);
 
-
 protected:
-
   /**
    * Note that this is not the complete residual for the quadpoint
    * In computeResidual we sum over the quadpoints and then add
@@ -109,16 +107,16 @@ protected:
   const RichardsRelPerm & _relperm_UO;
 
   /// viscosities
-  const MaterialProperty<std::vector<Real> > &_viscosity;
+  const MaterialProperty<std::vector<Real>> & _viscosity;
 
   /// permeability*(grad(pressure) - density*gravity)  (a vector of these in the multiphase case)
-  const MaterialProperty<std::vector<RealVectorValue> > & _flux_no_mob;
+  const MaterialProperty<std::vector<RealVectorValue>> & _flux_no_mob;
 
   /// d(_flux_no_mob)/d(variable)
-  const MaterialProperty<std::vector<std::vector<RealVectorValue> > > & _dflux_no_mob_dv;
+  const MaterialProperty<std::vector<std::vector<RealVectorValue>>> & _dflux_no_mob_dv;
 
   /// d(_flux_no_mob)/d(grad(variable))
-  const MaterialProperty<std::vector<std::vector<RealTensorValue> > > & _dflux_no_mob_dgradv;
+  const MaterialProperty<std::vector<std::vector<RealTensorValue>>> & _dflux_no_mob_dgradv;
 
   /// number of nodes in this element
   unsigned int _num_nodes;
@@ -133,15 +131,15 @@ protected:
    * d(_mobility)/d(variable_ph)  (variable_ph is the variable for phase=ph)
    * These are used in the jacobian calculations
    */
-  std::vector<std::vector<Real> > _dmobility_dv;
+  std::vector<std::vector<Real>> _dmobility_dv;
 
   /**
    * Holds the values of pressures at all the nodes of the element
    * Eg:
    * _ps_at_nodes[_pvar] is a pointer to this variable's nodal porepressure values
-   * So: (*_ps_at_nodes[_pvar])[i] = _var.nodalSln()[i] = value of porepressure at node i
+   * So: (*_ps_at_nodes[_pvar])[i] = _var.nodalValue()[i] = value of porepressure at node i
    */
   std::vector<const VariableValue *> _ps_at_nodes;
 };
 
-#endif //RICHARDSFULLYUPWINDFLUX
+#endif // RICHARDSFULLYUPWINDFLUX

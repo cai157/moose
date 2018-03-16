@@ -1,20 +1,21 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWDICTATOR_H
 #define POROUSFLOWDICTATOR_H
 
 #include "GeneralUserObject.h"
 #include "Coupleable.h"
-#include "ZeroInterface.h"
 
 class PorousFlowDictator;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowDictator>();
 
 /**
@@ -24,23 +25,58 @@ InputParameters validParams<PorousFlowDictator>();
  * well as the number of fluid phases and
  * the number of fluid components.
  *
+ * The Dictator performs sanity checks on all
+ * PorousFlow simulations and helps users
+ * rectify errors (for instance if parts of
+ * the input file suggest it is a 2-phase
+ * simulation, while other parts suggest it
+ * is 1-phase).
+ *
  * All PorousFlow Materials and Kernels calculate
  * and use derivatives with respect to all the variables
  * mentioned in this Object, at least in principal
  * (in practice they may be lazy and not compute
  * all derivatives).
  */
-class PorousFlowDictator :
-  public GeneralUserObject,
-  public Coupleable,
-  public ZeroInterface
+
+/**
+                                  `  `:;@;:.:::#@@@'.`
+                           `    ,@;@@@@@@@@@@@@@@@@@@@@'';''``
+                     ,;@@@@@@@@@@@@T@@@@@H@@@@@E@@@@@@@@++@@@+:.:.`
+            '@@'@@@@@@@D@@@@@I@@@@@C@@@@@T@@@@@A@@@@@T@@@@@O@@@@@R@@@@@@..`
+     `..,;@@@@@@@@@@@@@@@@@@@@@@@@@@@@I@@@@@S@@@@@@@@@@@@@@@@@@@@@@@@@@@;.
+ .:@@@@@@@@@@@@@@@@@@@@W@@@@@A@@@@@T@@@@@C@@@@@H@@@@@I@@@@@N@@@@@G@@@@@@@@@#;:.`
+ .:@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@:,@@@@@@@@@@+` ``
+ ,@@@@@@@@@@@';'@@@@@@@@@@:@@@@+@+:;@@@@@@@;:#';::'@@@@@@.  `::;,..`::+:,;@@@@@@:.``
+`'@@@@@@'..```.,,....```  ``                    `                      ..:;@@@@@@@@+.
+@;;;;@;,,`` ``                                                             `:@@@@@@:`
+@@++';:,.```                                                                ``;+@#:,.
+@@@@#+:.`         `,@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'@@@@@+:.                    `.:'::,
+@@@@@@:,`...`,@@@@@@@@@@,    +@@@@@@@@@@@@@@@@@@@@@@@@`  `;'@@@@#               .,,,,
+@@@@@@':::@@@@@@@@.`   `@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@.    ``,@@@`           `.::,
+@@@@@@#@@@@@';.    `@@@@@@@@;,@`@@@@@@@@@@@@@@@@@@@@@@@@@@@@@`   .,@@@@         ``..,
+@@@@@@@@@:..    @@@@@,         ;@@@@@@@@@@@@@@@@@@  ,@@@@@:@@@@@   `,'@@@        ```.
+@@@@@':,,`   @@@@:`            @@@@@@@@@@@@@@@@@@     ,@@: `:@@@@@; ..:@@@`       ```
+@@@@;:`   @@@@@@..             '@@@@@@@@@@@@@@@@@@    `@@`    .@@@@@,`:'@@@.        `
+@@@@;:.`@@@@@,   ``             @@@@@@@@@@@@@@@@@@@@@@@@@      ,@@@@@@.'@@@@,`
+@@@+':''`  ;@@@@@@,,`            @@@@@@@@@@@@@@@@@@@@@@'       `.:@@@#@:@@@@':.
+:;;;:@@,,.`  `@@@+,   `+.         @@@@@@@@@@@@@@@@@@@@`       ```.     @@:';,,,.`
+.,,,,,,;;+;:.`..;,.,      ,,`       @@@@@@@@@@@@@@@@`       ```     ,@@,    ``` `
+`......,,;+++#';@@@@@@.                  '@@@@@@;      ```     .;@@@@.
+ ```` `,;'+@@+;:'@@@'@@@@@:.                `             ,#@@@@+,
+        .:+'@';::'@+':,;,#@@@@@@@@@@@@@@@@@@:      .@@@@@@@:
+         `:,,::,.`...,,`..,,,,...,,,,,...`:;@@@@@@@@;
+           `.....```` `,.`````````..,,,,,.....``````
+*/
+
+class PorousFlowDictator : public GeneralUserObject, public Coupleable
 {
- public:
+public:
   PorousFlowDictator(const InputParameters & parameters);
 
-  void initialize() {};
-  void execute() {};
-  void finalize() {};
+  virtual void initialize() override{};
+  virtual void execute() override{};
+  virtual void finalize() override{};
 
   /**
    * The number of PorousFlow variables.  Materials
@@ -54,6 +90,12 @@ class PorousFlowDictator :
 
   /// the number of fluid components
   unsigned int numComponents() const;
+
+  /// the number of aqueous equilibrium secondary species
+  unsigned int numAqueousEquilibrium() const;
+
+  /// the number of aqueous kinetic secondary species
+  unsigned int numAqueousKinetic() const;
 
   /**
    * the PorousFlow variable number
@@ -106,7 +148,7 @@ class PorousFlowDictator :
    */
   const VariableName massFractionVariableNameDummy() const;
 
- protected:
+protected:
   /// number of porousflow variables
   const unsigned int _num_variables;
 
@@ -116,7 +158,13 @@ class PorousFlowDictator :
   /// number of fluid components
   const unsigned int _num_components;
 
- private:
+  /// number of aqueous-equilibrium secondary species
+  const unsigned int _num_aqueous_equilibrium;
+
+  /// number of aqeuous-kinetic secondary species that are involved in mineralisation
+  const unsigned int _num_aqueous_kinetic;
+
+private:
   /// _moose_var_num[i] = the moose variable number corresponding to porous flow variable i
   std::vector<unsigned int> _moose_var_num;
 

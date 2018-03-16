@@ -1,42 +1,37 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef ELEMENTDAMPER_H
 #define ELEMENTDAMPER_H
 
 // Moose Includes
 #include "Damper.h"
-#include "ParallelUniqueId.h"
 #include "MaterialPropertyInterface.h"
-#include "MooseVariableBase.h"
+#include "MooseTypes.h"
 
-//Forward Declarations
+// Forward Declarations
 class ElementDamper;
 class SubProblem;
 class SystemBase;
-class MooseVariable;
+template <typename>
+class MooseVariableField;
+typedef MooseVariableField<Real> MooseVariable;
+typedef MooseVariableField<VectorValue<Real>> VectorMooseVariable;
 class Assembly;
 
-template<>
+template <>
 InputParameters validParams<ElementDamper>();
 
 /**
  * Base class for deriving element dampers
  */
-class ElementDamper :
-  public Damper,
-  protected MaterialPropertyInterface
+class ElementDamper : public Damper, protected MaterialPropertyInterface
 {
 public:
   ElementDamper(const InputParameters & parameters);
@@ -50,7 +45,6 @@ public:
    * Get the variable this damper is acting on
    */
   MooseVariable * getVariable() { return &_var; }
-
 
 protected:
   /**
@@ -71,14 +65,14 @@ protected:
   MooseVariable & _var;
 
   /// Current element
-  const Elem * & _current_elem;
+  const Elem *& _current_elem;
 
   /// Quadrature point index
   unsigned int _qp;
   /// Quadrature points
-  const MooseArray< Point > & _q_point;
+  const MooseArray<Point> & _q_point;
   /// Quadrature rule
-  QBase * & _qrule;
+  QBase *& _qrule;
   /// Transformed Jacobian weights
   const MooseArray<Real> & _JxW;
 
@@ -90,4 +84,4 @@ protected:
   const VariableGradient & _grad_u;
 };
 
-#endif //ELEMENTDAMPER_H
+#endif // ELEMENTDAMPER_H

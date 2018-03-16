@@ -1,24 +1,22 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ElementExtremeValue.h"
 
 #include <algorithm>
 #include <limits>
 
-template<>
-InputParameters validParams<ElementExtremeValue>()
+registerMooseObject("MooseApp", ElementExtremeValue);
+
+template <>
+InputParameters
+validParams<ElementExtremeValue>()
 {
   // Define the min/max enumeration
   MooseEnum type_options("max=0 min=1", "max");
@@ -26,16 +24,21 @@ InputParameters validParams<ElementExtremeValue>()
   // Define the parameters
   InputParameters params = validParams<ElementVariablePostprocessor>();
 
-  params.addParam<MooseEnum>("value_type", type_options, "Type of extreme value to return. 'max' returns the maximum value. 'min' returns the minimum value.");
+  params.addParam<MooseEnum>("value_type",
+                             type_options,
+                             "Type of extreme value to return. 'max' "
+                             "returns the maximum value. 'min' returns "
+                             "the minimum value.");
 
   return params;
 }
 
-ElementExtremeValue::ElementExtremeValue(const InputParameters & parameters) :
-  ElementVariablePostprocessor(parameters),
-  _type((ExtremeType)(int)parameters.get<MooseEnum>("value_type")),
-  _value(_type == 0 ? -std::numeric_limits<Real>::max() : std::numeric_limits<Real>::max())
-{}
+ElementExtremeValue::ElementExtremeValue(const InputParameters & parameters)
+  : ElementVariablePostprocessor(parameters),
+    _type((ExtremeType)(int)parameters.get<MooseEnum>("value_type")),
+    _value(_type == 0 ? -std::numeric_limits<Real>::max() : std::numeric_limits<Real>::max())
+{
+}
 
 void
 ElementExtremeValue::initialize()
@@ -98,4 +101,3 @@ ElementExtremeValue::threadJoin(const UserObject & y)
       break;
   }
 }
-

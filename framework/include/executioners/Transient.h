@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef TRANSIENT_H
 #define TRANSIENT_H
@@ -26,14 +21,14 @@ class Transient;
 class TimeStepper;
 class FEProblemBase;
 
-template<>
+template <>
 InputParameters validParams<Transient>();
 
 /**
  * Transient executioners usually loop through a number of timesteps... calling solve()
  * for each timestep.
  */
-class Transient: public Executioner
+class Transient : public Executioner
 {
 public:
   /**
@@ -110,7 +105,7 @@ public:
   /**
    * Set the old time.
    */
-  virtual void setTimeOld(Real t){ _time_old = t; };
+  virtual void setTimeOld(Real t) { _time_old = t; };
 
   /**
    * Get the Relative L2 norm of the change in the solution.
@@ -121,14 +116,14 @@ public:
    * Pointer to the TimeStepper
    * @return Pointer to the time stepper for this Executioner
    */
-  TimeStepper * getTimeStepper(){ return _time_stepper.get(); }
+  TimeStepper * getTimeStepper() { return _time_stepper.get(); }
 
   /**
    * Set the timestepper to use.
    *
    * @param ts The TimeStepper to use
    */
-  void setTimeStepper(MooseSharedPointer<TimeStepper> ts) { _time_stepper = ts; }
+  void setTimeStepper(std::shared_ptr<TimeStepper> ts) { _time_stepper = ts; }
 
   /**
    * Get the timestepper.
@@ -139,7 +134,7 @@ public:
    * Get the time scheme used
    * @return MooseEnum with the time scheme
    */
-  MooseEnum getTimeScheme() { return _time_scheme; }
+  Moose::TimeIntegratorType getTimeScheme() { return _time_scheme; }
 
   /**
    * Get the set of sync times
@@ -201,10 +196,20 @@ public:
    * Get the number of Picard iterations performed
    * @return Number of Picard iterations performed
    */
-  //Because this returns the number of Picard iterations, rather than the current
-  //iteration count (which starts at 0), increment by 1.
-  Real numPicardIts() { return _picard_it+1; }
+  // Because this returns the number of Picard iterations, rather than the current
+  // iteration count (which starts at 0), increment by 1.
+  Real numPicardIts() { return _picard_it + 1; }
 
+  /**
+   * Check if Picard iteration converged when maximum number of Picard iterations is greater than
+   * one
+   */
+  virtual bool picardConverged() const;
+
+  /**
+   * The relative L2 norm of the difference between solution and old solution vector.
+   */
+  virtual Real relativeSolutionDifferenceNorm();
 
 protected:
   /**
@@ -215,8 +220,11 @@ protected:
   /// Here for backward compatibility
   FEProblemBase & _problem;
 
-  MooseEnum _time_scheme;
-  MooseSharedPointer<TimeStepper> _time_stepper;
+  /// Reference to nonlinear system base for faster access
+  NonlinearSystemBase & _nl;
+
+  Moose::TimeIntegratorType _time_scheme;
+  std::shared_ptr<TimeStepper> _time_stepper;
 
   /// Current timestep.
   int & _t_step;
@@ -255,9 +263,9 @@ protected:
   /**
    * Steady state detection variables:
    */
-  bool _trans_ss_check;
-  Real _ss_check_tol;
-  Real _ss_tmin;
+  bool _steady_state_detection;
+  Real _steady_state_tolerance;
+  Real _steady_state_start_time;
   Real & _sln_diff_norm;
   Real & _old_time_solution_norm;
 
@@ -279,7 +287,7 @@ protected:
    * Picard Related
    */
   /// Number of Picard iterations to perform
-  int  & _picard_it;
+  int & _picard_it;
   Real _picard_max_its;
   bool & _picard_converged;
   Real & _picard_initial_norm;
@@ -293,7 +301,24 @@ protected:
 
   Real _solution_change_norm;
 
+  /// The difference of current and old solutions
+  NumericVector<Number> & _sln_diff;
+
   void setupTimeIntegrator();
+
+  /// Relaxation factor for Picard Iteration
+  Real _relax_factor;
+
+  /// The _time when this app solved last.
+  /// This allows a sub-app to know if this is the first
+  /// Picard iteration or not.
+  Real _prev_time;
+
+  /// The transferred variables that are going to be relaxed
+  std::vector<std::string> _relaxed_vars;
+
+  /// The DoFs associates with all of the relaxed variables
+  std::set<dof_id_type> _relaxed_dofs;
 };
 
-#endif //TRANSIENTEXECUTIONER_H
+#endif // TRANSIENTEXECUTIONER_H

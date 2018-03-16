@@ -1,73 +1,33 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWPOROSITYTHM_H
 #define POROUSFLOWPOROSITYTHM_H
 
-#include "PorousFlowPorosityBase.h"
+#include "PorousFlowPorosity.h"
 
-//Forward Declarations
+// Forward Declarations
 class PorousFlowPorosityTHM;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowPorosityTHM>();
 
 /**
  * Material designed to provide the porosity in thermo-hydro-mechanical simulations
- * biot + (phi0 - biot)*exp(-vol_strain + coeff * effective_pressure + thermal_exp_coeff * temperature)
+ * biot + (phi0 - biot) * exp(-vol_strain
+ *    + coeff * (effective_pressure - reference_pressure)
+ *    + thermal_exp_coeff * (temperature - reference_temperature))
  */
-class PorousFlowPorosityTHM : public PorousFlowPorosityBase
+class PorousFlowPorosityTHM : public PorousFlowPorosity
 {
 public:
   PorousFlowPorosityTHM(const InputParameters & parameters);
-
-protected:
-  virtual void initQpStatefulProperties() override;
-
-  virtual void computeQpProperties() override;
-
-  /// porosity at zero strain and zero porepressure and zero temperature
-  const VariableValue & _phi0;
-
-  /// biot coefficient
-  const Real _biot;
-
-  /// thermal expansion coefficient of the solid porous skeleton
-  const Real _exp_coeff;
-
-  /// drained bulk modulus of the porous skeleton
-  const Real _solid_bulk;
-
-  /// short-hand number (biot-1)/solid_bulk
-  const Real _coeff;
-
-  /// number of displacement variables
-  const unsigned int _ndisp;
-
-  /// variable number of the displacements variables
-  std::vector<unsigned int> _disp_var_num;
-
-  /// strain
-  const MaterialProperty<Real> & _vol_strain_qp;
-
-  /// d(strain)/(dvar)
-  const MaterialProperty<std::vector<RealGradient> > & _dvol_strain_qp_dvar;
-
-  /// effective porepressure at the quadpoints or nodes
-  const MaterialProperty<Real> & _pf;
-
-  /// d(effective porepressure)/(d porflow variable)
-  const MaterialProperty<std::vector<Real> > & _dpf_dvar;
-
-  /// temperature at the quadpoints or nodes
-  const MaterialProperty<Real> & _temperature;
-
-  /// d(temperature)/(d porflow variable)
-  const MaterialProperty<std::vector<Real> > & _dtemperature_dvar;
 };
 
-#endif //POROUSFLOWPOROSITYTHM_H
+#endif // POROUSFLOWPOROSITYTHM_H

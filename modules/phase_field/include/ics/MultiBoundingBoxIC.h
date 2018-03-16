@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef MULTIBOUNDINGBOXIC_H
 #define MULTIBOUNDINGBOXIC_H
 
@@ -12,11 +15,12 @@
 // Forward Declarations
 class MultiBoundingBoxIC;
 
-template<>
+template <>
 InputParameters validParams<MultiBoundingBoxIC>();
 
 /**
- * MultiBoundingBoxIC allows setting the initial condition of a value inside and outside of a specified box.
+ * MultiBoundingBoxIC allows setting the initial condition of a value inside and outside of a
+ * specified box.
  * The box is aligned with the x,y,z axis... and is specified by passing in the x,y,z coordinates of
  * opposite corners.
  */
@@ -46,4 +50,4 @@ protected:
   const Real _outside;
 };
 
-#endif //MULTIBOUNDINGBOXIC_H
+#endif // MULTIBOUNDINGBOXIC_H

@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef SYMMELASTICITYTENSOR_H
 #define SYMMELASTICITYTENSOR_H
 
@@ -61,14 +64,11 @@ public:
    */
   SymmElasticityTensor(const bool constant = false);
 
-  void constant( bool c )
-  {
-    _constant = c;
-  }
+  void constant(bool c) { _constant = c; }
 
   virtual ~SymmElasticityTensor() {}
 
-  void copyValues( SymmElasticityTensor & rhs ) const
+  void copyValues(SymmElasticityTensor & rhs) const
   {
     for (unsigned i(0); i < 21; ++i)
     {
@@ -82,25 +82,25 @@ public:
    */
   void calculate(unsigned int qp);
 
-  virtual void multiply( const SymmTensor & x, SymmTensor & b ) const;
-  SymmTensor operator*( const SymmTensor & x ) const;
-  SymmElasticityTensor operator*( Real x ) const;
+  virtual void multiply(const SymmTensor & x, SymmTensor & b) const;
+  SymmTensor operator*(const SymmTensor & x) const;
+  SymmElasticityTensor operator*(Real x) const;
 
-  virtual Real stiffness( const unsigned int i, const unsigned int j,
-                          const RealGradient & test,
-                          const RealGradient & phi ) const;
+  virtual Real stiffness(const unsigned int i,
+                         const unsigned int j,
+                         const RealGradient & test,
+                         const RealGradient & phi) const;
 
   SymmElasticityTensor operator+(const SymmElasticityTensor & rhs) const
-    {
-      SymmElasticityTensor t = *this;
+  {
+    SymmElasticityTensor t = *this;
 
-      t += rhs;
+    t += rhs;
 
-      return t;
-    }
+    return t;
+  }
 
-
-  void operator+=( const SymmElasticityTensor & rhs )
+  void operator+=(const SymmElasticityTensor & rhs)
   {
     for (unsigned i(0); i < 21; ++i)
     {
@@ -108,7 +108,7 @@ public:
     }
   }
 
-  void operator-=( const SymmElasticityTensor & rhs )
+  void operator-=(const SymmElasticityTensor & rhs)
   {
     for (unsigned i(0); i < 21; ++i)
     {
@@ -116,7 +116,7 @@ public:
     }
   }
 
-  void operator*=( Real rhs )
+  void operator*=(Real rhs)
   {
     for (unsigned i(0); i < 21; ++i)
     {
@@ -124,7 +124,7 @@ public:
     }
   }
 
-  void operator/=( Real rhs )
+  void operator/=(Real rhs)
   {
     for (unsigned i(0); i < 21; ++i)
     {
@@ -140,21 +140,20 @@ public:
     }
   }
 
-  void convertFrom9x9( const ColumnMajorMatrix & cmm );
-  void convertFrom6x6( const ColumnMajorMatrix & cmm );
+  void convertFrom9x9(const ColumnMajorMatrix & cmm);
+  void convertFrom6x6(const ColumnMajorMatrix & cmm);
 
   ColumnMajorMatrix columnMajorMatrix9x9() const;
   ColumnMajorMatrix columnMajorMatrix6x6() const;
 
-  void form9x9Rotation( const ColumnMajorMatrix & R_3x3,
-                        ColumnMajorMatrix & R_9x9 ) const;
-  void rotateFromGlobalToLocal(const ColumnMajorMatrix & R );
-  void rotateFromLocalToGlobal(const ColumnMajorMatrix & R );
+  void form9x9Rotation(const ColumnMajorMatrix & R_3x3, ColumnMajorMatrix & R_9x9) const;
+  void rotateFromGlobalToLocal(const ColumnMajorMatrix & R);
+  void rotateFromLocalToGlobal(const ColumnMajorMatrix & R);
 
   virtual void adjustForCracking(const RealVectorValue & crack_flags);
   virtual void adjustForCrackingWithShearRetention(const RealVectorValue & crack_flags);
 
-  virtual SymmElasticityTensor calculateDerivative(unsigned int qp,unsigned int i);
+  virtual SymmElasticityTensor calculateDerivative(unsigned int qp, unsigned int i);
 
   friend std::ostream & operator<<(std::ostream & stream, const SymmElasticityTensor & obj);
 
@@ -169,7 +168,6 @@ public:
   Real valueAtIndex(int i) const;
 
 protected:
-
   /**
    * Whether or not the matrix is constant for all of time and space.
    */
@@ -195,17 +193,17 @@ protected:
                  // 2 in fifth
                  // 1 in sixth
 
-  template<class T>
+  template <class T>
   friend void dataStore(std::ostream &, T &, void *);
 
-  template<class T>
+  template <class T>
   friend void dataLoad(std::istream &, T &, void *);
 };
 
-template<>
+template <>
 void dataStore(std::ostream &, SymmElasticityTensor &, void *);
 
-template<>
+template <>
 void dataLoad(std::istream &, SymmElasticityTensor &, void *);
 
-#endif //SYMMELASTICITYTENSOR_H
+#endif // SYMMELASTICITYTENSOR_H

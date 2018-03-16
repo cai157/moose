@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef NSKERNEL_H
 #define NSKERNEL_H
 
@@ -13,7 +16,7 @@
 class NSKernel;
 class IdealGasFluidProperties;
 
-template<>
+template <>
 InputParameters validParams<NSKernel>();
 
 /**
@@ -63,10 +66,11 @@ protected:
   const IdealGasFluidProperties & _fp;
 
   /**
-   * Helper function for mapping Moose variable numberings into
+   * Helper functions for mapping Moose variable numberings into
    * the "canonical" numbering for the compressible NS equations.
    */
+  bool isNSVariable(unsigned var);
   unsigned mapVarNumber(unsigned var);
 };
 
-#endif //NSKERNEL_H
+#endif // NSKERNEL_H

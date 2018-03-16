@@ -1,39 +1,42 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "NodalConstraint.h"
-#include "SystemBase.h"
-#include "Assembly.h"
 
-// libMesh includes
+// MOOSE includes
+#include "Assembly.h"
+#include "MooseVariableField.h"
+#include "SystemBase.h"
+
 #include "libmesh/sparse_matrix.h"
 
-template<>
-InputParameters validParams<NodalConstraint>()
+template <>
+InputParameters
+validParams<NodalConstraint>()
 {
   InputParameters params = validParams<Constraint>();
-  MooseEnum formulationtype ("penalty kinematic", "penalty");
-  params.addParam<MooseEnum>("formulation", formulationtype, "Formulation used to calculate constraint - penalty or kinematic.");
+  MooseEnum formulationtype("penalty kinematic", "penalty");
+  params.addParam<MooseEnum>("formulation",
+                             formulationtype,
+                             "Formulation used to calculate constraint - penalty or kinematic.");
   return params;
 }
 
-NodalConstraint::NodalConstraint(const InputParameters & parameters) :
-    Constraint(parameters),
+NodalConstraint::NodalConstraint(const InputParameters & parameters)
+  : Constraint(parameters),
     NeighborCoupleableMooseVariableDependencyIntermediateInterface(this, true, true),
-    _u_slave(_var.nodalSlnNeighbor()),
-    _u_master(_var.nodalSln())
+    NeighborMooseVariableInterface<Real>(this, true),
+    _u_slave(_var.nodalValueNeighbor()),
+    _u_master(_var.nodalValue())
 {
+  addMooseVariableDependency(&_var);
+
   MooseEnum temp_formulation = getParam<MooseEnum>("formulation");
   if (temp_formulation == "penalty")
     _formulation = Moose::Penalty;
@@ -115,8 +118,10 @@ NodalConstraint::computeJacobian(SparseMatrix<Number> & jacobian)
         case Moose::Kinematic:
           Kee(_j, _j) = 0.;
           Ken(_j, _i) += jacobian(slavedof[_i], masterdof[_j]) * _weights[_j];
-          Kne(_i, _j) += -jacobian(slavedof[_i], masterdof[_j]) / masterdof.size() + computeQpJacobian(Moose::SlaveMaster);
-          Knn(_i, _i) += -jacobian(slavedof[_i], slavedof[_i]) / masterdof.size() + computeQpJacobian(Moose::SlaveSlave);
+          Kne(_i, _j) += -jacobian(slavedof[_i], masterdof[_j]) / masterdof.size() +
+                         computeQpJacobian(Moose::SlaveMaster);
+          Knn(_i, _i) += -jacobian(slavedof[_i], slavedof[_i]) / masterdof.size() +
+                         computeQpJacobian(Moose::SlaveSlave);
           break;
       }
     }

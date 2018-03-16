@@ -1,29 +1,27 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef BOUNDINGBOXNODESET_H
 #define BOUNDINGBOXNODESET_H
 
+// MOOSE includes
 #include "MeshModifier.h"
+#include "MooseEnum.h"
 
-// libmesh includes
-#include "libmesh/mesh_tools.h"
-
-//Forward Declaration
+// Forward Declaration
 class BoundingBoxNodeSet;
+namespace libMesh
+{
+class BoundingBox;
+}
 
-template<>
+template <>
 InputParameters validParams<BoundingBoxNodeSet>();
 
 /**
@@ -31,8 +29,7 @@ InputParameters validParams<BoundingBoxNodeSet>();
  * the bounding box specified. Can select nodes "inside" or "outside"
  * the bounding box.
  */
-class BoundingBoxNodeSet :
-  public MeshModifier
+class BoundingBoxNodeSet : public MeshModifier
 {
 public:
   BoundingBoxNodeSet(const InputParameters & parameters);
@@ -45,7 +42,7 @@ private:
   MooseEnum _location;
 
   /// Bounding box for testing element centroids against. Note that
-  MeshTools::BoundingBox _bounding_box;
+  BoundingBox _bounding_box;
 };
 
-#endif //BOUNDINGBOXNODESET_H
+#endif // BOUNDINGBOXNODESET_H

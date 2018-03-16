@@ -1,18 +1,22 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "INSMomentumNoBCBCBase.h"
 #include "MooseMesh.h"
 
-template<>
-InputParameters validParams<INSMomentumNoBCBCBase>()
+template <>
+InputParameters
+validParams<INSMomentumNoBCBCBase>()
 {
   InputParameters params = validParams<IntegratedBC>();
 
+  params.addClassDescription("Base class for the 'No BC' boundary condition.");
   // Coupled variables
   params.addRequiredCoupledVar("u", "x-velocity");
   params.addCoupledVar("v", "y-velocity"); // only required in 2D and 3D
@@ -20,19 +24,23 @@ InputParameters validParams<INSMomentumNoBCBCBase>()
   params.addRequiredCoupledVar("p", "pressure");
 
   // Required parameters
-  params.addRequiredParam<Real>("mu", "dynamic viscosity");
-  params.addRequiredParam<Real>("rho", "density");
   params.addRequiredParam<RealVectorValue>("gravity", "Direction of the gravity vector");
-  params.addRequiredParam<unsigned>("component", "0,1,2 depending on if we are solving the x,y,z component of the momentum equation");
-  params.addParam<bool>("integrate_p_by_parts", true, "Allows simulations to be run with pressure BC if set to false");
+  params.addRequiredParam<unsigned>(
+      "component",
+      "0,1,2 depending on if we are solving the x,y,z component of the momentum equation");
+  params.addParam<bool>("integrate_p_by_parts",
+                        true,
+                        "Allows simulations to be run with pressure BC if set to false");
+
+  // Optional parameters
+  params.addParam<MaterialPropertyName>("mu_name", "mu", "The name of the dynamic viscosity");
+  params.addParam<MaterialPropertyName>("rho_name", "rho", "The name of the density");
 
   return params;
 }
 
-
-
-INSMomentumNoBCBCBase::INSMomentumNoBCBCBase(const InputParameters & parameters) :
-    IntegratedBC(parameters),
+INSMomentumNoBCBCBase::INSMomentumNoBCBCBase(const InputParameters & parameters)
+  : IntegratedBC(parameters),
 
     // Coupled variables
     _u_vel(coupledValue("u")),
@@ -52,10 +60,12 @@ INSMomentumNoBCBCBase::INSMomentumNoBCBCBase(const InputParameters & parameters)
     _p_var_number(coupled("p")),
 
     // Required parameters
-    _mu(getParam<Real>("mu")),
-    _rho(getParam<Real>("rho")),
     _gravity(getParam<RealVectorValue>("gravity")),
     _component(getParam<unsigned>("component")),
-    _integrate_p_by_parts(getParam<bool>("integrate_p_by_parts"))
+    _integrate_p_by_parts(getParam<bool>("integrate_p_by_parts")),
+
+    // Material properties
+    _mu(getMaterialProperty<Real>("mu_name")),
+    _rho(getMaterialProperty<Real>("rho_name"))
 {
 }

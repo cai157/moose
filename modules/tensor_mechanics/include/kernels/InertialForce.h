@@ -1,25 +1,27 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef INERTIALFORCE_H
 #define INERTIALFORCE_H
 
 #include "Kernel.h"
 #include "Material.h"
 
-//Forward Declarations
+// Forward Declarations
 class InertialForce;
 
-template<>
+template <>
 InputParameters validParams<InertialForce>();
 
 class InertialForce : public Kernel
 {
 public:
-
   InertialForce(const InputParameters & parameters);
 
 protected:
@@ -34,9 +36,8 @@ private:
   const VariableValue & _accel_old;
   const Real _beta;
   const Real _gamma;
-  const Real _eta;
+  const MaterialProperty<Real> & _eta;
   const Real _alpha;
-
 };
 
-#endif //INERTIALFORCE_H
+#endif // INERTIALFORCE_H

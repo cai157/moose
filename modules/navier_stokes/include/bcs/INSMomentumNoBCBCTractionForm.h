@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef INSMOMENTUMNOBCBCTRACTIONFORM_H
 #define INSMOMENTUMNOBCBCTRACTIONFORM_H
 
@@ -12,7 +15,7 @@
 // Forward Declarations
 class INSMomentumNoBCBCTractionForm;
 
-template<>
+template <>
 InputParameters validParams<INSMomentumNoBCBCTractionForm>();
 
 /**
@@ -24,13 +27,12 @@ class INSMomentumNoBCBCTractionForm : public INSMomentumNoBCBCBase
 public:
   INSMomentumNoBCBCTractionForm(const InputParameters & parameters);
 
-  virtual ~INSMomentumNoBCBCTractionForm(){}
+  virtual ~INSMomentumNoBCBCTractionForm() {}
 
 protected:
   virtual Real computeQpResidual();
   virtual Real computeQpJacobian();
   virtual Real computeQpOffDiagJacobian(unsigned jvar);
 };
-
 
 #endif

@@ -1,24 +1,29 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "RandomEulerAngleProvider.h"
 #include "GrainTrackerInterface.h"
 
-template<>
-InputParameters validParams<RandomEulerAngleProvider>()
+template <>
+InputParameters
+validParams<RandomEulerAngleProvider>()
 {
   InputParameters params = validParams<EulerAngleProvider>();
   params.addClassDescription("Assign random euler angles for each grain.");
-  params.addRequiredParam<UserObjectName>("grain_tracker_object", "The FeatureFloodCount UserObject to get values from.");
+  params.addRequiredParam<UserObjectName>("grain_tracker_object",
+                                          "The FeatureFloodCount UserObject to get values from.");
   params.addParam<unsigned int>("seed", 0, "Seed value for the random number generator");
   return params;
 }
 
-RandomEulerAngleProvider::RandomEulerAngleProvider(const InputParameters & params) :
-    EulerAngleProvider(params),
+RandomEulerAngleProvider::RandomEulerAngleProvider(const InputParameters & params)
+  : EulerAngleProvider(params),
     _grain_tracker(getUserObject<GrainTrackerInterface>("grain_tracker_object")),
     _angles(0)
 {

@@ -1,26 +1,30 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "LinearInterpolationMaterial.h"
 
-template<>
-InputParameters validParams<LinearInterpolationMaterial>()
+registerMooseObject("MooseTestApp", LinearInterpolationMaterial);
+
+template <>
+InputParameters
+validParams<LinearInterpolationMaterial>()
 {
   InputParameters params = validParams<Material>();
-  params.addRequiredParam<std::string>("prop_name", "The property name that will contain the piecewise function");
-  params.addRequiredParam<std::vector<Real> >("independent_vals", "The vector of indepedent values for building the piecewise function");
-  params.addRequiredParam<std::vector<Real> >("dependent_vals", "The vector of depedent values for building the piecewise function");
-  params.addParam<bool>("use_poly_fit", false, "Setting to true will use polynomial fit instead of linear interpolation");
+  params.addRequiredParam<std::string>(
+      "prop_name", "The property name that will contain the piecewise function");
+  params.addRequiredParam<std::vector<Real>>(
+      "independent_vals", "The vector of indepedent values for building the piecewise function");
+  params.addRequiredParam<std::vector<Real>>(
+      "dependent_vals", "The vector of depedent values for building the piecewise function");
+  params.addParam<bool>("use_poly_fit",
+                        false,
+                        "Setting to true will use polynomial fit instead of linear interpolation");
   return params;
 }
 
@@ -30,9 +34,8 @@ LinearInterpolationMaterial::~LinearInterpolationMaterial()
   delete _linear_interp;
 }
 
-
-LinearInterpolationMaterial::LinearInterpolationMaterial(const InputParameters & parameters) :
-    Material(parameters),
+LinearInterpolationMaterial::LinearInterpolationMaterial(const InputParameters & parameters)
+  : Material(parameters),
     _use_poly_fit(getParam<bool>("use_poly_fit")),
     _linear_interp(NULL),
     _poly_fit(NULL),
@@ -40,30 +43,29 @@ LinearInterpolationMaterial::LinearInterpolationMaterial(const InputParameters &
 {
   if (_use_poly_fit)
   {
-    _poly_fit = new PolynomialFit(getParam<std::vector<Real> >("independent_vals"),
-                                  getParam<std::vector<Real> >("dependent_vals"), 4);
+    _poly_fit = new PolynomialFit(getParam<std::vector<Real>>("independent_vals"),
+                                  getParam<std::vector<Real>>("dependent_vals"),
+                                  4);
 
     _poly_fit->generate();
-    _poly_fit->dumpSampleFile(getParam<std::string>("prop_name"),
-                              "X position",
-                              getParam<std::string>("prop_name"));
+    _poly_fit->dumpSampleFile(
+        getParam<std::string>("prop_name"), "X position", getParam<std::string>("prop_name"));
   }
   else
   {
     try
     {
 
-      _linear_interp = new LinearInterpolation(getParam<std::vector<Real> >("independent_vals"),
-                                               getParam<std::vector<Real> >("dependent_vals"));
+      _linear_interp = new LinearInterpolation(getParam<std::vector<Real>>("independent_vals"),
+                                               getParam<std::vector<Real>>("dependent_vals"));
     }
     catch (std::domain_error & e)
     {
-      mooseError("In LinearInterpolationMaterial " << _name << ": " << e.what());
+      mooseError("In LinearInterpolationMaterial ", _name, ": ", e.what());
     }
 
-    _linear_interp->dumpSampleFile(getParam<std::string>("prop_name"),
-                                   "X position",
-                                   getParam<std::string>("prop_name"));
+    _linear_interp->dumpSampleFile(
+        getParam<std::string>("prop_name"), "X position", getParam<std::string>("prop_name"));
   }
 }
 

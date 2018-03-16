@@ -1,23 +1,29 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "StrainGradDispDerivatives.h"
 #include "RankTwoTensor.h"
 
-template<>
-InputParameters validParams<StrainGradDispDerivatives>()
+template <>
+InputParameters
+validParams<StrainGradDispDerivatives>()
 {
   InputParameters params = validParams<Material>();
-  params.addClassDescription("Provide the constant derivatives of strain w.r.t. the displacement gradient components.");
-  params.addCoupledVar("displacement_gradients", "List of displacement gradient component variables");
+  params.addClassDescription(
+      "Provide the constant derivatives of strain w.r.t. the displacement gradient components.");
+  params.addCoupledVar("displacement_gradients",
+                       "List of displacement gradient component variables");
   return params;
 }
 
-StrainGradDispDerivatives::StrainGradDispDerivatives(const InputParameters & parameters) :
-    DerivativeMaterialInterface<Material>(parameters),
+StrainGradDispDerivatives::StrainGradDispDerivatives(const InputParameters & parameters)
+  : DerivativeMaterialInterface<Material>(parameters),
     _nvar(coupledComponents("displacement_gradients")),
     _dstrain(_nvar)
 {
@@ -43,7 +49,8 @@ StrainGradDispDerivatives::StrainGradDispDerivatives(const InputParameters & par
     mooseError("Too many gradient component variables for the current LIBMESH_DIM");
 
   for (unsigned int i = 0; i < _nvar; ++i)
-    _dstrain[i] = &declarePropertyDerivative<RankTwoTensor>("elastic_strain", getVar("displacement_gradients", i)->name());
+    _dstrain[i] = &declarePropertyDerivative<RankTwoTensor>(
+        "elastic_strain", getVar("displacement_gradients", i)->name());
 }
 
 void
@@ -54,8 +61,8 @@ StrainGradDispDerivatives::computeQpProperties()
     for (unsigned int k = 0; k < _gdim; ++k)
     {
       (*_dstrain[i])[_qp].zero();
-      (*_dstrain[i])[_qp](j,k) += 0.5;
-      (*_dstrain[i])[_qp](k,j) += 0.5;
+      (*_dstrain[i])[_qp](j, k) += 0.5;
+      (*_dstrain[i])[_qp](k, j) += 0.5;
       ++i;
     }
 }

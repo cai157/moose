@@ -1,41 +1,42 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "LinearNodalConstraint.h"
 #include "MooseMesh.h"
 
-template<>
-InputParameters validParams<LinearNodalConstraint>()
+registerMooseObject("MooseApp", LinearNodalConstraint);
+
+template <>
+InputParameters
+validParams<LinearNodalConstraint>()
 {
   InputParameters params = validParams<NodalConstraint>();
-  params.addRequiredParam<std::vector<unsigned int> >("master", "The master node IDs.");
-  params.addParam<std::vector<unsigned int> >("slave_node_ids", "The list of slave node ids");
-  params.addParam<BoundaryName>("slave_node_set", "NaN", "The boundary ID associated with the slave side");
+  params.addRequiredParam<std::vector<unsigned int>>("master", "The master node IDs.");
+  params.addParam<std::vector<unsigned int>>("slave_node_ids", "The list of slave node ids");
+  params.addParam<BoundaryName>(
+      "slave_node_set", "NaN", "The boundary ID associated with the slave side");
   params.addRequiredParam<Real>("penalty", "The penalty used for the boundary term");
-  params.addRequiredParam<std::vector<Real> >("weights", "The weights associated with the master node ids. Must be of the same size as master nodes");
+  params.addRequiredParam<std::vector<Real>>(
+      "weights",
+      "The weights associated with the master node ids. Must be of the same size as master nodes");
   return params;
 }
 
-LinearNodalConstraint::LinearNodalConstraint(const InputParameters & parameters) :
-    NodalConstraint(parameters),
-    _master_node_ids(getParam<std::vector<unsigned int> >("master")),
-    _slave_node_ids(getParam<std::vector<unsigned int> >("slave_node_ids")),
+LinearNodalConstraint::LinearNodalConstraint(const InputParameters & parameters)
+  : NodalConstraint(parameters),
+    _master_node_ids(getParam<std::vector<unsigned int>>("master")),
+    _slave_node_ids(getParam<std::vector<unsigned int>>("slave_node_ids")),
     _slave_node_set_id(getParam<BoundaryName>("slave_node_set")),
     _penalty(getParam<Real>("penalty"))
 {
-  _weights = getParam<std::vector<Real> >("weights");
+  _weights = getParam<std::vector<Real>>("weights");
 
   if (_master_node_ids.size() != _weights.size())
     mooseError("master and weights should be of equal size.");
@@ -50,7 +51,7 @@ LinearNodalConstraint::LinearNodalConstraint(const InputParameters & parameters)
     for (in = nodelist.begin(); in != nodelist.end(); ++in)
     {
       if (_mesh.nodeRef(*in).processor_id() == _subproblem.processor_id())
-        _connected_nodes.push_back(*in); //defining slave nodes in the base class
+        _connected_nodes.push_back(*in); // defining slave nodes in the base class
     }
   }
   else if ((_slave_node_ids.size() > 0) && (_slave_node_set_id == "NaN"))
@@ -81,9 +82,12 @@ Real
 LinearNodalConstraint::computeQpResidual(Moose::ConstraintType type)
 {
   /**
-  * Slave residual is u_slave - weights[1]*u_master[1]-weights[2]*u_master[2] ... -u_master[n]*weights[n]
-  * However, computeQPresidual is calculated for only a combination of one master and one slave node at a time.
-  * To get around this, the residual is split up such that the final slave residual resembles the above expression.
+  * Slave residual is u_slave - weights[1]*u_master[1]-weights[2]*u_master[2] ...
+  *-u_master[n]*weights[n]
+  * However, computeQPresidual is calculated for only a combination of one master and one slave node
+  *at a time.
+  * To get around this, the residual is split up such that the final slave residual resembles the
+  *above expression.
   **/
 
   unsigned int master_size = _master_node_ids.size();
@@ -104,7 +108,8 @@ LinearNodalConstraint::computeQpJacobian(Moose::ConstraintJacobianType type)
   unsigned int master_size = _master_node_ids.size();
 
   switch (type)
-  {  case Moose::MasterMaster:
+  {
+    case Moose::MasterMaster:
       return _penalty * _weights[_j];
     case Moose::MasterSlave:
       return -_penalty / master_size;

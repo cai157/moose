@@ -1,33 +1,28 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef NODALCONSTRAINT_H
 #define NODALCONSTRAINT_H
 
-//MOOSE includes
+// MOOSE includes
 #include "Constraint.h"
 #include "NeighborCoupleableMooseVariableDependencyIntermediateInterface.h"
 
-//Forward Declarations
+// Forward Declarations
 class NodalConstraint;
 
-template<>
+template <>
 InputParameters validParams<NodalConstraint>();
 
-class NodalConstraint :
-  public Constraint,
-  public NeighborCoupleableMooseVariableDependencyIntermediateInterface
+class NodalConstraint : public Constraint,
+                        public NeighborCoupleableMooseVariableDependencyIntermediateInterface,
+                        public NeighborMooseVariableInterface<Real>
 {
 public:
   NodalConstraint(const InputParameters & parameters);
@@ -36,7 +31,7 @@ public:
    * Get the list of master nodes
    * @return list of master nodes IDs
    */
-  std::vector<dof_id_type> &  getMasterNodeId() { return _master_node_vector; }
+  std::vector<dof_id_type> & getMasterNodeId() { return _master_node_vector; }
 
   /**
    * Get the list of connected slave nodes
@@ -61,12 +56,14 @@ public:
 
 protected:
   /**
-   * This is the virtual that derived classes should override for computing the residual on neighboring element.
+   * This is the virtual that derived classes should override for computing the residual on
+   * neighboring element.
    */
   virtual Real computeQpResidual(Moose::ConstraintType type) = 0;
 
   /**
-   * This is the virtual that derived classes should override for computing the Jacobian on neighboring element.
+   * This is the virtual that derived classes should override for computing the Jacobian on
+   * neighboring element.
    */
   virtual Real computeQpJacobian(Moose::ConstraintJacobianType type) = 0;
 

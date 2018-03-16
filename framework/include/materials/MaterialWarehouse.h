@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MATERIALWAREHOUSE_H
 #define MATERIALWAREHOUSE_H
@@ -22,9 +17,11 @@
 class Material;
 
 /**
- * Material objects are special in that they have additional objects created automatically (see FEProblemBase::addMaterial).
+ * Material objects are special in that they have additional objects created automatically (see
+ * FEProblemBase::addMaterial).
  *
- * This class specializes the base class to acount for the additional Neightbor and face objects that may
+ * This class specializes the base class to acount for the additional Neightbor and face objects
+ * that may
  * exist.
  */
 class MaterialWarehouse : public MooseObjectWarehouse<Material>
@@ -34,12 +31,15 @@ public:
 
   ///@{
   /**
-   * Convenience methods for calling object setup methods that handle the extra neighbor and face objects.
+   * Convenience methods for calling object setup methods that handle the extra neighbor and face
+   * objects.
    */
   virtual void initialSetup(THREAD_ID tid = 0) const;
   virtual void timestepSetup(THREAD_ID tid = 0) const;
   virtual void subdomainSetup(THREAD_ID tid = 0) const;
   virtual void subdomainSetup(SubdomainID id, THREAD_ID tid = 0) const;
+  virtual void neighborSubdomainSetup(THREAD_ID tid = 0) const;
+  virtual void neighborSubdomainSetup(SubdomainID id, THREAD_ID tid = 0) const;
   virtual void jacobianSetup(THREAD_ID tid = 0) const;
   virtual void residualSetup(THREAD_ID tid = 0) const;
   virtual void updateActive(THREAD_ID tid = 0);
@@ -49,7 +49,10 @@ public:
   /**
    * A special method unique to this class for adding Block, Neighbor, and Face material objects.
    */
-  void addObjects(MooseSharedPointer<Material> block, MooseSharedPointer<Material> neighbor, MooseSharedPointer<Material> face, THREAD_ID tid = 0);
+  void addObjects(std::shared_ptr<Material> block,
+                  std::shared_ptr<Material> neighbor,
+                  std::shared_ptr<Material> face,
+                  THREAD_ID tid = 0);
 
 protected:
   /// Stroage for neighbor material objects (Block are stored in the base class)

@@ -1,16 +1,26 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef CHPFCRFF_H
 #define CHPFCRFF_H
 
 #include "Kernel.h"
 
-//Forward Declarations
+// Forward Declarations
 class CHPFCRFF;
 
-template<>
+template <>
 InputParameters validParams<CHPFCRFF>();
 
 /**
- * This kernel calculates the main portion of the cahn-hilliard residual for the RFF form of the phase field crystal model
+ * This kernel calculates the main portion of the cahn-hilliard residual for the
+ * RFF form of the phase field crystal model
  */
 class CHPFCRFF : public Kernel
 {
@@ -24,19 +34,20 @@ protected:
 
 private:
   const MaterialProperty<Real> & _M;
-  bool _has_MJac;
+  const bool _has_MJac;
   const MaterialProperty<Real> * _DM;
 
-  MooseEnum _log_approach;
-  Real _tol;
+  const MooseEnum _log_approach;
+  const Real _tol;
+
+  const unsigned int _num_L;
   std::vector<unsigned int> _vals_var;
   std::vector<const VariableGradient *> _grad_vals;
-  unsigned int _n_exp_terms;
-  Real _a;
-  Real _b;
-  Real _c;
 
-  unsigned int _num_L;
+  const unsigned int _n_exp_terms;
+  const Real _a;
+  const Real _b;
+  const Real _c;
 };
 
-#endif //CHPFCRFF_H
+#endif // CHPFCRFF_H

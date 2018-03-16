@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef SYMMISOTROPICELASTICITYTENSOR_H
 #define SYMMISOTROPICELASTICITYTENSOR_H
 
@@ -35,10 +38,7 @@ public:
 
   virtual ~SymmIsotropicElasticityTensor() {}
 
-  void unsetConstants()
-  {
-    _lambda_set = _mu_set = _E_set = _nu_set = _k_set = false;
-  }
+  void unsetConstants() { _lambda_set = _mu_set = _E_set = _nu_set = _k_set = false; }
 
   /**
    * Set the first Lame Coefficient.
@@ -96,7 +96,6 @@ public:
   virtual void adjustForCrackingWithShearRetention(const RealVectorValue & crack_flags);
 
 protected:
-
   bool _lambda_set, _mu_set, _E_set, _nu_set, _k_set;
 
   Real _lambda, _mu, _E, _nu, _k;
@@ -113,7 +112,6 @@ protected:
    * These are based on Michael Tonks's's notes
    */
   void calculateLameCoefficients();
-
 };
 
-#endif //ISOTROPICELASTICITYTENSOR_H
+#endif // ISOTROPICELASTICITYTENSOR_H

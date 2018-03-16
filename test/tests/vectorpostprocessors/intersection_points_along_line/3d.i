@@ -4,6 +4,8 @@
   nx = 10
   ny = 10
   nz = 10
+  # Ray tracing code is not yet compatible with DistributedMesh
+  parallel_type = replicated
 []
 
 [Variables]
@@ -42,7 +44,6 @@
 []
 
 [Executioner]
-  # Preconditioned JFNK (default)
   type = Steady
   solve_type = PJFNK
   petsc_options_iname = '-pc_type -pc_hypre_type'

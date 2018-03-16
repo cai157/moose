@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef RESTARTABLETYPES_H
 #define RESTARTABLETYPES_H
@@ -19,7 +14,7 @@
 
 class RestartableTypes;
 
-template<>
+template <>
 InputParameters validParams<RestartableTypes>();
 
 class Dummy
@@ -34,35 +29,35 @@ public:
   int _i;
 };
 
-template<>
+template <>
 inline void
-dataStore(std::ostream & stream, Dummy * & v, void * context)
+dataStore(std::ostream & stream, Dummy *& v, void * context)
 {
   dataStore(stream, v->_i, context);
 }
 
-template<>
+template <>
 inline void
-dataLoad(std::istream & stream, Dummy * & v, void * context)
+dataLoad(std::istream & stream, Dummy *& v, void * context)
 {
   dataLoad(stream, v->_i, context);
 }
 
-template<>
+template <>
 inline void
 dataStore(std::ostream & stream, Dummy & v, void * context)
 {
   dataStore(stream, v._i, context);
 }
 
-template<>
+template <>
 inline void
 dataLoad(std::istream & stream, Dummy & v, void * context)
 {
   dataLoad(stream, v._i, context);
 }
 
-template<>
+template <>
 inline void
 dataStore(std::ostream & stream, DummyNeedingContext & v, void * context)
 {
@@ -73,7 +68,7 @@ dataStore(std::ostream & stream, DummyNeedingContext & v, void * context)
   dataStore(stream, value, context);
 }
 
-template<>
+template <>
 inline void
 dataLoad(std::istream & stream, DummyNeedingContext & v, void * context)
 {
@@ -98,16 +93,16 @@ public:
   virtual void initialSetup();
   virtual void timestepSetup();
 
-  virtual void initialize() {};
+  virtual void initialize(){};
   virtual void execute();
-  virtual void finalize() {};
+  virtual void finalize(){};
 
 protected:
   int _context_int;
   Real & _real_data;
   std::vector<Real> & _vector_data;
-  std::vector<std::vector<Real> > & _vector_vector_data;
-  Dummy * & _pointer_data;
+  std::vector<std::vector<Real>> & _vector_vector_data;
+  Dummy *& _pointer_data;
   Dummy & _custom_data;
   DummyNeedingContext & _custom_with_context;
   std::set<Real> & _set_data;
@@ -115,6 +110,5 @@ protected:
   DenseVector<Real> & _dense_vector_data;
   DenseMatrix<Real> & _dense_matrix_data;
 };
-
 
 #endif /* RESTARTABLETYPES_H */

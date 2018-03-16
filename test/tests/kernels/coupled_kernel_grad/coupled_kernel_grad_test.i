@@ -85,12 +85,12 @@
   [../]
 
   [./forceu]
-    type = UserForcingFunction
+    type = BodyForce
     variable = u
     function = forcing_fnu
   [../]
   [./forcev]
-    type = UserForcingFunction
+    type = BodyForce
     variable = v
     function = forcing_fnv
   [../]
@@ -170,7 +170,6 @@
 
   [./h]
     type = AverageElementSize
-    variable = u
   [../]
 
   [./L2u]
@@ -198,7 +197,6 @@
 [Executioner]
   type = Steady
 
-  # Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 #  petsc_options = '-snes'
   nl_rel_tol = 1e-15

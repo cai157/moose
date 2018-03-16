@@ -1,43 +1,48 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "ImageSampler.h"
 #include "MooseApp.h"
 #include "ImageMesh.h"
 
-template<>
-InputParameters validParams<ImageSampler>()
+#include "libmesh/mesh_tools.h"
+
+template <>
+InputParameters
+validParams<ImageSampler>()
 {
   // Define the general parameters
   InputParameters params = emptyInputParameters();
   params += validParams<FileRangeBuilder>();
 
   params.addParam<Point>("origin", "Origin of the image (defaults to mesh origin)");
-  params.addParam<Point>("dimensions", "x,y,z dimensions of the image (defaults to mesh dimensions)");
-  params.addParam<unsigned int>("component", "The image RGB-component to return, leaving this blank will result in a greyscale value "
-                                             "for the image to be created. The component number is zero based, i.e. 0 returns the first (RED) component of the image.");
+  params.addParam<Point>("dimensions",
+                         "x,y,z dimensions of the image (defaults to mesh dimensions)");
+  params.addParam<unsigned int>(
+      "component",
+      "The image RGB-component to return, leaving this blank will result in a greyscale value "
+      "for the image to be created. The component number is zero based, i.e. 0 returns the first "
+      "(RED) component of the image.");
 
   // Shift and Scale (application of these occurs prior to threshold)
   params.addParam<double>("shift", 0, "Value to add to all pixels; occurs prior to scaling");
-  params.addParam<double>("scale", 1, "Multiplier to apply to all pixel values; occurs after shifting");
+  params.addParam<double>(
+      "scale", 1, "Multiplier to apply to all pixel values; occurs after shifting");
   params.addParamNamesToGroup("shift scale", "Rescale");
 
   // Threshold parameters
   params.addParam<double>("threshold", "The threshold value");
-  params.addParam<double>("upper_value", 1, "The value to set for data greater than the threshold value");
-  params.addParam<double>("lower_value", 0, "The value to set for data less than the threshold value");
+  params.addParam<double>(
+      "upper_value", 1, "The value to set for data greater than the threshold value");
+  params.addParam<double>(
+      "lower_value", 0, "The value to set for data less than the threshold value");
   params.addParamNamesToGroup("threshold upper_value lower_value", "Threshold");
 
   // Flip image
@@ -49,8 +54,8 @@ InputParameters validParams<ImageSampler>()
   return params;
 }
 
-ImageSampler::ImageSampler(const InputParameters & parameters) :
-    FileRangeBuilder(parameters),
+ImageSampler::ImageSampler(const InputParameters & parameters)
+  : FileRangeBuilder(parameters),
 #ifdef LIBMESH_HAVE_VTK
     _data(NULL),
     _algorithm(NULL),
@@ -60,7 +65,8 @@ ImageSampler::ImageSampler(const InputParameters & parameters) :
 
 {
 #ifndef LIBMESH_HAVE_VTK
-  // This should be impossible to reach, the registration of ImageSampler is also guarded with LIBMESH_HAVE_VTK
+  // This should be impossible to reach, the registration of ImageSampler is also guarded with
+  // LIBMESH_HAVE_VTK
   mooseError("libMesh must be configured with VTK enabled to utilize ImageSampler");
 #endif
 }
@@ -74,7 +80,7 @@ ImageSampler::setupImageSampler(MooseMesh & mesh)
 
 #ifdef LIBMESH_HAVE_VTK
   // Get access to the Mesh object
-  MeshTools::BoundingBox bbox = MeshTools::bounding_box(mesh.getMesh());
+  BoundingBox bbox = MeshTools::create_bounding_box(mesh.getMesh());
 
   // Set the dimensions from the Mesh if not set by the User
   if (_is_pars.isParamValid("dimensions"))
@@ -121,7 +127,7 @@ ImageSampler::setupImageSampler(MooseMesh & mesh)
   if (_status != 0)
   {
     // We don't have parameters, so see if we can get them from ImageMesh
-    ImageMesh * image_mesh = dynamic_cast<ImageMesh*>(&mesh);
+    ImageMesh * image_mesh = dynamic_cast<ImageMesh *>(&mesh);
     if (!image_mesh)
       mooseError("No file range parameters were provided and the Mesh is not an ImageMesh.");
 
@@ -147,7 +153,6 @@ ImageSampler::setupImageSampler(MooseMesh & mesh)
   if (_files->GetNumberOfValues() == 0)
     mooseError("No image file(s) located");
 
-
   // Read the image stack.  Hurray for VTK not using polymorphism in a
   // smart way... we actually have to explicitly create the type of
   // reader based on the file extension, using an if-statement...
@@ -156,7 +161,7 @@ ImageSampler::setupImageSampler(MooseMesh & mesh)
   else if (file_suffix == "tiff" || file_suffix == "tif")
     _image = vtkSmartPointer<vtkTIFFReader>::New();
   else
-    mooseError("Un-supported file type '" << file_suffix << "'");
+    mooseError("Un-supported file type '", file_suffix, "'");
 
   // Now that _image is set up, actually read the images
   // Indicate that data read has started
@@ -173,7 +178,7 @@ ImageSampler::setupImageSampler(MooseMesh & mesh)
   for (unsigned int i = 0; i < 3; ++i)
   {
     _dims.push_back(dims[i]);
-    _voxel.push_back(_physical_dims(i)/_dims[i]);
+    _voxel.push_back(_physical_dims(i) / _dims[i]);
   }
 
   // Set the dimensions of the image and bounding box
@@ -192,7 +197,7 @@ ImageSampler::setupImageSampler(MooseMesh & mesh)
     unsigned int n = _data->GetNumberOfScalarComponents();
     _component = _is_pars.get<unsigned int>("component");
     if (_component >= n)
-      mooseError("'component' parameter must be empty or have a value of 0 to " << n-1);
+      mooseError("'component' parameter must be empty or have a value of 0 to ", n - 1);
   }
   else
     _component = 0;
@@ -215,7 +220,7 @@ ImageSampler::sample(const Point & p)
     return 0.0;
 
   // Determine pixel coordinates
-  std::vector<int> x(3,0);
+  std::vector<int> x(3, 0);
   for (int i = 0; i < LIBMESH_DIM; ++i)
   {
     // Compute position, only if voxel size is greater than zero
@@ -224,7 +229,7 @@ ImageSampler::sample(const Point & p)
 
     else
     {
-      x[i] = std::floor((p(i) - _origin(i))/_voxel[i]);
+      x[i] = std::floor((p(i) - _origin(i)) / _voxel[i]);
 
       // If the point falls on the mesh extents the index needs to be decreased by one
       if (x[i] == _dims[i])
@@ -272,7 +277,6 @@ ImageSampler::vtkShiftAndScale()
   if (shift == 0 && scale == 1)
     return;
 
-
   // Perform the scaling and offset actions
   _shift_scale_filter = vtkSmartPointer<vtkImageShiftScale>::New();
   _shift_scale_filter->SetOutputScalarTypeToDouble();
@@ -298,7 +302,8 @@ ImageSampler::vtkThreshold()
 
   // Error if both upper and lower are not set
   if (!_is_pars.isParamValid("upper_value") || !_is_pars.isParamValid("lower_value"))
-    mooseError("When thresholding is applied, both the upper_value and lower_value parameters must be set");
+    mooseError("When thresholding is applied, both the upper_value and lower_value parameters must "
+               "be set");
 
   // Create the thresholding object
   _image_threshold = vtkSmartPointer<vtkImageThreshold>::New();
@@ -328,11 +333,10 @@ ImageSampler::vtkFlip()
 {
 #ifdef LIBMESH_HAVE_VTK
   // Convert boolean values into an integer array, then loop over it
-  int mask[3] = {_is_pars.get<bool>("flip_x"),
-                 _is_pars.get<bool>("flip_y"),
-                 _is_pars.get<bool>("flip_z")};
+  int mask[3] = {
+      _is_pars.get<bool>("flip_x"), _is_pars.get<bool>("flip_y"), _is_pars.get<bool>("flip_z")};
 
-  for (int dim=0; dim<3; ++dim)
+  for (int dim = 0; dim < 3; ++dim)
   {
     if (mask[dim])
     {

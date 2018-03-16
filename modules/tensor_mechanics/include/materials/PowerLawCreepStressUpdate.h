@@ -1,14 +1,22 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef RECOMPUTERADIALRETURNPOWERLAWCREEP_H
 #define RECOMPUTERADIALRETURNPOWERLAWCREEP_H
 
 #include "RadialReturnStressUpdate.h"
 #include "MooseMesh.h"
+
+class PowerLawCreepStressUpdate;
+
+template <>
+InputParameters validParams<PowerLawCreepStressUpdate>();
 
 /**
  * This class uses the Discrete material in a radial return isotropic creep
@@ -21,7 +29,6 @@
  * creep based on stress, temperature, and time effects.  This class also
  * computes the creep strain as a stateful material property.
  */
-
 class PowerLawCreepStressUpdate : public RadialReturnStressUpdate
 {
 public:
@@ -29,12 +36,17 @@ public:
 
 protected:
   virtual void initQpStatefulProperties() override;
+  virtual void propagateQpStatefulProperties() override;
 
-  virtual void computeStressInitialize(Real effectiveTrialStress) override;
+  virtual void computeStressInitialize(const Real effective_trial_stress,
+                                       const RankFourTensor & elasticity_tensor) override;
   virtual void computeStressFinalize(const RankTwoTensor & plasticStrainIncrement) override;
 
-  virtual Real computeResidual(Real effectiveTrialStress, Real scalar) override;
-  virtual Real computeDerivative(Real effectiveTrialStress, Real scalar) override;
+  virtual Real computeResidual(const Real effective_trial_stress, const Real scalar) override;
+  virtual Real computeDerivative(const Real effective_trial_stress, const Real scalar) override;
+
+  /// String that is prepended to the creep_strain Material Property
+  const std::string _creep_prepend;
 
   const Real _coefficient;
   const Real _n_exponent;
@@ -42,17 +54,18 @@ protected:
   const Real _activation_energy;
   const Real _gas_constant;
   const Real _start_time;
-  Real _shear_modulus;
   Real _exponential;
   Real _exp_time;
   const bool _has_temp;
 
   const VariableValue & _temperature;
   MaterialProperty<RankTwoTensor> & _creep_strain;
-  MaterialProperty<RankTwoTensor> & _creep_strain_old;
+  const MaterialProperty<RankTwoTensor> & _creep_strain_old;
+
+  Real _max_creep_incr;
 };
 
-template<>
+template <>
 InputParameters validParams<PowerLawCreepStressUpdate>();
 
-#endif //RECOMPUTERADIALRETURNPOWERLAWCREEP_H
+#endif // RECOMPUTERADIALRETURNPOWERLAWCREEP_H

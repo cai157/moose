@@ -1,22 +1,16 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef CHECKPOINT_H
 #define CHECKPOINT_H
 
 // MOOSE includes
-#include "BasicOutput.h"
 #include "FileOutput.h"
 #include "RestartableDataIO.h"
 
@@ -26,7 +20,7 @@
 class Checkpoint;
 class MaterialPropertyStorage;
 
-template<>
+template <>
 InputParameters validParams<Checkpoint>();
 
 /**
@@ -47,21 +41,14 @@ struct CheckpointFileNames
 /**
  *
  */
-class Checkpoint : public BasicOutput<FileOutput>
+class Checkpoint : public FileOutput
 {
 public:
-
   /**
    * Class constructor
    * @param parameters
    */
   Checkpoint(const InputParameters & parameters);
-
-  /**
-   * Outputs a checkpoint file.
-   * Each call to this function creates various files associated with
-   */
-  void output(const ExecFlagType & type) override;
 
   /**
    * Returns the base filename for the checkpoint files
@@ -75,10 +62,14 @@ public:
   std::string directory();
 
 protected:
-
-  void updateCheckpointFiles(CheckpointFileNames file_struct);
+  /**
+   * Outputs a checkpoint file.
+   * Each call to this function creates various files associated with
+   */
+  virtual void output(const ExecFlagType & type) override;
 
 private:
+  void updateCheckpointFiles(CheckpointFileNames file_struct);
 
   /// Max no. of output files to store
   unsigned int _num_files;
@@ -111,4 +102,4 @@ private:
   std::deque<CheckpointFileNames> _file_names;
 };
 
-#endif //CHECKPOINT_H
+#endif // CHECKPOINT_H

@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef KKSSPLITCHCRES_H
 #define KKSSPLITCHCRES_H
 
@@ -11,10 +14,10 @@
 #include "JvarMapInterface.h"
 #include "DerivativeMaterialInterface.h"
 
-//Forward Declarations
+// Forward Declarations
 class KKSSplitCHCRes;
 
-template<>
+template <>
 InputParameters validParams<KKSSplitCHCRes>();
 
 /**
@@ -29,7 +32,7 @@ InputParameters validParams<KKSSplitCHCRes>();
  * The user picks one phase free energy \f$ F_a \f$ (f_base) and its corresponding
  * phase concentration \f$ c_a \f$
  */
-class KKSSplitCHCRes : public DerivativeMaterialInterface<JvarMapKernelInterface<SplitCHBase> >
+class KKSSplitCHCRes : public DerivativeMaterialInterface<JvarMapKernelInterface<SplitCHBase>>
 {
 public:
   KKSSplitCHCRes(const InputParameters & parameters);
@@ -72,4 +75,4 @@ private:
   const VariableValue & _w;
 };
 
-#endif //KKSSPLITCHCRES_H
+#endif // KKSSPLITCHCRES_H

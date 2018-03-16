@@ -1,34 +1,23 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOOSEPARSEDFUNCTION_H
 #define MOOSEPARSEDFUNCTION_H
-
-// std includes
-#include <iostream>
-#include <string>
-#include <map>
 
 // MOOSE includes
 #include "Function.h"
 #include "MooseParsedFunctionBase.h"
 
-//Forward declarations
+// Forward declarations
 class MooseParsedFunction;
-class MooseParsedFunctionWrapper;
 
-template<>
+template <>
 InputParameters validParams<MooseParsedFunction>();
 
 /**
@@ -39,18 +28,14 @@ InputParameters validParams<MooseParsedFunction>();
  * Documentation for the Function Parser can be found at:
  * http://warp.povusers.org/FunctionParser/fparser.html
  */
-class MooseParsedFunction :
-  public Function,
-  public MooseParsedFunctionBase
+class MooseParsedFunction : public Function, public MooseParsedFunctionBase
 {
 public:
-
   /**
    * Created from MooseSystem via the FunctionFactory.
    * @param parameters The input parameters
    */
   MooseParsedFunction(const InputParameters & parameters);
-  virtual ~MooseParsedFunction();
 
   /**
    * Evaluate the equation at the given location. For 1-D and 2-D equations
@@ -88,14 +73,9 @@ public:
   virtual void initialSetup() override;
 
 protected:
-
   /// The function defined by the user
   std::string _value;
 
-  /// Pointer to the wrapper object for the function
-  MooseParsedFunctionWrapper * _function_ptr;
-
   friend class ParsedFunctionTest;
-
 };
-#endif //MOOSEPARSEDFUNCTION_H
+#endif // MOOSEPARSEDFUNCTION_H

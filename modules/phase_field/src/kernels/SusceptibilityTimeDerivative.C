@@ -1,23 +1,30 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "SusceptibilityTimeDerivative.h"
 
-template<>
-InputParameters validParams<SusceptibilityTimeDerivative>()
+template <>
+InputParameters
+validParams<SusceptibilityTimeDerivative>()
 {
   InputParameters params = validParams<TimeDerivative>();
-  params.addClassDescription("A modified time derivative Kernel that multiply the time derivative of a variable by a generalized susceptibility");
-  params.addRequiredParam<MaterialPropertyName>("f_name", "Base name of the susceptibility function F defined in a DerivativeParsedMaterial");
+  params.addClassDescription(
+      "A modified time derivative Kernel that multiplies the time derivative "
+      "of a variable by a generalized susceptibility");
+  params.addRequiredParam<MaterialPropertyName>(
+      "f_name", "Susceptibility function F defined in a FunctionMaterial");
   params.addCoupledVar("args", "Vector of arguments of the susceptibility");
   return params;
 }
 
-SusceptibilityTimeDerivative::SusceptibilityTimeDerivative(const InputParameters & parameters) :
-    DerivativeMaterialInterface<JvarMapKernelInterface<TimeDerivative> >(parameters),
+SusceptibilityTimeDerivative::SusceptibilityTimeDerivative(const InputParameters & parameters)
+  : DerivativeMaterialInterface<JvarMapKernelInterface<TimeDerivative>>(parameters),
     _Chi(getMaterialProperty<Real>("f_name")),
     _dChidu(getMaterialPropertyDerivative<Real>("f_name", _var.name())),
     _dChidarg(_coupled_moose_vars.size())
@@ -42,7 +49,8 @@ SusceptibilityTimeDerivative::computeQpResidual()
 Real
 SusceptibilityTimeDerivative::computeQpJacobian()
 {
-  return TimeDerivative::computeQpJacobian() * _Chi[_qp] + TimeDerivative::computeQpResidual() * _dChidu[_qp] * _phi[_j][_qp];
+  return TimeDerivative::computeQpJacobian() * _Chi[_qp] +
+         TimeDerivative::computeQpResidual() * _dChidu[_qp] * _phi[_j][_qp];
 }
 
 Real

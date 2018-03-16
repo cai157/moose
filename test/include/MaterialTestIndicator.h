@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MATERIALTESTINDICATOR_H
 #define MATERIALTESTINDICATOR_H
@@ -19,27 +14,23 @@
 #include "Indicator.h"
 #include "MaterialPropertyInterface.h"
 
-// libMesh includes
 #include "libmesh/quadrature.h"
 
 // Forward Declarations
 class MaterialTestIndicator;
 
-template<>
+template <>
 InputParameters validParams<MaterialTestIndicator>();
 
 /**
  * Computes the minimum element size.
  */
-class MaterialTestIndicator :
-    public Indicator,
-    public MaterialPropertyInterface
+class MaterialTestIndicator : public Indicator
 {
 public:
   MaterialTestIndicator(const InputParameters & params);
 
 protected:
-
   /// Computes the minimum element size based on the shear wave speed
   virtual void computeIndicator() override;
 
@@ -47,7 +38,7 @@ protected:
   const MaterialProperty<Real> & _property;
 
   /// The current quadrature rule
-  QBase * & _qrule;
+  QBase *& _qrule;
 
   /// The variable for storing indicator value
   MooseVariable & _indicator_var;

@@ -1,37 +1,31 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "KernelValue.h"
+
+// MOOSE includes
+#include "Assembly.h"
+#include "MooseVariableField.h"
 #include "SubProblem.h"
 #include "SystemBase.h"
-#include "Assembly.h"
 
-// libMesh includes
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<KernelValue>()
+template <>
+InputParameters
+validParams<KernelValue>()
 {
   InputParameters params = validParams<Kernel>();
   return params;
 }
 
-
-KernelValue::KernelValue(const InputParameters & parameters) :
-    Kernel(parameters)
-{
-}
+KernelValue::KernelValue(const InputParameters & parameters) : Kernel(parameters) {}
 
 void
 KernelValue::computeResidual()
@@ -81,7 +75,7 @@ KernelValue::computeJacobian()
     unsigned int rows = ke.m();
     DenseVector<Number> diag(rows);
     for (unsigned int i = 0; i < rows; i++) // target for auto vectorization
-      diag(i) = _local_ke(i,i);
+      diag(i) = _local_ke(i, i);
 
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
     for (const auto & var : _diag_save_in)

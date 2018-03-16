@@ -1,29 +1,23 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef RANDOMCORROSION_H
 #define RANDOMCORROSION_H
 
 // MOOSE includes
 #include "AuxKernel.h"
-#include "libmesh/mesh_tools.h"
+#include "libmesh/bounding_box.h"
 
 // Forward declarations
 class RandomCorrosion;
-namespace libMesh{ namespace MeshTools { class BoundingBox; } }
 
-template<>
+template <>
 InputParameters validParams<RandomCorrosion>();
 
 /**
@@ -39,7 +33,6 @@ InputParameters validParams<RandomCorrosion>();
 class RandomCorrosion : public AuxKernel
 {
 public:
-
   /**
    * Class constructor
    * @param parameters The input parameters for the RandomCorrosion object.
@@ -52,7 +45,6 @@ public:
   void timestepSetup() override;
 
 protected:
-
   /**
    * Computes the "corrosion" for the supplied phase variable.
    * @return The compute "phase" variable
@@ -66,12 +58,11 @@ protected:
   Point getRandomPoint();
 
 private:
-
   /// The vector of random points to apply "corrosion"
   std::vector<Point> _points;
 
   /// The bounding box of the domain, used for generating "corrosion" points
-  MeshTools::BoundingBox _box;
+  BoundingBox _box;
 
   /// Nodal tolerance for determining if "corrosion" should occur at the current node
   const Real & _nodal_tol;

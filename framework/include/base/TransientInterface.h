@@ -1,26 +1,27 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef TRANSIENTINTERFACE_H
 #define TRANSIENTINTERFACE_H
 
-#include "InputParameters.h"
+#include "Moose.h"
 
+// Forward declarations
 class FEProblemBase;
+class InputParameters;
+class MooseObject;
 class TransientInterface;
 
-template<>
+template <typename T>
+InputParameters validParams();
+
+template <>
 InputParameters validParams<TransientInterface>();
 
 /**
@@ -41,7 +42,8 @@ protected:
 
   /**
    * If the object is using implicit or explicit form. This does NOT mean time scheme,
-   * but which values are going to be used in the object - either from current time or old time. Note that
+   * but which values are going to be used in the object - either from current time or old time.
+   * Note that
    * even explicit schemes have implicit form (it is the time derivative "kernel")
    */
   bool _is_implicit;

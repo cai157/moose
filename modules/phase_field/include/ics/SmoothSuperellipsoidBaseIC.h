@@ -1,28 +1,29 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef SMOOTHSUPERELLIPSOIDBASEIC_H
 #define SMOOTHSUPERELLIPSOIDBASEIC_H
 
-#include "Kernel.h"
 #include "InitialCondition.h"
 #include "MooseRandom.h"
-
-// System includes
-#include <string>
 
 // Forward Declarations
 class SmoothSuperellipsoidBaseIC;
 
-template<>
+template <>
 InputParameters validParams<SmoothSuperellipsoidBaseIC>();
 
 /**
- * SmoothSuperellipsoidBaseIC is the base class for all initial conditions that create superellipsoids.
- * A superellipsoid is described by \f$ \left|\frac{x}{a}\right|^n + \left|\frac{y}{b}\right|^n + \left|\frac{z}{c}\right|^n = 1\f$.
+ * SmoothSuperellipsoidBaseIC is the base class for all initial conditions that create
+ * superellipsoids.
+ * A superellipsoid is described by \f$ \left|\frac{x}{a}\right|^n + \left|\frac{y}{b}\right|^n +
+ * \left|\frac{z}{c}\right|^n = 1\f$.
  * Note that all children must resize _as, _bs, _cs, _ns, and _centers.
  */
 class SmoothSuperellipsoidBaseIC : public InitialCondition
@@ -36,9 +37,12 @@ public:
   virtual void initialSetup();
 
 protected:
-  virtual Real computeSuperellipsoidValue(const Point & p, const Point & center, Real a, Real b, Real c, Real n);
-  virtual Real computeSuperellipsoidInverseValue(const Point & p, const Point & center, Real a, Real b, Real c, Real n);
-  RealGradient computeSuperellipsoidGradient(const Point & p, const Point & center, Real a, Real b, Real c, Real n);
+  virtual Real
+  computeSuperellipsoidValue(const Point & p, const Point & center, Real a, Real b, Real c, Real n);
+  virtual Real computeSuperellipsoidInverseValue(
+      const Point & p, const Point & center, Real a, Real b, Real c, Real n);
+  RealGradient computeSuperellipsoidGradient(
+      const Point & p, const Point & center, Real a, Real b, Real c, Real n);
 
   virtual void computeSuperellipsoidSemiaxes() = 0;
   virtual void computeSuperellipsoidExponents() = 0;
@@ -63,4 +67,4 @@ protected:
   MooseRandom _random;
 };
 
-#endif //SMOOTHSUPERELLIPSOIDBASEIC_H
+#endif // SMOOTHSUPERELLIPSOIDBASEIC_H

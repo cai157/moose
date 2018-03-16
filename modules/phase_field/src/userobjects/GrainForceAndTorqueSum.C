@@ -1,26 +1,31 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "GrainForceAndTorqueSum.h"
 
-template<>
-InputParameters validParams<GrainForceAndTorqueSum>()
+template <>
+InputParameters
+validParams<GrainForceAndTorqueSum>()
 {
   InputParameters params = validParams<GeneralUserObject>();
   params.addClassDescription("Userobject for summing forces and torques acting on a grain");
-  params.addParam<std::vector<UserObjectName> >("grain_forces", "List of names of user objects that provides forces and torques applied to grains");
+  params.addParam<std::vector<UserObjectName>>(
+      "grain_forces",
+      "List of names of user objects that provides forces and torques applied to grains");
   params.addParam<unsigned int>("grain_num", "Number of grains");
   return params;
 }
 
-GrainForceAndTorqueSum::GrainForceAndTorqueSum(const InputParameters & parameters) :
-    GrainForceAndTorqueInterface(),
+GrainForceAndTorqueSum::GrainForceAndTorqueSum(const InputParameters & parameters)
+  : GrainForceAndTorqueInterface(),
     GeneralUserObject(parameters),
-    _sum_objects(getParam<std::vector<UserObjectName> >("grain_forces")),
+    _sum_objects(getParam<std::vector<UserObjectName>>("grain_forces")),
     _num_forces(_sum_objects.size()),
     _grain_num(getParam<unsigned int>("grain_num")),
     _sum_forces(_num_forces),
@@ -28,7 +33,7 @@ GrainForceAndTorqueSum::GrainForceAndTorqueSum(const InputParameters & parameter
     _torque_values(_grain_num)
 {
   for (unsigned int i = 0; i < _num_forces; ++i)
-    _sum_forces[i] = & getUserObjectByName<GrainForceAndTorqueInterface>(_sum_objects[i]);
+    _sum_forces[i] = &getUserObjectByName<GrainForceAndTorqueInterface>(_sum_objects[i]);
 }
 
 void
@@ -48,7 +53,7 @@ GrainForceAndTorqueSum::initialize()
   if (_fe_problem.currentlyComputingJacobian())
   {
     unsigned int total_dofs = _subproblem.es().n_dofs();
-    _c_jacobians.resize(6*_grain_num*total_dofs, 0.0);
+    _c_jacobians.resize(6 * _grain_num * total_dofs, 0.0);
     _eta_jacobians.resize(_grain_num);
 
     for (unsigned int i = 0; i < _c_jacobians.size(); ++i)
@@ -57,7 +62,7 @@ GrainForceAndTorqueSum::initialize()
 
     for (unsigned int i = 0; i < _grain_num; ++i)
     {
-      _eta_jacobians[i].resize(6*_grain_num*total_dofs, 0.0);
+      _eta_jacobians[i].resize(6 * _grain_num * total_dofs, 0.0);
       for (unsigned int j = 0; j < _eta_jacobians[i].size(); ++j)
         for (unsigned int k = 0; k < _num_forces; ++k)
           _eta_jacobians[i][j] += (_sum_forces[k]->getForceEtaJacobians())[i][j];
@@ -83,7 +88,7 @@ GrainForceAndTorqueSum::getForceCJacobians() const
   return _c_jacobians;
 }
 
-const std::vector<std::vector<Real> > &
+const std::vector<std::vector<Real>> &
 GrainForceAndTorqueSum::getForceEtaJacobians() const
 {
   return _eta_jacobians;

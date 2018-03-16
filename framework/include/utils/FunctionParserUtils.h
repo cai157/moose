@@ -1,26 +1,30 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef FUNCTIONPARSERUTILS_H
 #define FUNCTIONPARSERUTILS_H
 
-#include "InputParameters.h"
+#include "Moose.h"
+
+#include "libmesh/fparser_ad.hh"
+
+// C++ includes
+#include <memory>
 
 // Forward declartions
 class FunctionParserUtils;
+class InputParameters;
 
-template<>
+template <typename T>
+InputParameters validParams();
+
+template <>
 InputParameters validParams<FunctionParserUtils>();
 
 class FunctionParserUtils
@@ -32,7 +36,7 @@ public:
   typedef FunctionParserADBase<Real> ADFunction;
 
   /// Shorthand for an smart pointer to an autodiff function parser object.
-  typedef MooseSharedPointer<ADFunction> ADFunctionPtr;
+  typedef std::shared_ptr<ADFunction> ADFunctionPtr;
 
   /// apply input paramters to internal feature flags of the parser object
   void setParserFeatureFlags(ADFunctionPtr &);
@@ -64,4 +68,4 @@ protected:
   std::vector<Real> _func_params;
 };
 
-#endif //FUNCTIONPARSERUTILS_H
+#endif // FUNCTIONPARSERUTILS_H

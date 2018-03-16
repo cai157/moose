@@ -1,43 +1,44 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "AEFVMaterial.h"
 #include "MooseMesh.h"
 
-// libMesh includes
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<AEFVMaterial>()
+template <>
+InputParameters
+validParams<AEFVMaterial>()
 {
   InputParameters params = validParams<Material>();
-  params.addClassDescription("A material kernel for the advection equation using a cell-centered finite volume method.");
+  params.addClassDescription(
+      "A material kernel for the advection equation using a cell-centered finite volume method.");
   params.addRequiredCoupledVar("u", "Cell-averge variable");
   params.addRequiredParam<UserObjectName>("slope_limiting", "Name for slope limiting user object");
   return params;
 }
 
-AEFVMaterial::AEFVMaterial(const InputParameters & parameters):
-    Material(parameters),
+AEFVMaterial::AEFVMaterial(const InputParameters & parameters)
+  : Material(parameters),
     _uc(coupledValue("u")),
     _lslope(getUserObject<SlopeLimitingBase>("slope_limiting")),
     _u(declareProperty<Real>("u"))
 {
 }
 
-AEFVMaterial::~AEFVMaterial()
-{
-}
+AEFVMaterial::~AEFVMaterial() {}
 
 void
 AEFVMaterial::computeQpProperties()
 {
   // initialize the variable
-  _u[_qp]  = _uc[_qp];
+  _u[_qp] = _uc[_qp];
 
   // interpolate variable values at face center
   if (_bnd)

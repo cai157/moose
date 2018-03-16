@@ -1,26 +1,33 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "CHSplitChemicalPotential.h"
 
-template<>
-InputParameters validParams<CHSplitChemicalPotential>()
+template <>
+InputParameters
+validParams<CHSplitChemicalPotential>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addClassDescription("Chemical potential kernel in Split Cahn-Hilliard that solves chemical potential in a weak form");
-  params.addRequiredParam<MaterialPropertyName>("chemical_potential_prop", "Chemical potential property name");
+  params.addClassDescription("Chemical potential kernel in Split Cahn-Hilliard that solves "
+                             "chemical potential in a weak form");
+  params.addRequiredParam<MaterialPropertyName>("chemical_potential_prop",
+                                                "Chemical potential property name");
   params.addRequiredCoupledVar("c", "Concentration");
   return params;
 }
 
-CHSplitChemicalPotential::CHSplitChemicalPotential(const InputParameters & parameters) :
-    DerivativeMaterialInterface<Kernel>(parameters),
+CHSplitChemicalPotential::CHSplitChemicalPotential(const InputParameters & parameters)
+  : DerivativeMaterialInterface<Kernel>(parameters),
     _mu_prop_name(getParam<MaterialPropertyName>("chemical_potential_prop")),
     _chemical_potential(getMaterialProperty<Real>(_mu_prop_name)),
-    _dchemical_potential_dc(getMaterialPropertyDerivative<Real>(_mu_prop_name, getVar("c", 0)->name())),
+    _dchemical_potential_dc(
+        getMaterialPropertyDerivative<Real>(_mu_prop_name, getVar("c", 0)->name())),
     _c_var(coupled("c"))
 {
 }

@@ -1,17 +1,21 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "AEFVKernel.h"
 
-template<>
-InputParameters validParams<AEFVKernel>()
+template <>
+InputParameters
+validParams<AEFVKernel>()
 {
   InputParameters params = validParams<DGKernel>();
-  params.addClassDescription("A dgkernel for the advection equation using a cell-centered finite volume method.");
+  params.addClassDescription(
+      "A dgkernel for the advection equation using a cell-centered finite volume method.");
   MooseEnum component("concentration");
   params.addParam<MooseEnum>("component", component, "Choose one of the equations");
   params.addRequiredCoupledVar("u", "Name of the variable to use");
@@ -19,8 +23,8 @@ InputParameters validParams<AEFVKernel>()
   return params;
 }
 
-AEFVKernel::AEFVKernel(const InputParameters & parameters) :
-    DGKernel(parameters),
+AEFVKernel::AEFVKernel(const InputParameters & parameters)
+  : DGKernel(parameters),
     _component(getParam<MooseEnum>("component")),
     _uc1(coupledValue("u")),
     _uc2(coupledNeighborValue("u")),
@@ -30,9 +34,7 @@ AEFVKernel::AEFVKernel(const InputParameters & parameters) :
 {
 }
 
-AEFVKernel::~AEFVKernel()
-{
-}
+AEFVKernel::~AEFVKernel() {}
 
 Real
 AEFVKernel::computeQpResidual(Moose::DGResidualType type)
@@ -44,8 +46,8 @@ AEFVKernel::computeQpResidual(Moose::DGResidualType type)
   std::vector<Real> uvec2 = {_u2[_qp]};
 
   // calculate the flux
-  const auto & flux = _flux.getFlux(_current_side, _current_elem->id(), _neighbor_elem->id(),
-                                    uvec1, uvec2, _normals[_qp], _tid);
+  const auto & flux = _flux.getFlux(
+      _current_side, _current_elem->id(), _neighbor_elem->id(), uvec1, uvec2, _normals[_qp], _tid);
 
   // distribute the contribution to the current and neighbor elements
   switch (type)
@@ -65,21 +67,33 @@ AEFVKernel::computeQpJacobian(Moose::DGJacobianType type)
 {
   // assemble the input vectors, which are
   //   the constant monomial from the current and neighbor elements
-  std::vector<Real> uvec1 = { _uc1[_qp]};
-  std::vector<Real> uvec2 = { _uc2[_qp]};
+  std::vector<Real> uvec1 = {_uc1[_qp]};
+  std::vector<Real> uvec2 = {_uc2[_qp]};
 
   // calculate the Jacobian matrices
-  const auto & fjac1 = _flux.getJacobian(Moose::Element, _current_side, _current_elem->id(),
-                                         _neighbor_elem->id(), uvec1, uvec2, _normals[_qp], _tid);
+  const auto & fjac1 = _flux.getJacobian(Moose::Element,
+                                         _current_side,
+                                         _current_elem->id(),
+                                         _neighbor_elem->id(),
+                                         uvec1,
+                                         uvec2,
+                                         _normals[_qp],
+                                         _tid);
 
-  const auto & fjac2 = _flux.getJacobian(Moose::Neighbor, _current_side, _current_elem->id(),
-                                         _neighbor_elem->id(), uvec1, uvec2, _normals[_qp], _tid);
+  const auto & fjac2 = _flux.getJacobian(Moose::Neighbor,
+                                         _current_side,
+                                         _current_elem->id(),
+                                         _neighbor_elem->id(),
+                                         uvec1,
+                                         uvec2,
+                                         _normals[_qp],
+                                         _tid);
 
   // distribute the contribution to the current and neighbor elements
   switch (type)
   {
     case Moose::ElementElement:
-      return  fjac1(_component, _component) * _phi[_j][_qp] * _test[_i][_qp];
+      return fjac1(_component, _component) * _phi[_j][_qp] * _test[_i][_qp];
 
     case Moose::ElementNeighbor:
       return fjac2(_component, _component) * _phi_neighbor[_j][_qp] * _test[_i][_qp];

@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWHEATENERGY_H
 #define POROUSFLOWHEATENERGY_H
@@ -14,18 +16,20 @@
 // Forward Declarations
 class PorousFlowHeatEnergy;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowHeatEnergy>();
 
 /**
- * Postprocessor produces the sum of heat energy of the porous skeleton and/or fluid components in a region
+ * Postprocessor produces the sum of heat energy of the porous skeleton and/or fluid components in a
+ * region
  */
-class PorousFlowHeatEnergy: public ElementIntegralPostprocessor
+class PorousFlowHeatEnergy : public ElementIntegralPostprocessor
 {
 public:
   PorousFlowHeatEnergy(const InputParameters & parameters);
 
 protected:
+  virtual Real computeIntegral() override;
   virtual Real computeQpIntegral() override;
 
   /// Holds info on the PorousFlow variables
@@ -50,13 +54,16 @@ protected:
   const MaterialProperty<Real> & _rock_energy_nodal;
 
   /// nodal fluid density
-  const MaterialProperty<std::vector<Real> > * _fluid_density;
+  const MaterialProperty<std::vector<Real>> * const _fluid_density;
 
   /// nodal fluid saturation
-  const MaterialProperty<std::vector<Real> > * _fluid_saturation_nodal;
+  const MaterialProperty<std::vector<Real>> * const _fluid_saturation_nodal;
 
   /// internal energy of the phases, evaluated at the nodes
-  const MaterialProperty<std::vector<Real> > * _energy_nodal;
+  const MaterialProperty<std::vector<Real>> * const _energy_nodal;
+
+  /// the variable for the corresponding PorousFlowEnergyTimeDerivative Kernel: this provides test functions
+  MooseVariable * const _var;
 };
 
-#endif //POROUSFLOWHEATENERGY_H
+#endif // POROUSFLOWHEATENERGY_H

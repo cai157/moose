@@ -1,33 +1,25 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#include "MinimalApp.h"
+#include "gtest_include.h"
+
 #include "AppFactory.h"
 #include "Executioner.h"
 #include "MooseMesh.h"
 
-CPPUNIT_TEST_SUITE_REGISTRATION( MinimalApp );
-
-void
-MinimalApp::createMinimalAppTest()
+TEST(MinimalApp, create)
 {
-  const char *argv[1] = { "\0" };
-  MooseApp * app = AppFactory::createApp("MooseUnitApp", 1, (char**)argv);
+  const char * argv[1] = {"\0"};
+  std::shared_ptr<MooseApp> app = AppFactory::createAppShared("MooseUnitApp", 1, (char **)argv);
   app->parameters().set<bool>("minimal") = true;
   app->run();
-  CPPUNIT_ASSERT(app->executioner()->name() == "Executioner");
-  CPPUNIT_ASSERT(app->executioner()->feProblem().name() == "MOOSE Problem");
-  CPPUNIT_ASSERT(app->executioner()->feProblem().mesh().nElem() == 1);
-  delete app;
+  EXPECT_EQ(app->executioner()->name(), "Executioner");
+  EXPECT_EQ(app->executioner()->feProblem().name(), "MOOSE Problem");
+  EXPECT_EQ(app->executioner()->feProblem().mesh().nElem(), 1);
 }

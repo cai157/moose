@@ -1,20 +1,23 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "Air.h"
 
-// libMesh includes
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<Air>()
+template <>
+InputParameters
+validParams<Air>()
 {
   InputParameters params = validParams<NavierStokesMaterial>();
 
+  params.addClassDescription("Air.");
   // Allow the user to specify the dynamic viscosity from the input file,
   // otherwise use the value at 300K by default
   params.addParam<Real>("dynamic_viscosity", 1.9830e-5, "in kg/m/s");
@@ -22,13 +25,10 @@ InputParameters validParams<Air>()
   return params;
 }
 
-Air::Air(const InputParameters & parameters) :
-    NavierStokesMaterial(parameters),
-    _mu(getParam<Real>("dynamic_viscosity"))
+Air::Air(const InputParameters & parameters)
+  : NavierStokesMaterial(parameters), _mu(getParam<Real>("dynamic_viscosity"))
 {
 }
-
-
 
 void
 Air::computeProperties()

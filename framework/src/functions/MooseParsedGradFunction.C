@@ -1,22 +1,20 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "MooseParsedGradFunction.h"
 #include "MooseParsedFunctionWrapper.h"
 
-template<>
-InputParameters validParams<MooseParsedGradFunction>()
+registerMooseObjectAliased("MooseApp", MooseParsedGradFunction, "ParsedGradFunction");
+
+template <>
+InputParameters
+validParams<MooseParsedGradFunction>()
 {
   InputParameters params = validParams<Function>();
   params += validParams<MooseParsedFunctionBase>();
@@ -27,24 +25,17 @@ InputParameters validParams<MooseParsedGradFunction>()
   return params;
 }
 
-MooseParsedGradFunction::MooseParsedGradFunction(const InputParameters & parameters) :
-    Function(parameters),
+MooseParsedGradFunction::MooseParsedGradFunction(const InputParameters & parameters)
+  : Function(parameters),
     MooseParsedFunctionBase(parameters),
     _value(verifyFunction(getParam<std::string>("value"))),
     _grad_value(verifyFunction(std::string("{") + getParam<std::string>("grad_x") + "}{" +
-                                 getParam<std::string>("grad_y") + "}{" +
-                                 getParam<std::string>("grad_z") + "}")),
-    _function_ptr(NULL),
-    _grad_function_ptr(NULL)
+                               getParam<std::string>("grad_y") + "}{" +
+                               getParam<std::string>("grad_z") + "}"))
 {
 }
 
-MooseParsedGradFunction::~MooseParsedGradFunction()
-{
-  // Clean up the parsed function object
-  delete _function_ptr;
-  delete _grad_function_ptr;
-}
+MooseParsedGradFunction::~MooseParsedGradFunction() {}
 
 Real
 MooseParsedGradFunction::value(Real t, const Point & p)
@@ -73,10 +64,11 @@ MooseParsedGradFunction::initialSetup()
   if (isParamValid("_tid"))
     tid = getParam<THREAD_ID>("_tid");
 
-  if (_function_ptr == NULL)
-    _function_ptr = new MooseParsedFunctionWrapper(_pfb_feproblem, _value, _vars, _vals, tid);
+  if (!_function_ptr)
+    _function_ptr =
+        libmesh_make_unique<MooseParsedFunctionWrapper>(_pfb_feproblem, _value, _vars, _vals, tid);
 
-  if (_grad_function_ptr == NULL)
-    _grad_function_ptr = new MooseParsedFunctionWrapper(_pfb_feproblem, _grad_value, _vars, _vals, tid);
+  if (!_grad_function_ptr)
+    _grad_function_ptr = libmesh_make_unique<MooseParsedFunctionWrapper>(
+        _pfb_feproblem, _grad_value, _vars, _vals, tid);
 }
-

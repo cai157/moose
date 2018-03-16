@@ -1,18 +1,14 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#include "FEProblem.h"
+#include "FEProblemBase.h"
+#include "AuxiliarySystem.h"
 #include "MaterialPropertyStorage.h"
 #include "MooseEnum.h"
 #include "Resurrector.h"
@@ -37,6 +33,9 @@
 #include "Parser.h"
 #include "ElementH1Error.h"
 #include "Function.h"
+#include "NonlinearSystem.h"
+#include "Distribution.h"
+#include "Sampler.h"
 #include "PetscSupport.h"
 #include "RandomInterface.h"
 #include "RandomData.h"
@@ -58,6 +57,7 @@
 #include "Indicator.h"
 #include "Marker.h"
 #include "MultiApp.h"
+#include "MultiAppTransfer.h"
 #include "TransientMultiApp.h"
 #include "ElementUserObject.h"
 #include "NodalUserObject.h"
@@ -77,37 +77,79 @@
 #include "NonlocalIntegratedBC.h"
 #include "ShapeElementUserObject.h"
 #include "ShapeSideUserObject.h"
+#include "MooseVariableField.h"
+#include "MooseVariableScalar.h"
 
 #include "libmesh/exodusII_io.h"
 #include "libmesh/quadrature.h"
 #include "libmesh/coupling_matrix.h"
+#include "libmesh/nonlinear_solver.h"
+
+// Anonymous namespace for helper function
+namespace
+{
+/**
+ * Method for sorting the MooseVariableFEs based on variable numbers
+ */
+bool
+sortMooseVariables(MooseVariableFE * a, MooseVariableFE * b)
+{
+  return a->number() < b->number();
+}
+}
 
 Threads::spin_mutex get_function_mutex;
 
-template<>
-InputParameters validParams<FEProblemBase>()
+template <>
+InputParameters
+validParams<FEProblemBase>()
 {
   InputParameters params = validParams<SubProblem>();
   params.addPrivateParam<MooseMesh *>("mesh");
   params.addParam<unsigned int>("null_space_dimension", 0, "The dimension of the nullspace");
-  params.addParam<unsigned int>("transpose_null_space_dimension", 0, "The dimension of the transpose nullspace");
-  params.addParam<unsigned int>("near_null_space_dimension", 0, "The dimension of the near nullspace");
-  params.addParam<bool>("solve", true, "Whether or not to actually solve the Nonlinear system.  This is handy in the case that all you want to do is execute AuxKernels, Transfers, etc. without actually solving anything");
-  params.addParam<bool>("use_nonlinear", true, "Determines whether to use a Nonlinear vs a Eigenvalue system (Automatically determined based on executioner)");
-  params.addParam<bool>("error_on_jacobian_nonzero_reallocation", false, "This causes PETSc to error if it had to reallocate memory in the Jacobian matrix due to not having enough nonzeros");
-  params.addParam<bool>("force_restart", false, "EXPERIMENTAL: If true, a sub_app may use a restart file instead of using of using the master backup file");
+  params.addParam<unsigned int>(
+      "transpose_null_space_dimension", 0, "The dimension of the transpose nullspace");
+  params.addParam<unsigned int>(
+      "near_null_space_dimension", 0, "The dimension of the near nullspace");
+  params.addParam<bool>("solve",
+                        true,
+                        "Whether or not to actually solve the Nonlinear system.  "
+                        "This is handy in the case that all you want to do is "
+                        "execute AuxKernels, Transfers, etc. without actually "
+                        "solving anything");
+  params.addParam<bool>("use_nonlinear",
+                        true,
+                        "Determines whether to use a Nonlinear vs a "
+                        "Eigenvalue system (Automatically determined based "
+                        "on executioner)");
+  params.addParam<bool>("error_on_jacobian_nonzero_reallocation",
+                        false,
+                        "This causes PETSc to error if it had to reallocate memory in the Jacobian "
+                        "matrix due to not having enough nonzeros");
+  params.addParam<bool>("ignore_zeros_in_jacobian",
+                        false,
+                        "Do not explicitly store zero values in "
+                        "the Jacobian matrix if true");
+  params.addParam<bool>("force_restart",
+                        false,
+                        "EXPERIMENTAL: If true, a sub_app may use a "
+                        "restart file instead of using of using the master "
+                        "backup file");
+  params.addParam<bool>("skip_additional_restart_data",
+                        false,
+                        "True to skip additional data in equation system for restart. It is useful "
+                        "for starting a transient calculation with a steady-state solution");
 
   return params;
 }
 
-FEProblemBase::FEProblemBase(const InputParameters & parameters) :
-    SubProblem(parameters),
-    Restartable(parameters, "FEProblemBase", this),
-    _mesh(*parameters.get<MooseMesh *>("mesh")),
+FEProblemBase::FEProblemBase(const InputParameters & parameters)
+  : SubProblem(parameters),
+    Restartable(this, "FEProblemBase"),
+    _mesh(*getCheckedPointerParam<MooseMesh *>("mesh")),
     _eq(_mesh),
     _initialized(false),
     _kernel_type(Moose::KT_ALL),
-    _current_boundary_id(Moose::INVALID_BOUNDARY_ID),
     _solve(getParam<bool>("solve")),
 
     _transient(false),
@@ -120,16 +162,26 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters) :
     _nl(NULL),
     _aux(NULL),
     _coupling(Moose::COUPLING_DIAG),
-    _cm(NULL),
+    _distributions(/*threaded=*/false),
+    _samplers(_app.getExecuteOnEnum()),
     _scalar_ics(/*threaded=*/false),
-    _material_props(declareRestartableDataWithContext<MaterialPropertyStorage>("material_props", &_mesh)),
-    _bnd_material_props(declareRestartableDataWithContext<MaterialPropertyStorage>("bnd_material_props", &_mesh)),
+    _material_props(
+        declareRestartableDataWithContext<MaterialPropertyStorage>("material_props", &_mesh)),
+    _bnd_material_props(
+        declareRestartableDataWithContext<MaterialPropertyStorage>("bnd_material_props", &_mesh)),
     _pps_data(*this),
     _vpps_data(*this),
-    _general_user_objects(/*threaded=*/false),
-    _transfers(/*threaded=*/false),
-    _to_multi_app_transfers(/*threaded=*/false),
-    _from_multi_app_transfers(/*threaded=*/false),
+    _all_user_objects(_app.getExecuteOnEnum()),
+    _general_user_objects(_app.getExecuteOnEnum(), /*threaded=*/false),
+    _nodal_user_objects(_app.getExecuteOnEnum()),
+    _elemental_user_objects(_app.getExecuteOnEnum()),
+    _side_user_objects(_app.getExecuteOnEnum()),
+    _internal_side_user_objects(_app.getExecuteOnEnum()),
+    _multi_apps(_app.getExecuteOnEnum()),
+    _transient_multi_apps(_app.getExecuteOnEnum()),
+    _transfers(_app.getExecuteOnEnum(), /*threaded=*/false),
+    _to_multi_app_transfers(_app.getExecuteOnEnum(), /*threaded=*/false),
+    _from_multi_app_transfers(_app.getExecuteOnEnum(), /*threaded=*/false),
 #ifdef LIBMESH_ENABLE_AMR
     _adaptivity(*this),
     _cycles_completed(0),
@@ -142,9 +194,9 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters) :
     _has_dampers(false),
     _has_constraints(false),
     _has_initialized_stateful(false),
-    _resurrector(NULL),
     _const_jacobian(false),
     _has_jacobian(false),
+    _needs_old_newton_iter(false),
     _has_nonlocal_coupling(false),
     _calculate_jacobian_in_uo(false),
     _kernel_coverage_check(false),
@@ -154,14 +206,17 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters) :
     _max_scalar_order(INVALID_ORDER),
     _has_time_integrator(false),
     _has_exception(false),
+    _parallel_barrier_messaging(true),
     _current_execute_on_flag(EXEC_NONE),
-    _use_legacy_uo_aux_computation(_app.legacyUoAuxComputationDefault()),
-    _use_legacy_uo_initialization(_app.legacyUoInitializationDefault()),
-    _error_on_jacobian_nonzero_reallocation(getParam<bool>("error_on_jacobian_nonzero_reallocation")),
+    _control_warehouse(_app.getExecuteOnEnum()),
+    _error_on_jacobian_nonzero_reallocation(
+        getParam<bool>("error_on_jacobian_nonzero_reallocation")),
+    _ignore_zeros_in_jacobian(getParam<bool>("ignore_zeros_in_jacobian")),
     _force_restart(getParam<bool>("force_restart")),
+    _skip_additional_restart_data(getParam<bool>("skip_additional_restart_data")),
     _fail_next_linear_convergence_check(false),
-    _currently_computing_jacobian(false),
-    _started_initial_setup(false)
+    _started_initial_setup(false),
+    _has_internal_edge_residual_objects(false)
 {
 
   _time = 0.0;
@@ -173,21 +228,24 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters) :
   unsigned int n_threads = libMesh::n_threads();
 
   _real_zero.resize(n_threads, 0.);
+  _scalar_zero.resize(n_threads);
   _zero.resize(n_threads);
   _grad_zero.resize(n_threads);
   _second_zero.resize(n_threads);
   _second_phi_zero.resize(n_threads);
+  _point_zero.resize(n_threads);
+  _vector_zero.resize(n_threads);
+  _vector_curl_zero.resize(n_threads);
   _uo_jacobian_moose_vars.resize(n_threads);
-
 
   _material_data.resize(n_threads);
   _bnd_material_data.resize(n_threads);
   _neighbor_material_data.resize(n_threads);
   for (unsigned int i = 0; i < n_threads; i++)
   {
-    _material_data[i] = MooseSharedPointer<MaterialData>(new MaterialData(_material_props));
-    _bnd_material_data[i] = MooseSharedPointer<MaterialData>(new MaterialData(_bnd_material_props));
-    _neighbor_material_data[i] = MooseSharedPointer<MaterialData>(new MaterialData(_bnd_material_props));
+    _material_data[i] = std::make_shared<MaterialData>(_material_props);
+    _bnd_material_data[i] = std::make_shared<MaterialData>(_bnd_material_props);
+    _neighbor_material_data[i] = std::make_shared<MaterialData>(_bnd_material_props);
   }
 
   _active_elemental_moose_variables.resize(n_threads);
@@ -195,21 +253,23 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters) :
   _block_mat_side_cache.resize(n_threads);
   _bnd_mat_side_cache.resize(n_threads);
 
-  _resurrector = new Resurrector(*this);
+  _resurrector = libmesh_make_unique<Resurrector>(*this);
 
   _eq.parameters.set<FEProblemBase *>("_fe_problem_base") = this;
 }
 
-void FEProblemBase::newAssemblyArray(NonlinearSystemBase & nl)
+void
+FEProblemBase::newAssemblyArray(NonlinearSystemBase & nl)
 {
   unsigned int n_threads = libMesh::n_threads();
 
   _assembly.resize(n_threads);
   for (unsigned int i = 0; i < n_threads; ++i)
-    _assembly[i] = new Assembly(nl, couplingMatrix(), i);
+    _assembly[i] = new Assembly(nl, i);
 }
 
-void FEProblemBase::deleteAssemblyArray()
+void
+FEProblemBase::deleteAssemblyArray()
 {
   unsigned int n_threads = libMesh::n_threads();
   for (unsigned int i = 0; i < n_threads; i++)
@@ -218,16 +278,19 @@ void FEProblemBase::deleteAssemblyArray()
   }
 }
 
-void FEProblemBase::initNullSpaceVectors(const InputParameters & parameters, NonlinearSystemBase & nl)
+void
+FEProblemBase::initNullSpaceVectors(const InputParameters & parameters, NonlinearSystemBase & nl)
 {
   unsigned int dimNullSpace = parameters.get<unsigned int>("null_space_dimension");
-  unsigned int dimTransposeNullSpace = parameters.get<unsigned int>("transpose_null_space_dimension");
+  unsigned int dimTransposeNullSpace =
+      parameters.get<unsigned int>("transpose_null_space_dimension");
   unsigned int dimNearNullSpace = parameters.get<unsigned int>("near_null_space_dimension");
   for (unsigned int i = 0; i < dimNullSpace; ++i)
   {
     std::ostringstream oss;
     oss << "_" << i;
-    // do not project, since this will be recomputed, but make it ghosted, since the near nullspace builder might march over all nodes
+    // do not project, since this will be recomputed, but make it ghosted, since the near nullspace
+    // builder might march over all nodes
     nl.addVector("NullSpace" + oss.str(), false, GHOSTED);
   }
   _subspace_dim["NullSpace"] = dimNullSpace;
@@ -235,7 +298,8 @@ void FEProblemBase::initNullSpaceVectors(const InputParameters & parameters, Non
   {
     std::ostringstream oss;
     oss << "_" << i;
-    // do not project, since this will be recomputed, but make it ghosted, since the near nullspace builder might march over all nodes
+    // do not project, since this will be recomputed, but make it ghosted, since the near nullspace
+    // builder might march over all nodes
     nl.addVector("TransposeNullSpace" + oss.str(), false, GHOSTED);
   }
   _subspace_dim["TransposeNullSpace"] = dimTransposeNullSpace;
@@ -243,12 +307,12 @@ void FEProblemBase::initNullSpaceVectors(const InputParameters & parameters, Non
   {
     std::ostringstream oss;
     oss << "_" << i;
-    // do not project, since this will be recomputed, but make it ghosted, since the near-nullspace builder might march over all semilocal nodes
+    // do not project, since this will be recomputed, but make it ghosted, since the near-nullspace
+    // builder might march over all semilocal nodes
     nl.addVector("NearNullSpace" + oss.str(), false, GHOSTED);
   }
   _subspace_dim["NearNullSpace"] = dimNearNullSpace;
 }
-
 
 FEProblemBase::~FEProblemBase()
 {
@@ -258,21 +322,17 @@ FEProblemBase::~FEProblemBase()
   // an unflushed stream and start destructing things.
   _console << std::flush;
 
-  delete _cm;
   unsigned int n_threads = libMesh::n_threads();
   for (unsigned int i = 0; i < n_threads; i++)
   {
     _zero[i].release();
+    _scalar_zero[i].release();
     _grad_zero[i].release();
     _second_zero[i].release();
     _second_phi_zero[i].release();
+    _vector_zero[i].release();
+    _vector_curl_zero[i].release();
   }
-
-  delete _resurrector;
-
-  // Random data objects
-  for (auto & it : _random_data_objects)
-    delete it.second;
 }
 
 Moose::CoordinateSystemType
@@ -282,21 +342,23 @@ FEProblemBase::getCoordSystem(SubdomainID sid)
   if (it != _coord_sys.end())
     return (*it).second;
   else
-    mooseError("Requested subdomain " << sid << " does not exist.");
+    mooseError("Requested subdomain ", sid, " does not exist.");
 }
 
 void
-FEProblemBase::setCoordSystem(const std::vector<SubdomainName> & blocks, const MultiMooseEnum & coord_sys)
+FEProblemBase::setCoordSystem(const std::vector<SubdomainName> & blocks,
+                              const MultiMooseEnum & coord_sys)
 {
   const std::set<SubdomainID> & subdomains = _mesh.meshSubdomains();
   if (blocks.size() == 0)
   {
     // no blocks specified -> assume the whole domain
-    Moose::CoordinateSystemType coord_type = Moose::COORD_XYZ;                          // all is going to be XYZ by default
+    Moose::CoordinateSystemType coord_type = Moose::COORD_XYZ; // all is going to be XYZ by default
     if (coord_sys.size() == 0)
       ; // relax, do nothing
     else if (coord_sys.size() == 1)
-      coord_type = Moose::stringToEnum<Moose::CoordinateSystemType>(coord_sys[0]);      // one system specified, the whole domain is going to have that system
+      coord_type = Moose::stringToEnum<Moose::CoordinateSystemType>(
+          coord_sys[0]); // one system specified, the whole domain is going to have that system
     else
       mooseError("Multiple coordinate systems specified, but no blocks given.");
 
@@ -318,7 +380,8 @@ FEProblemBase::setCoordSystem(const std::vector<SubdomainName> & blocks, const M
     else if (coord_sys.size() == 1)
     {
       // set all blocks to the coordinate system specified by `coord_sys[0]`
-      Moose::CoordinateSystemType coord_type = Moose::stringToEnum<Moose::CoordinateSystemType>(coord_sys[0]);
+      Moose::CoordinateSystemType coord_type =
+          Moose::stringToEnum<Moose::CoordinateSystemType>(coord_sys[0]);
       for (const auto & block : blocks)
       {
         SubdomainID sid = _mesh.getSubdomainID(block);
@@ -333,29 +396,42 @@ FEProblemBase::setCoordSystem(const std::vector<SubdomainName> & blocks, const M
       for (unsigned int i = 0; i < blocks.size(); i++)
       {
         SubdomainID sid = _mesh.getSubdomainID(blocks[i]);
-        Moose::CoordinateSystemType coord_type = Moose::stringToEnum<Moose::CoordinateSystemType>(coord_sys[i]);
+        Moose::CoordinateSystemType coord_type =
+            Moose::stringToEnum<Moose::CoordinateSystemType>(coord_sys[i]);
         _coord_sys[sid] = coord_type;
       }
 
       for (const auto & sid : subdomains)
         if (_coord_sys.find(sid) == _coord_sys.end())
-          mooseError("Subdomain '" + Moose::stringify(sid) + "' does not have a coordinate system specified.");
+          mooseError("Subdomain '" + Moose::stringify(sid) +
+                     "' does not have a coordinate system specified.");
     }
   }
 }
 
-void FEProblemBase::setAxisymmetricCoordAxis(const MooseEnum & rz_coord_axis)
+void
+FEProblemBase::setAxisymmetricCoordAxis(const MooseEnum & rz_coord_axis)
 {
   _rz_coord_axis = rz_coord_axis;
 }
 
-void FEProblemBase::initialSetup()
+void
+FEProblemBase::addExtraVectors()
+{
+  _nl->addExtraVectors();
+  _aux->addExtraVectors();
+}
+
+void
+FEProblemBase::initialSetup()
 {
   Moose::perf_log.push("initialSetup()", "Setup");
 
   // set state flag indicating that we are in or beyond initialSetup.
   // This can be used to throw errors in methods that _must_ be called at construction time.
   _started_initial_setup = true;
+
+  addExtraVectors();
 
   // Perform output related setups
   _app.getOutputWarehouse().initialSetup();
@@ -364,7 +440,11 @@ void FEProblemBase::initialSetup()
   _app.getOutputWarehouse().mooseConsole();
 
   if (_app.isRecovering() && (_app.isUltimateMaster() || _force_restart))
+  {
     _resurrector->setRestartFile(_app.getRecoverFileBase());
+    if (_app.getRecoverFileSuffix() == "cpa")
+      _resurrector->setRestartSuffix("xda");
+  }
 
   if ((_app.isRestarting() || _app.isRecovering()) && (_app.isUltimateMaster() || _force_restart))
     _resurrector->restartFromFile();
@@ -380,8 +460,12 @@ void FEProblemBase::initialSetup()
   }
 
   // Build Refinement and Coarsening maps for stateful material projections if necessary
-  if (_adaptivity.isOn() && (_material_props.hasStatefulProperties() || _bnd_material_props.hasStatefulProperties()))
+  if (_adaptivity.isOn() &&
+      (_material_props.hasStatefulProperties() || _bnd_material_props.hasStatefulProperties()))
   {
+    if (_has_internal_edge_residual_objects)
+      mooseError("Stateful neighbor material properties do not work with mesh adaptivity");
+
     Moose::perf_log.push("mesh.buildRefinementAndCoarseningMaps()", "Setup");
     _mesh.buildRefinementAndCoarseningMaps(_assembly[0]);
     Moose::perf_log.pop("mesh.buildRefinementAndCoarseningMaps()", "Setup");
@@ -397,7 +481,8 @@ void FEProblemBase::initialSetup()
     if (_mesh.uniformRefineLevel() > 0 && _app.setFileRestart())
     {
       if (!_app.isUltimateMaster())
-        mooseError("Doing extra refinements when restarting is NOT supported for sub-apps of a MultiApp");
+        mooseError(
+            "Doing extra refinements when restarting is NOT supported for sub-apps of a MultiApp");
 
       Moose::perf_log.push("Uniformly Refine Mesh", "Setup");
       adaptivity().uniformRefineWithProjection();
@@ -414,24 +499,25 @@ void FEProblemBase::initialSetup()
   unsigned int n_threads = libMesh::n_threads();
 
   // UserObject initialSetup
-  std::set<std::string> depend_objects = _aux->getDependObjects();
+  std::set<std::string> depend_objects_ic = _ics.getDependObjects();
+  std::set<std::string> depend_objects_aux = _aux->getDependObjects();
 
-  _general_user_objects.updateDependObjects(depend_objects);
+  _general_user_objects.updateDependObjects(depend_objects_ic, depend_objects_aux);
   _general_user_objects.initialSetup();
   _general_user_objects.sort();
 
   for (THREAD_ID tid = 0; tid < n_threads; tid++)
   {
-    _nodal_user_objects.updateDependObjects(depend_objects, tid);
+    _nodal_user_objects.updateDependObjects(depend_objects_ic, depend_objects_aux, tid);
     _nodal_user_objects.initialSetup(tid);
 
-    _elemental_user_objects.updateDependObjects(depend_objects, tid);
+    _elemental_user_objects.updateDependObjects(depend_objects_ic, depend_objects_aux, tid);
     _elemental_user_objects.initialSetup(tid);
 
-    _side_user_objects.updateDependObjects(depend_objects, tid);
+    _side_user_objects.updateDependObjects(depend_objects_ic, depend_objects_aux, tid);
     _side_user_objects.initialSetup(tid);
 
-    _internal_side_user_objects.updateDependObjects(depend_objects, tid);
+    _internal_side_user_objects.updateDependObjects(depend_objects_ic, depend_objects_aux, tid);
     _internal_side_user_objects.initialSetup(tid);
   }
 
@@ -444,14 +530,17 @@ void FEProblemBase::initialSetup()
     setVariableAllDoFMap(_uo_jacobian_moose_vars[0]);
 
   // Call the initialSetup methods for functions
-  for (THREAD_ID tid = 0; tid <n_threads; tid++)
+  for (THREAD_ID tid = 0; tid < n_threads; tid++)
   {
-    reinitScalars(tid); // initialize scalars so they are properly sized for use as input into ParsedFunctions
+    reinitScalars(
+        tid); // initialize scalars so they are properly sized for use as input into ParsedFunctions
     _functions.initialSetup(tid);
   }
 
   if (!_app.isRecovering())
   {
+    computeUserObjects(EXEC_INITIAL, Moose::PRE_IC);
+
     for (THREAD_ID tid = 0; tid < n_threads; tid++)
       _ics.initialSetup(tid);
     _scalar_ics.sort();
@@ -471,11 +560,18 @@ void FEProblemBase::initialSetup()
     }
 
     ConstElemRange & elem_range = *_mesh.getActiveLocalElementRange();
-    ComputeMaterialsObjectThread cmt(*this, _material_data, _bnd_material_data, _neighbor_material_data,
-                                     _material_props, _bnd_material_props, _assembly);
+    ComputeMaterialsObjectThread cmt(*this,
+                                     _material_data,
+                                     _bnd_material_data,
+                                     _neighbor_material_data,
+                                     _material_props,
+                                     _bnd_material_props,
+                                     _assembly);
     /**
-     * The ComputeMaterialObjectThread object now allocates memory as needed for the material storage system.
-     * This cannot be done with threads. The first call to this object bypasses threading by calling the object
+     * The ComputeMaterialObjectThread object now allocates memory as needed for the material
+     * storage system.
+     * This cannot be done with threads. The first call to this object bypasses threading by calling
+     * the object
      * directly. The subsequent call can be called with threads.
      */
     cmt(elem_range, true);
@@ -506,7 +602,7 @@ void FEProblemBase::initialSetup()
     Moose::perf_log.pop("initial adaptivity", "Setup");
   }
 
-#endif //LIBMESH_ENABLE_AMR
+#endif // LIBMESH_ENABLE_AMR
 
   if (!_app.isRecovering() && !_app.isRestarting())
   {
@@ -516,8 +612,7 @@ void FEProblemBase::initialSetup()
 
   if (!_app.isRecovering())
   {
-    if (haveXFEM() &&
-        updateMeshXFEM())
+    if (haveXFEM() && updateMeshXFEM())
       _console << "XFEM updated mesh on initializaton" << std::endl;
   }
 
@@ -559,7 +654,8 @@ void FEProblemBase::initialSetup()
 
   if (_app.isRestarting() || _app.isRecovering())
   {
-    if (_app.hasCachedBackup()) // This happens when this app is a sub-app and has been given a Backup
+    if (_app.hasCachedBackup()) // This happens when this app is a sub-app and has been given a
+                                // Backup
       _app.restoreCachedBackup();
     else
       _resurrector->restartRestartableData();
@@ -576,7 +672,8 @@ void FEProblemBase::initialSetup()
     }
   }
 
-  // HUGE NOTE: MultiApp initialSetup() MUST... I repeat MUST be _after_ restartable data has been restored
+  // HUGE NOTE: MultiApp initialSetup() MUST... I repeat MUST be _after_ restartable data has been
+  // restored
 
   // Call initialSetup on the MultiApps
   if (_multi_apps.hasActiveObjects())
@@ -593,6 +690,8 @@ void FEProblemBase::initialSetup()
 
   if (!_app.isRecovering())
   {
+    _current_execute_on_flag = EXEC_INITIAL;
+
     Moose::perf_log.push("execTransfers()", "Setup");
     execTransfers(EXEC_INITIAL);
     Moose::perf_log.pop("execTransfers()", "Setup");
@@ -605,51 +704,41 @@ void FEProblemBase::initialSetup()
     // We'll backup the Multiapp here
     backupMultiApps(EXEC_INITIAL);
     Moose::perf_log.pop("execMultiApps()", "Setup");
-  }
 
-  // Yak is currently relying on doing this after initial Transfers
-  if (!_app.isRecovering())
-  {
-    Moose::setup_perf_log.push("computeUserObjects()", "Setup");
-
-    //TODO: user object evaluation could fail.
+    // TODO: user object evaluation could fail.
     computeUserObjects(EXEC_INITIAL, Moose::PRE_AUX);
 
-    Moose::setup_perf_log.push("computeAux()", "Setup");
     _aux->compute(EXEC_INITIAL);
-    Moose::setup_perf_log.pop("computeAux()", "Setup");
-
-    if (_use_legacy_uo_initialization)
-    {
-      _aux->compute(EXEC_TIMESTEP_BEGIN);
-      computeUserObjects(EXEC_TIMESTEP_END, Moose::ALL);
-    }
 
     // The only user objects that should be computed here are the initial UOs
     computeUserObjects(EXEC_INITIAL, Moose::POST_AUX);
 
-    if (_use_legacy_uo_initialization)
-    {
-      computeUserObjects(EXEC_TIMESTEP_BEGIN, Moose::ALL);
-      computeUserObjects(EXEC_LINEAR, Moose::ALL);
-    }
-    Moose::setup_perf_log.pop("computeUserObjects()", "Setup");
+    _current_execute_on_flag = EXEC_NONE;
   }
-
 
   // Here we will initialize the stateful properties once more since they may have been updated
   // during initialSetup by calls to computeProperties.
   //
-  // It's really bad that we don't allow this during restart.  It means that we can't add new stateful materials
-  // during restart.  This is only happening because this _has_ to be below initial userobject execution.
-  // Otherwise this could be done up above... _before_ restoring restartable data... which would allow you to have
-  // this happen during restart.  I honestly have no idea why this has to happen after initial user object computation.
+  // It's really bad that we don't allow this during restart.  It means that we can't add new
+  // stateful materials
+  // during restart.  This is only happening because this _has_ to be below initial userobject
+  // execution.
+  // Otherwise this could be done up above... _before_ restoring restartable data... which would
+  // allow you to have
+  // this happen during restart.  I honestly have no idea why this has to happen after initial user
+  // object computation.
   // THAT is something we should fix... so I've opened this ticket: #5804
-  if (!_app.isRecovering() && !_app.isRestarting() && (_material_props.hasStatefulProperties() || _bnd_material_props.hasStatefulProperties()))
+  if (!_app.isRecovering() && !_app.isRestarting() &&
+      (_material_props.hasStatefulProperties() || _bnd_material_props.hasStatefulProperties()))
   {
     ConstElemRange & elem_range = *_mesh.getActiveLocalElementRange();
-    ComputeMaterialsObjectThread cmt(*this, _material_data, _bnd_material_data, _neighbor_material_data,
-                                     _material_props, _bnd_material_props, _assembly);
+    ComputeMaterialsObjectThread cmt(*this,
+                                     _material_data,
+                                     _bnd_material_data,
+                                     _neighbor_material_data,
+                                     _material_props,
+                                     _bnd_material_props,
+                                     _assembly);
     Threads::parallel_reduce(elem_range, cmt);
   }
 
@@ -672,11 +761,14 @@ void FEProblemBase::initialSetup()
   {
     setNonlocalCouplingMatrix();
     for (THREAD_ID tid = 0; tid < n_threads; ++tid)
-        _assembly[tid]->initNonlocalCoupling();
+      _assembly[tid]->initNonlocalCoupling();
   }
+
+  _app.checkRegistryLabels();
 }
 
-void FEProblemBase::timestepSetup()
+void
+FEProblemBase::timestepSetup()
 {
   unsigned int n_threads = libMesh::n_threads();
 
@@ -707,7 +799,7 @@ void FEProblemBase::timestepSetup()
   }
   _general_user_objects.timestepSetup();
 
-   // Timestep setup of output objects
+  // Timestep setup of output objects
   _app.getOutputWarehouse().timestepSetup();
 
   if (_requires_nonlocal_coupling)
@@ -743,10 +835,11 @@ FEProblemBase::checkNonlocalCoupling()
   for (THREAD_ID tid = 0; tid < libMesh::n_threads(); tid++)
   {
     const KernelWarehouse & all_kernels = _nl->getKernelWarehouse();
-    const std::vector<MooseSharedPointer<KernelBase> > & kernels = all_kernels.getObjects(tid);
+    const auto & kernels = all_kernels.getObjects(tid);
     for (const auto & kernel : kernels)
     {
-      MooseSharedPointer<NonlocalKernel> nonlocal_kernel = MooseSharedNamespace::dynamic_pointer_cast<NonlocalKernel>(kernel);
+      std::shared_ptr<NonlocalKernel> nonlocal_kernel =
+          std::dynamic_pointer_cast<NonlocalKernel>(kernel);
       if (nonlocal_kernel)
       {
         if (_calculate_jacobian_in_uo)
@@ -754,11 +847,13 @@ FEProblemBase::checkNonlocalCoupling()
         _nonlocal_kernels.addObject(kernel, tid);
       }
     }
-    const MooseObjectWarehouse<IntegratedBC> & all_integrated_bcs = _nl->getIntegratedBCWarehouse();
-    const std::vector<MooseSharedPointer<IntegratedBC> > & integrated_bcs = all_integrated_bcs.getObjects(tid);
+    const MooseObjectWarehouse<IntegratedBCBase> & all_integrated_bcs =
+        _nl->getIntegratedBCWarehouse();
+    const auto & integrated_bcs = all_integrated_bcs.getObjects(tid);
     for (const auto & integrated_bc : integrated_bcs)
     {
-      MooseSharedPointer<NonlocalIntegratedBC> nonlocal_integrated_bc = MooseSharedNamespace::dynamic_pointer_cast<NonlocalIntegratedBC>(integrated_bc);
+      std::shared_ptr<NonlocalIntegratedBC> nonlocal_integrated_bc =
+          std::dynamic_pointer_cast<NonlocalIntegratedBC>(integrated_bc);
       if (nonlocal_integrated_bc)
       {
         if (_calculate_jacobian_in_uo)
@@ -772,35 +867,38 @@ FEProblemBase::checkNonlocalCoupling()
 void
 FEProblemBase::checkUserObjectJacobianRequirement(THREAD_ID tid)
 {
-  std::set<MooseVariable *> uo_jacobian_moose_vars;
-  const std::vector<MooseSharedPointer<ElementUserObject> > & e_objects = _elemental_user_objects.getActiveObjects(tid);
+  std::set<MooseVariableFE *> uo_jacobian_moose_vars;
+  const auto & e_objects = _elemental_user_objects.getActiveObjects(tid);
   for (const auto & uo : e_objects)
   {
-    MooseSharedPointer<ShapeElementUserObject> shape_element_uo = MooseSharedNamespace::dynamic_pointer_cast<ShapeElementUserObject>(uo);
+    std::shared_ptr<ShapeElementUserObject> shape_element_uo =
+        std::dynamic_pointer_cast<ShapeElementUserObject>(uo);
     if (shape_element_uo)
     {
       _calculate_jacobian_in_uo = shape_element_uo->computeJacobianFlag();
-      const std::set<MooseVariable *> & mv_deps = shape_element_uo->jacobianMooseVariables();
+      const std::set<MooseVariableFE *> & mv_deps = shape_element_uo->jacobianMooseVariables();
       uo_jacobian_moose_vars.insert(mv_deps.begin(), mv_deps.end());
     }
   }
-  const std::vector<MooseSharedPointer<SideUserObject> > & s_objects = _side_user_objects.getActiveObjects(tid);
+  const auto & s_objects = _side_user_objects.getActiveObjects(tid);
   for (const auto & uo : s_objects)
   {
-    MooseSharedPointer<ShapeSideUserObject> shape_side_uo = MooseSharedNamespace::dynamic_pointer_cast<ShapeSideUserObject>(uo);
+    std::shared_ptr<ShapeSideUserObject> shape_side_uo =
+        std::dynamic_pointer_cast<ShapeSideUserObject>(uo);
     if (shape_side_uo)
     {
       _calculate_jacobian_in_uo = shape_side_uo->computeJacobianFlag();
-      const std::set<MooseVariable *> & mv_deps = shape_side_uo->jacobianMooseVariables();
+      const std::set<MooseVariableFE *> & mv_deps = shape_side_uo->jacobianMooseVariables();
       uo_jacobian_moose_vars.insert(mv_deps.begin(), mv_deps.end());
     }
   }
   _uo_jacobian_moose_vars[tid].assign(uo_jacobian_moose_vars.begin(), uo_jacobian_moose_vars.end());
-  std::sort(_uo_jacobian_moose_vars[tid].begin(), _uo_jacobian_moose_vars[tid].end(), sortMooseVariables);
+  std::sort(
+      _uo_jacobian_moose_vars[tid].begin(), _uo_jacobian_moose_vars[tid].end(), sortMooseVariables);
 }
 
 void
-FEProblemBase::setVariableAllDoFMap(const std::vector<MooseVariable *> moose_vars)
+FEProblemBase::setVariableAllDoFMap(const std::vector<MooseVariableFE *> moose_vars)
 {
   for (unsigned int i = 0; i < moose_vars.size(); ++i)
   {
@@ -840,7 +938,11 @@ FEProblemBase::prepareFace(const Elem * elem, THREAD_ID tid)
 }
 
 void
-FEProblemBase::prepare(const Elem * elem, unsigned int ivar, unsigned int jvar, const std::vector<dof_id_type> & dof_indices, THREAD_ID tid)
+FEProblemBase::prepare(const Elem * elem,
+                       unsigned int ivar,
+                       unsigned int jvar,
+                       const std::vector<dof_id_type> & dof_indices,
+                       THREAD_ID tid)
 {
   _assembly[tid]->reinit(elem);
 
@@ -850,7 +952,7 @@ FEProblemBase::prepare(const Elem * elem, unsigned int ivar, unsigned int jvar, 
   if (_has_nonlocal_coupling)
     if (_nonlocal_cm(ivar, jvar) != 0)
     {
-      MooseVariable & jv = _nl->getVariable(tid, jvar);
+      MooseVariableFE & jv = _nl->getVariable(tid, jvar);
       _assembly[tid]->prepareBlockNonlocal(ivar, jvar, dof_indices, jv.allDofIndices());
     }
 
@@ -860,10 +962,37 @@ FEProblemBase::prepare(const Elem * elem, unsigned int ivar, unsigned int jvar, 
     if (_has_nonlocal_coupling)
       if (_nonlocal_cm(ivar, jvar) != 0)
       {
-        MooseVariable & jv = _nl->getVariable(tid, jvar);
+        MooseVariableFE & jv = _nl->getVariable(tid, jvar);
         _displaced_problem->prepareBlockNonlocal(ivar, jvar, dof_indices, jv.allDofIndices(), tid);
       }
   }
+}
+
+void
+FEProblemBase::setCurrentSubdomainID(const Elem * elem, THREAD_ID tid)
+{
+  SubdomainID did = elem->subdomain_id();
+  _assembly[tid]->setCurrentSubdomainID(did);
+  if (_displaced_problem != NULL && (_reinit_displaced_elem || _reinit_displaced_face))
+    _displaced_problem->assembly(tid).setCurrentSubdomainID(did);
+}
+
+void
+FEProblemBase::setNeighborSubdomainID(const Elem * elem, unsigned int side, THREAD_ID tid)
+{
+  SubdomainID did = elem->neighbor_ptr(side)->subdomain_id();
+  _assembly[tid]->setCurrentNeighborSubdomainID(did);
+  if (_displaced_problem != NULL && (_reinit_displaced_elem || _reinit_displaced_face))
+    _displaced_problem->assembly(tid).setCurrentNeighborSubdomainID(did);
+}
+
+void
+FEProblemBase::setNeighborSubdomainID(const Elem * elem, THREAD_ID tid)
+{
+  SubdomainID did = elem->subdomain_id();
+  _assembly[tid]->setCurrentNeighborSubdomainID(did);
+  if (_displaced_problem != NULL && (_reinit_displaced_elem || _reinit_displaced_face))
+    _displaced_problem->assembly(tid).setCurrentNeighborSubdomainID(did);
 }
 
 void
@@ -890,8 +1019,10 @@ FEProblemBase::residualVector(Moose::KernelType type)
 void
 FEProblemBase::addResidual(THREAD_ID tid)
 {
-  _assembly[tid]->addResidual(residualVector(Moose::KT_TIME), Moose::KT_TIME);
-  _assembly[tid]->addResidual(residualVector(Moose::KT_NONTIME), Moose::KT_NONTIME);
+  if (_nl->hasResidualVector(Moose::KT_TIME))
+    _assembly[tid]->addResidual(residualVector(Moose::KT_TIME), Moose::KT_TIME);
+  if (_nl->hasResidualVector(Moose::KT_NONTIME))
+    _assembly[tid]->addResidual(residualVector(Moose::KT_NONTIME), Moose::KT_NONTIME);
 
   if (_displaced_problem)
     _displaced_problem->addResidual(tid);
@@ -900,17 +1031,21 @@ FEProblemBase::addResidual(THREAD_ID tid)
 void
 FEProblemBase::addResidualNeighbor(THREAD_ID tid)
 {
-  _assembly[tid]->addResidualNeighbor(residualVector(Moose::KT_TIME), Moose::KT_TIME);
-  _assembly[tid]->addResidualNeighbor(residualVector(Moose::KT_NONTIME), Moose::KT_NONTIME);
+  if (_nl->hasResidualVector(Moose::KT_TIME))
+    _assembly[tid]->addResidualNeighbor(residualVector(Moose::KT_TIME), Moose::KT_TIME);
+  if (_nl->hasResidualVector(Moose::KT_NONTIME))
+    _assembly[tid]->addResidualNeighbor(residualVector(Moose::KT_NONTIME), Moose::KT_NONTIME);
   if (_displaced_problem)
     _displaced_problem->addResidualNeighbor(tid);
 }
 
 void
-FEProblemBase::addResidualScalar(THREAD_ID tid/* = 0*/)
+FEProblemBase::addResidualScalar(THREAD_ID tid /* = 0*/)
 {
-  _assembly[tid]->addResidualScalar(residualVector(Moose::KT_TIME), Moose::KT_TIME);
-  _assembly[tid]->addResidualScalar(residualVector(Moose::KT_NONTIME), Moose::KT_NONTIME);
+  if (_nl->hasResidualVector(Moose::KT_TIME))
+    _assembly[tid]->addResidualScalar(residualVector(Moose::KT_TIME), Moose::KT_TIME);
+  if (_nl->hasResidualVector(Moose::KT_NONTIME))
+    _assembly[tid]->addResidualScalar(residualVector(Moose::KT_NONTIME), Moose::KT_NONTIME);
 }
 
 void
@@ -932,8 +1067,7 @@ FEProblemBase::cacheResidualNeighbor(THREAD_ID tid)
 void
 FEProblemBase::addCachedResidual(THREAD_ID tid)
 {
-  _assembly[tid]->addCachedResidual(residualVector(Moose::KT_TIME), Moose::KT_TIME);
-  _assembly[tid]->addCachedResidual(residualVector(Moose::KT_NONTIME), Moose::KT_NONTIME);
+  _assembly[tid]->addCachedResiduals();
 
   if (_displaced_problem)
     _displaced_problem->addCachedResidual(tid);
@@ -942,8 +1076,10 @@ FEProblemBase::addCachedResidual(THREAD_ID tid)
 void
 FEProblemBase::addCachedResidualDirectly(NumericVector<Number> & residual, THREAD_ID tid)
 {
-  _assembly[tid]->addCachedResidual(residual, Moose::KT_TIME);
-  _assembly[tid]->addCachedResidual(residual, Moose::KT_NONTIME);
+  if (_nl->hasResidualVector(Moose::KT_TIME))
+    _assembly[tid]->addCachedResidual(residual, Moose::KT_TIME);
+  if (_nl->hasResidualVector(Moose::KT_NONTIME))
+    _assembly[tid]->addCachedResidual(residual, Moose::KT_NONTIME);
 
   if (_displaced_problem)
     _displaced_problem->addCachedResidualDirectly(residual, tid);
@@ -988,13 +1124,15 @@ FEProblemBase::addJacobianNeighbor(SparseMatrix<Number> & jacobian, THREAD_ID ti
 }
 
 void
-FEProblemBase::addJacobianScalar(SparseMatrix<Number> & jacobian, THREAD_ID tid/* = 0*/)
+FEProblemBase::addJacobianScalar(SparseMatrix<Number> & jacobian, THREAD_ID tid /* = 0*/)
 {
   _assembly[tid]->addJacobianScalar(jacobian);
 }
 
 void
-FEProblemBase::addJacobianOffDiagScalar(SparseMatrix<Number> & jacobian, unsigned int ivar, THREAD_ID tid/* = 0*/)
+FEProblemBase::addJacobianOffDiagScalar(SparseMatrix<Number> & jacobian,
+                                        unsigned int ivar,
+                                        THREAD_ID tid /* = 0*/)
 {
   _assembly[tid]->addJacobianOffDiagScalar(jacobian, ivar);
 }
@@ -1030,14 +1168,20 @@ FEProblemBase::addCachedJacobian(SparseMatrix<Number> & jacobian, THREAD_ID tid)
 }
 
 void
-FEProblemBase::addJacobianBlock(SparseMatrix<Number> & jacobian, unsigned int ivar, unsigned int jvar, const DofMap & dof_map, std::vector<dof_id_type> & dof_indices, THREAD_ID tid)
+FEProblemBase::addJacobianBlock(SparseMatrix<Number> & jacobian,
+                                unsigned int ivar,
+                                unsigned int jvar,
+                                const DofMap & dof_map,
+                                std::vector<dof_id_type> & dof_indices,
+                                THREAD_ID tid)
 {
   _assembly[tid]->addJacobianBlock(jacobian, ivar, jvar, dof_map, dof_indices);
   if (_has_nonlocal_coupling)
     if (_nonlocal_cm(ivar, jvar) != 0)
     {
-      MooseVariable & jv = _nl->getVariable(tid, jvar);
-      _assembly[tid]->addJacobianBlockNonlocal(jacobian, ivar, jvar, dof_map, dof_indices, jv.allDofIndices());
+      MooseVariableFE & jv = _nl->getVariable(tid, jvar);
+      _assembly[tid]->addJacobianBlockNonlocal(
+          jacobian, ivar, jvar, dof_map, dof_indices, jv.allDofIndices());
     }
 
   if (_displaced_problem)
@@ -1046,18 +1190,27 @@ FEProblemBase::addJacobianBlock(SparseMatrix<Number> & jacobian, unsigned int iv
     if (_has_nonlocal_coupling)
       if (_nonlocal_cm(ivar, jvar) != 0)
       {
-        MooseVariable & jv = _nl->getVariable(tid, jvar);
-        _displaced_problem->addJacobianBlockNonlocal(jacobian, ivar, jvar, dof_map, dof_indices, jv.allDofIndices(), tid);
+        MooseVariableFE & jv = _nl->getVariable(tid, jvar);
+        _displaced_problem->addJacobianBlockNonlocal(
+            jacobian, ivar, jvar, dof_map, dof_indices, jv.allDofIndices(), tid);
       }
   }
 }
 
 void
-FEProblemBase::addJacobianNeighbor(SparseMatrix<Number> & jacobian, unsigned int ivar, unsigned int jvar, const DofMap & dof_map, std::vector<dof_id_type> & dof_indices, std::vector<dof_id_type> & neighbor_dof_indices, THREAD_ID tid)
+FEProblemBase::addJacobianNeighbor(SparseMatrix<Number> & jacobian,
+                                   unsigned int ivar,
+                                   unsigned int jvar,
+                                   const DofMap & dof_map,
+                                   std::vector<dof_id_type> & dof_indices,
+                                   std::vector<dof_id_type> & neighbor_dof_indices,
+                                   THREAD_ID tid)
 {
-  _assembly[tid]->addJacobianNeighbor(jacobian, ivar, jvar, dof_map, dof_indices, neighbor_dof_indices);
+  _assembly[tid]->addJacobianNeighbor(
+      jacobian, ivar, jvar, dof_map, dof_indices, neighbor_dof_indices);
   if (_displaced_problem)
-    _displaced_problem->addJacobianNeighbor(jacobian, ivar, jvar, dof_map, dof_indices, neighbor_dof_indices, tid);
+    _displaced_problem->addJacobianNeighbor(
+        jacobian, ivar, jvar, dof_map, dof_indices, neighbor_dof_indices, tid);
 }
 
 void
@@ -1105,7 +1258,8 @@ FEProblemBase::ghostGhostedBoundaries()
 void
 FEProblemBase::sizeZeroes(unsigned int /*size*/, THREAD_ID /*tid*/)
 {
-  mooseDoOnce(mooseWarning("This function is deprecated and no longer performs any function. Please do not call it."));
+  mooseDoOnce(mooseWarning(
+      "This function is deprecated and no longer performs any function. Please do not call it."));
 }
 
 bool
@@ -1125,12 +1279,18 @@ FEProblemBase::reinitDirac(const Elem * elem, THREAD_ID tid)
        * The maximum number of qps can rise if several Dirac points are added to a single element.
        * In that case we need to resize the zeros to compensate.
        */
+      unsigned int max_qpts = getMaxQps();
       for (unsigned int tid = 0; tid < libMesh::n_threads(); ++tid)
       {
-        _zero[tid].resize(getMaxQps(), 0);
-        _grad_zero[tid].resize(getMaxQps(), RealGradient(0.));
-        _second_zero[tid].resize(getMaxQps(), RealTensor(0.));
-        _second_phi_zero[tid].resize(getMaxQps(), std::vector<RealTensor>(getMaxShapeFunctions(), RealTensor(0.)));
+        // the highest available order in libMesh is 43
+        _scalar_zero[tid].resize(FORTYTHIRD, 0);
+        _zero[tid].resize(max_qpts, 0);
+        _grad_zero[tid].resize(max_qpts, RealGradient(0.));
+        _second_zero[tid].resize(max_qpts, RealTensor(0.));
+        _second_phi_zero[tid].resize(
+            max_qpts, std::vector<RealTensor>(getMaxShapeFunctions(), RealTensor(0.)));
+        _vector_zero[tid].resize(max_qpts, RealGradient(0.));
+        _vector_curl_zero[tid].resize(max_qpts, RealGradient(0.));
       }
     }
 
@@ -1168,7 +1328,9 @@ FEProblemBase::reinitElem(const Elem * elem, THREAD_ID tid)
 }
 
 void
-FEProblemBase::reinitElemPhys(const Elem * elem, std::vector<Point> phys_points_in_elem, THREAD_ID tid)
+FEProblemBase::reinitElemPhys(const Elem * elem,
+                              const std::vector<Point> & phys_points_in_elem,
+                              THREAD_ID tid)
 {
   _assembly[tid]->reinitAtPhysical(elem, phys_points_in_elem);
 
@@ -1182,14 +1344,18 @@ FEProblemBase::reinitElemPhys(const Elem * elem, std::vector<Point> phys_points_
 
   if (_displaced_problem != NULL && (_reinit_displaced_elem))
   {
-    _displaced_problem->reinitElemPhys(_displaced_mesh->elemPtr(elem->id()), phys_points_in_elem, tid);
+    _displaced_problem->reinitElemPhys(
+        _displaced_mesh->elemPtr(elem->id()), phys_points_in_elem, tid);
     if (_has_nonlocal_coupling)
       _displaced_problem->prepareNonlocal(tid);
   }
 }
 
 void
-FEProblemBase::reinitElemFace(const Elem * elem, unsigned int side, BoundaryID bnd_id, THREAD_ID tid)
+FEProblemBase::reinitElemFace(const Elem * elem,
+                              unsigned int side,
+                              BoundaryID bnd_id,
+                              THREAD_ID tid)
 {
   _assembly[tid]->reinit(elem, side);
 
@@ -1222,7 +1388,6 @@ FEProblemBase::reinitNodeFace(const Node * node, BoundaryID bnd_id, THREAD_ID ti
 
   _nl->reinitNodeFace(node, bnd_id, tid);
   _aux->reinitNodeFace(node, bnd_id, tid);
-
 }
 
 void
@@ -1277,11 +1442,10 @@ FEProblemBase::reinitOffDiagScalars(THREAD_ID tid)
     _displaced_problem->reinitOffDiagScalars(tid);
 }
 
-
 void
 FEProblemBase::reinitNeighbor(const Elem * elem, unsigned int side, THREAD_ID tid)
 {
-  const Elem * neighbor = elem->neighbor(side);
+  const Elem * neighbor = elem->neighbor_ptr(side);
   unsigned int neighbor_side = neighbor->which_neighbor_am_i(elem);
 
   _assembly[tid]->reinitElemAndNeighbor(elem, side, neighbor, neighbor_side);
@@ -1291,7 +1455,7 @@ FEProblemBase::reinitNeighbor(const Elem * elem, unsigned int side, THREAD_ID ti
 
   _assembly[tid]->prepareNeighbor();
 
-  BoundaryID bnd_id = 0;              // some dummy number (it is not really used for anything, right now)
+  BoundaryID bnd_id = 0; // some dummy number (it is not really used for anything, right now)
   _nl->reinitElemFace(elem, side, bnd_id, tid);
   _aux->reinitElemFace(elem, side, bnd_id, tid);
 
@@ -1303,7 +1467,10 @@ FEProblemBase::reinitNeighbor(const Elem * elem, unsigned int side, THREAD_ID ti
 }
 
 void
-FEProblemBase::reinitNeighborPhys(const Elem * neighbor, unsigned int neighbor_side, const std::vector<Point> & physical_points, THREAD_ID tid)
+FEProblemBase::reinitNeighborPhys(const Elem * neighbor,
+                                  unsigned int neighbor_side,
+                                  const std::vector<Point> & physical_points,
+                                  THREAD_ID tid)
 {
   // Reinits shape the functions at the physical points
   _assembly[tid]->reinitNeighborAtPhysical(neighbor, neighbor_side, physical_points);
@@ -1320,12 +1487,15 @@ FEProblemBase::reinitNeighborPhys(const Elem * neighbor, unsigned int neighbor_s
   _aux->reinitNeighborFace(neighbor, neighbor_side, 0, tid);
 
   // Do the same for the displaced problem
-  if (_displaced_problem != NULL)
-    _displaced_problem->reinitNeighborPhys(_displaced_mesh->elemPtr(neighbor->id()), neighbor_side, physical_points, tid);
+  if (_displaced_problem != NULL && _reinit_displaced_face)
+    _displaced_problem->reinitNeighborPhys(
+        _displaced_mesh->elemPtr(neighbor->id()), neighbor_side, physical_points, tid);
 }
 
 void
-FEProblemBase::reinitNeighborPhys(const Elem * neighbor, const std::vector<Point> & physical_points, THREAD_ID tid)
+FEProblemBase::reinitNeighborPhys(const Elem * neighbor,
+                                  const std::vector<Point> & physical_points,
+                                  THREAD_ID tid)
 {
   // Reinits shape the functions at the physical points
   _assembly[tid]->reinitNeighborAtPhysical(neighbor, physical_points);
@@ -1342,8 +1512,9 @@ FEProblemBase::reinitNeighborPhys(const Elem * neighbor, const std::vector<Point
   _aux->reinitNeighbor(neighbor, tid);
 
   // Do the same for the displaced problem
-  if (_displaced_problem != NULL)
-    _displaced_problem->reinitNeighborPhys(_displaced_mesh->elemPtr(neighbor->id()), physical_points, tid);
+  if (_displaced_problem != NULL && _reinit_displaced_elem)
+    _displaced_problem->reinitNeighborPhys(
+        _displaced_mesh->elemPtr(neighbor->id()), physical_points, tid);
 }
 
 void
@@ -1374,12 +1545,9 @@ FEProblemBase::clearDiracInfo()
     _displaced_problem->clearDiracInfo();
 }
 
-
 void
 FEProblemBase::subdomainSetup(SubdomainID subdomain, THREAD_ID tid)
 {
-
-  // Material Warehouses
   _all_materials.subdomainSetup(subdomain, tid);
 
   // Call the subdomain methods of the output system, these are not threaded so only call it once
@@ -1393,6 +1561,12 @@ FEProblemBase::subdomainSetup(SubdomainID subdomain, THREAD_ID tid)
 }
 
 void
+FEProblemBase::neighborSubdomainSetup(SubdomainID subdomain, THREAD_ID tid)
+{
+  _all_materials.neighborSubdomainSetup(subdomain, tid);
+}
+
+void
 FEProblemBase::addFunction(std::string type, const std::string & name, InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
@@ -1400,7 +1574,7 @@ FEProblemBase::addFunction(std::string type, const std::string & name, InputPara
 
   for (THREAD_ID tid = 0; tid < libMesh::n_threads(); tid++)
   {
-    MooseSharedPointer<Function> func = _factory.create<Function>(type, name, parameters, tid);
+    std::shared_ptr<Function> func = _factory.create<Function>(type, name, parameters, tid);
     _functions.addObject(func, tid);
   }
 }
@@ -1452,20 +1626,103 @@ FEProblemBase::getFunction(const std::string & name, THREAD_ID tid)
   return *(_functions.getActiveObject(name, tid));
 }
 
-void
-FEProblemBase::addVariable(const std::string & var_name, const FEType & type, Real scale_factor, const std::set< SubdomainID > * const active_subdomains/* = NULL*/)
+NonlinearSystem &
+FEProblemBase::getNonlinearSystem()
 {
-  if (_aux->hasVariable(var_name))
-    mooseError("Cannot have an auxiliary variable and a nonlinear variable with the same name: " << var_name);
+  mooseDeprecated("FEProblemBase::getNonlinearSystem() is deprecated, please use "
+                  "FEProblemBase::getNonlinearSystemBase() \n");
 
-  if (_nl->hasVariable(var_name))
+  auto nl_sys = std::dynamic_pointer_cast<NonlinearSystem>(_nl);
+
+  if (!nl_sys)
+    mooseError("This is not a NonlinearSystem");
+
+  return *nl_sys;
+}
+
+void
+FEProblemBase::addDistribution(std::string type,
+                               const std::string & name,
+                               InputParameters parameters)
+{
+  setInputParametersFEProblem(parameters);
+  parameters.set<std::string>("type") = type;
+  std::shared_ptr<Distribution> dist = _factory.create<Distribution>(type, name, parameters);
+  _distributions.addObject(dist);
+}
+
+Distribution &
+FEProblemBase::getDistribution(const std::string & name)
+{
+  if (!_distributions.hasActiveObject(name))
+    mooseError("Unable to find distribution " + name);
+
+  return *(_distributions.getActiveObject(name));
+}
+
+void
+FEProblemBase::addSampler(std::string type, const std::string & name, InputParameters parameters)
+{
+  setInputParametersFEProblem(parameters);
+  for (THREAD_ID tid = 0; tid < libMesh::n_threads(); tid++)
   {
-    const Variable & var = _nl->system().variable(_nl->system().variable_number(var_name));
-    if (var.type() != type)
-      mooseError("Variable with name '" << var_name << "' already exists but is of a differing type!");
-
-    return;
+    std::shared_ptr<Sampler> dist = _factory.create<Sampler>(type, name, parameters, tid);
+    _samplers.addObject(dist, tid);
   }
+}
+
+Sampler &
+FEProblemBase::getSampler(const std::string & name, THREAD_ID tid)
+{
+  if (!_samplers.hasActiveObject(name, tid))
+    mooseError("Unable to find Sampler " + name);
+
+  return *(_samplers.getActiveObject(name, tid));
+}
+
+bool
+FEProblemBase::duplicateVariableCheck(const std::string & var_name,
+                                      const FEType & type,
+                                      bool is_aux)
+{
+  SystemBase * curr_sys_ptr = _nl.get();
+  SystemBase * other_sys_ptr = _aux.get();
+  std::string error_prefix = "";
+  if (is_aux)
+  {
+    curr_sys_ptr = _aux.get();
+    other_sys_ptr = _nl.get();
+    error_prefix = "Aux";
+  }
+
+  if (other_sys_ptr->hasVariable(var_name))
+    mooseError("Cannot have an auxiliary variable and a nonlinear variable with the same name: ",
+               var_name);
+
+  if (curr_sys_ptr->hasVariable(var_name))
+  {
+    const Variable & var =
+        curr_sys_ptr->system().variable(curr_sys_ptr->system().variable_number(var_name));
+    if (var.type() != type)
+      mooseError(error_prefix,
+                 "Variable with name '",
+                 var_name,
+                 "' already exists but is of a differing type!");
+
+    return true;
+  }
+
+  return false;
+}
+
+void
+FEProblemBase::addVariable(const std::string & var_name,
+                           const FEType & type,
+                           Real scale_factor,
+                           const std::set<SubdomainID> * const active_subdomains)
+{
+  if (duplicateVariableCheck(var_name, type, /* is_aux = */ false))
+    return;
 
   _nl->addVariable(var_name, type, scale_factor, active_subdomains);
   if (_displaced_problem)
@@ -1473,10 +1730,17 @@ FEProblemBase::addVariable(const std::string & var_name, const FEType & type, Re
 }
 
 void
-FEProblemBase::addScalarVariable(const std::string & var_name, Order order, Real scale_factor, const std::set< SubdomainID > * const active_subdomains)
+FEProblemBase::addScalarVariable(const std::string & var_name,
+                                 Order order,
+                                 Real scale_factor,
+                                 const std::set<SubdomainID> * const active_subdomains)
 {
   if (order > _max_scalar_order)
     _max_scalar_order = order;
+
+  FEType type(order, SCALAR);
+  if (duplicateVariableCheck(var_name, type, /* is_aux = */ false))
+    return;
 
   _nl->addScalarVariable(var_name, order, scale_factor, active_subdomains);
   if (_displaced_problem)
@@ -1484,7 +1748,9 @@ FEProblemBase::addScalarVariable(const std::string & var_name, Order order, Real
 }
 
 void
-FEProblemBase::addKernel(const std::string & kernel_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addKernel(const std::string & kernel_name,
+                         const std::string & name,
+                         InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
@@ -1506,14 +1772,16 @@ FEProblemBase::addKernel(const std::string & kernel_name, const std::string & na
     }
 
     parameters.set<SubProblem *>("_subproblem") = this;
-    parameters.set<SystemBase *>("_sys") = _nl;
+    parameters.set<SystemBase *>("_sys") = _nl.get();
   }
 
   _nl->addKernel(kernel_name, name, parameters);
 }
 
 void
-FEProblemBase::addNodalKernel(const std::string & kernel_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addNodalKernel(const std::string & kernel_name,
+                              const std::string & name,
+                              InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
@@ -1535,13 +1803,15 @@ FEProblemBase::addNodalKernel(const std::string & kernel_name, const std::string
     }
 
     parameters.set<SubProblem *>("_subproblem") = this;
-    parameters.set<SystemBase *>("_sys") = _nl;
+    parameters.set<SystemBase *>("_sys") = _nl.get();
   }
   _nl->addNodalKernel(kernel_name, name, parameters);
 }
 
 void
-FEProblemBase::addScalarKernel(const std::string & kernel_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addScalarKernel(const std::string & kernel_name,
+                               const std::string & name,
+                               InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
@@ -1562,13 +1832,15 @@ FEProblemBase::addScalarKernel(const std::string & kernel_name, const std::strin
     }
 
     parameters.set<SubProblem *>("_subproblem") = this;
-    parameters.set<SystemBase *>("_sys") = _nl;
+    parameters.set<SystemBase *>("_sys") = _nl.get();
   }
   _nl->addScalarKernel(kernel_name, name, parameters);
 }
 
 void
-FEProblemBase::addBoundaryCondition(const std::string & bc_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addBoundaryCondition(const std::string & bc_name,
+                                    const std::string & name,
+                                    InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
@@ -1590,13 +1862,15 @@ FEProblemBase::addBoundaryCondition(const std::string & bc_name, const std::stri
     }
 
     parameters.set<SubProblem *>("_subproblem") = this;
-    parameters.set<SystemBase *>("_sys") = _nl;
+    parameters.set<SystemBase *>("_sys") = _nl.get();
   }
   _nl->addBoundaryCondition(bc_name, name, parameters);
 }
 
 void
-FEProblemBase::addConstraint(const std::string & c_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addConstraint(const std::string & c_name,
+                             const std::string & name,
+                             InputParameters parameters)
 {
   _has_constraints = true;
 
@@ -1614,25 +1888,18 @@ FEProblemBase::addConstraint(const std::string & c_name, const std::string & nam
       parameters.set<bool>("use_displaced_mesh") = false;
 
     parameters.set<SubProblem *>("_subproblem") = this;
-    parameters.set<SystemBase *>("_sys") = _nl;
+    parameters.set<SystemBase *>("_sys") = _nl.get();
   }
   _nl->addConstraint(c_name, name, parameters);
 }
 
 void
-FEProblemBase::addAuxVariable(const std::string & var_name, const FEType & type, const std::set< SubdomainID > * const active_subdomains/* = NULL*/)
+FEProblemBase::addAuxVariable(const std::string & var_name,
+                              const FEType & type,
+                              const std::set<SubdomainID> * const active_subdomains)
 {
-  if (_nl->hasVariable(var_name))
-    mooseError("Cannot have an auxiliary variable and a nonlinear variable with the same name!");
-
-  if (_aux->hasVariable(var_name))
-  {
-    const Variable & var = _aux->sys().variable(_aux->sys().variable_number(var_name));
-    if (var.type() != type)
-      mooseError("AuxVariable with name '" << var_name << "' already exists but is of a differing type!");
-
+  if (duplicateVariableCheck(var_name, type, /* is_aux = */ true))
     return;
-  }
 
   _aux->addVariable(var_name, type, 1.0, active_subdomains);
   if (_displaced_problem)
@@ -1640,15 +1907,27 @@ FEProblemBase::addAuxVariable(const std::string & var_name, const FEType & type,
 }
 
 void
-FEProblemBase::addAuxScalarVariable(const std::string & var_name, Order order, Real scale_factor, const std::set< SubdomainID > * const active_subdomains)
+FEProblemBase::addAuxScalarVariable(const std::string & var_name,
+                                    Order order,
+                                    Real scale_factor,
+                                    const std::set<SubdomainID> * const active_subdomains)
 {
+  if (order > _max_scalar_order)
+    _max_scalar_order = order;
+
+  FEType type(order, SCALAR);
+  if (duplicateVariableCheck(var_name, type, /* is_aux = */ true))
+    return;
+
   _aux->addScalarVariable(var_name, order, scale_factor, active_subdomains);
   if (_displaced_problem)
     _displaced_problem->addAuxScalarVariable(var_name, order, scale_factor, active_subdomains);
 }
 
 void
-FEProblemBase::addAuxKernel(const std::string & kernel_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addAuxKernel(const std::string & kernel_name,
+                            const std::string & name,
+                            InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
@@ -1656,7 +1935,7 @@ FEProblemBase::addAuxKernel(const std::string & kernel_name, const std::string &
     parameters.set<SubProblem *>("_subproblem") = _displaced_problem.get();
     parameters.set<SystemBase *>("_sys") = &_displaced_problem->auxSys();
     parameters.set<SystemBase *>("_nl_sys") = &_displaced_problem->nlSys();
-    if (!parameters.get<std::vector<BoundaryName> >("boundary").empty())
+    if (!parameters.get<std::vector<BoundaryName>>("boundary").empty())
       _reinit_displaced_face = true;
     else
       _reinit_displaced_elem = true;
@@ -1674,14 +1953,16 @@ FEProblemBase::addAuxKernel(const std::string & kernel_name, const std::string &
     }
 
     parameters.set<SubProblem *>("_subproblem") = this;
-    parameters.set<SystemBase *>("_sys") = _aux;
-    parameters.set<SystemBase *>("_nl_sys") = _nl;
+    parameters.set<SystemBase *>("_sys") = _aux.get();
+    parameters.set<SystemBase *>("_nl_sys") = _nl.get();
   }
   _aux->addKernel(kernel_name, name, parameters);
 }
 
 void
-FEProblemBase::addAuxScalarKernel(const std::string & kernel_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addAuxScalarKernel(const std::string & kernel_name,
+                                  const std::string & name,
+                                  InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
@@ -1702,13 +1983,15 @@ FEProblemBase::addAuxScalarKernel(const std::string & kernel_name, const std::st
     }
 
     parameters.set<SubProblem *>("_subproblem") = this;
-    parameters.set<SystemBase *>("_sys") = _aux;
+    parameters.set<SystemBase *>("_sys") = _aux.get();
   }
   _aux->addScalarKernel(kernel_name, name, parameters);
 }
 
 void
-FEProblemBase::addDiracKernel(const std::string & kernel_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addDiracKernel(const std::string & kernel_name,
+                              const std::string & name,
+                              InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
@@ -1730,7 +2013,7 @@ FEProblemBase::addDiracKernel(const std::string & kernel_name, const std::string
     }
 
     parameters.set<SubProblem *>("_subproblem") = this;
-    parameters.set<SystemBase *>("_sys") = _nl;
+    parameters.set<SystemBase *>("_sys") = _nl.get();
   }
   _nl->addDiracKernel(kernel_name, name, parameters);
 }
@@ -1738,7 +2021,9 @@ FEProblemBase::addDiracKernel(const std::string & kernel_name, const std::string
 // DGKernels ////
 
 void
-FEProblemBase::addDGKernel(const std::string & dg_kernel_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addDGKernel(const std::string & dg_kernel_name,
+                           const std::string & name,
+                           InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
@@ -1760,15 +2045,19 @@ FEProblemBase::addDGKernel(const std::string & dg_kernel_name, const std::string
     }
 
     parameters.set<SubProblem *>("_subproblem") = this;
-    parameters.set<SystemBase *>("_sys") = _nl;
+    parameters.set<SystemBase *>("_sys") = _nl.get();
   }
   _nl->addDGKernel(dg_kernel_name, name, parameters);
+
+  _has_internal_edge_residual_objects = true;
 }
 
 // InterfaceKernels ////
 
 void
-FEProblemBase::addInterfaceKernel(const std::string & interface_kernel_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addInterfaceKernel(const std::string & interface_kernel_name,
+                                  const std::string & name,
+                                  InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
@@ -1790,13 +2079,17 @@ FEProblemBase::addInterfaceKernel(const std::string & interface_kernel_name, con
     }
 
     parameters.set<SubProblem *>("_subproblem") = this;
-    parameters.set<SystemBase *>("_sys") = _nl;
+    parameters.set<SystemBase *>("_sys") = _nl.get();
   }
   _nl->addInterfaceKernel(interface_kernel_name, name, parameters);
+
+  _has_internal_edge_residual_objects = true;
 }
 
 void
-FEProblemBase::addInitialCondition(const std::string & ic_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addInitialCondition(const std::string & ic_name,
+                                   const std::string & name,
+                                   InputParameters parameters)
 {
 
   // before we start to mess with the initial condition, we need to check parameters for errors.
@@ -1811,9 +2104,10 @@ FEProblemBase::addInitialCondition(const std::string & ic_name, const std::strin
   {
     for (THREAD_ID tid = 0; tid < libMesh::n_threads(); ++tid)
     {
-      MooseVariable & var = getVariable(tid, var_name);
+      MooseVariableFE & var = getVariable(tid, var_name);
       parameters.set<SystemBase *>("_sys") = &var.sys();
-      MooseSharedPointer<InitialCondition> ic = _factory.create<InitialCondition>(ic_name, name, parameters, tid);
+      std::shared_ptr<InitialCondition> ic =
+          _factory.create<InitialCondition>(ic_name, name, parameters, tid);
       _ics.addObject(ic, tid);
     }
   }
@@ -1823,12 +2117,14 @@ FEProblemBase::addInitialCondition(const std::string & ic_name, const std::strin
   {
     MooseVariableScalar & var = getScalarVariable(0, var_name);
     parameters.set<SystemBase *>("_sys") = &var.sys();
-    MooseSharedPointer<ScalarInitialCondition> ic = _factory.create<ScalarInitialCondition>(ic_name, name, parameters);
+    std::shared_ptr<ScalarInitialCondition> ic =
+        _factory.create<ScalarInitialCondition>(ic_name, name, parameters);
     _scalar_ics.addObject(ic);
   }
 
   else
-    mooseError("Variable '" << var_name << "' requested in initial condition '" << name << "' does not exist.");
+    mooseError(
+        "Variable '", var_name, "' requested in initial condition '", name, "' does not exist.");
 }
 
 void
@@ -1857,9 +2153,9 @@ FEProblemBase::projectSolution()
   // Also, load values into the SCALAR dofs
   // Note: We assume that all SCALAR dofs are on the
   // processor with highest ID
-  if (processor_id() == (n_processors()-1) && _scalar_ics.hasActiveObjects())
+  if (processor_id() == (n_processors() - 1) && _scalar_ics.hasActiveObjects())
   {
-    const std::vector<MooseSharedPointer<ScalarInitialCondition> > & ics = _scalar_ics.getActiveObjects();
+    const auto & ics = _scalar_ics.getActiveObjects();
     for (const auto & ic : ics)
     {
       MooseVariableScalar & var = ic->variable();
@@ -1889,53 +2185,59 @@ FEProblemBase::projectSolution()
   Moose::perf_log.pop("projectSolution()", "Utility");
 }
 
-
-MooseSharedPointer<Material>
-FEProblemBase::getMaterial(std::string name, Moose::MaterialDataType type, THREAD_ID tid)
+std::shared_ptr<Material>
+FEProblemBase::getMaterial(std::string name,
+                           Moose::MaterialDataType type,
+                           THREAD_ID tid,
+                           bool no_warn)
 {
   switch (type)
   {
-  case Moose::NEIGHBOR_MATERIAL_DATA:
-    name += "_neighbor";
-    break;
-  case Moose::FACE_MATERIAL_DATA:
-    name += "_face";
-    break;
-  default:
-    break;
+    case Moose::NEIGHBOR_MATERIAL_DATA:
+      name += "_neighbor";
+      break;
+    case Moose::FACE_MATERIAL_DATA:
+      name += "_face";
+      break;
+    default:
+      break;
   }
 
-  MooseSharedPointer<Material> material = _all_materials[type].getActiveObject(name, tid);
-  if (material->getParam<bool>("compute") && type == Moose::BLOCK_MATERIAL_DATA)
-    mooseWarning("You are retrieving a Material object (" << material->name() << "), but its compute flag is not set to true. This indicates that MOOSE is computing this property which may not be desired and produce un-expected results.");
+  std::shared_ptr<Material> material = _all_materials[type].getActiveObject(name, tid);
+  if (!no_warn && material->getParam<bool>("compute") && type == Moose::BLOCK_MATERIAL_DATA)
+    mooseWarning("You are retrieving a Material object (",
+                 material->name(),
+                 "), but its compute flag is set to true. This indicates that MOOSE is "
+                 "computing this property which may not be desired and produce un-expected "
+                 "results.");
 
   return material;
 }
 
-
-MooseSharedPointer<MaterialData>
+std::shared_ptr<MaterialData>
 FEProblemBase::getMaterialData(Moose::MaterialDataType type, THREAD_ID tid)
 {
-  MooseSharedPointer<MaterialData> output;
+  std::shared_ptr<MaterialData> output;
   switch (type)
   {
-  case Moose::BLOCK_MATERIAL_DATA:
-    output = _material_data[tid];
-    break;
-  case Moose::NEIGHBOR_MATERIAL_DATA:
-    output = _neighbor_material_data[tid];
-    break;
-  case Moose::BOUNDARY_MATERIAL_DATA:
-  case Moose::FACE_MATERIAL_DATA:
-    output = _bnd_material_data[tid];
-    break;
+    case Moose::BLOCK_MATERIAL_DATA:
+      output = _material_data[tid];
+      break;
+    case Moose::NEIGHBOR_MATERIAL_DATA:
+      output = _neighbor_material_data[tid];
+      break;
+    case Moose::BOUNDARY_MATERIAL_DATA:
+    case Moose::FACE_MATERIAL_DATA:
+      output = _bnd_material_data[tid];
+      break;
   }
   return output;
 }
 
-
 void
-FEProblemBase::addMaterial(const std::string & mat_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addMaterial(const std::string & mat_name,
+                           const std::string & name,
+                           InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
@@ -1961,7 +2263,7 @@ FEProblemBase::addMaterial(const std::string & mat_name, const std::string & nam
   for (THREAD_ID tid = 0; tid < libMesh::n_threads(); tid++)
   {
     // Create the general Block/Boundary Material object
-    MooseSharedPointer<Material> material = _factory.create<Material>(mat_name, name, parameters, tid);
+    std::shared_ptr<Material> material = _factory.create<Material>(mat_name, name, parameters, tid);
     bool discrete = !material->getParam<bool>("compute");
 
     // If the object is boundary restricted do not create the neighbor and face objects
@@ -1977,22 +2279,28 @@ FEProblemBase::addMaterial(const std::string & mat_name, const std::string & nam
     // Non-boundary restricted require face and neighbor objects
     else
     {
-      // The name of the object being created, this is changed multiple times as objects are created below
+      // The name of the object being created, this is changed multiple times as objects are created
+      // below
       std::string object_name;
 
-      // Create a copy of the supplied parameters to the setting for "_material_data_type" isn't used from a previous tid loop
+      // Create a copy of the supplied parameters to the setting for "_material_data_type" isn't
+      // used from a previous tid loop
       InputParameters current_parameters = parameters;
 
       // face material
-      current_parameters.set<Moose::MaterialDataType>("_material_data_type") = Moose::FACE_MATERIAL_DATA;
+      current_parameters.set<Moose::MaterialDataType>("_material_data_type") =
+          Moose::FACE_MATERIAL_DATA;
       object_name = name + "_face";
-      MooseSharedPointer<Material> face_material = _factory.create<Material>(mat_name, object_name, current_parameters, tid);
+      std::shared_ptr<Material> face_material =
+          _factory.create<Material>(mat_name, object_name, current_parameters, tid);
 
       // neighbor material
-      current_parameters.set<Moose::MaterialDataType>("_material_data_type") = Moose::NEIGHBOR_MATERIAL_DATA;
+      current_parameters.set<Moose::MaterialDataType>("_material_data_type") =
+          Moose::NEIGHBOR_MATERIAL_DATA;
       current_parameters.set<bool>("_neighbor") = true;
       object_name = name + "_neighbor";
-      MooseSharedPointer<Material> neighbor_material = _factory.create<Material>(mat_name, object_name, current_parameters, tid);
+      std::shared_ptr<Material> neighbor_material =
+          _factory.create<Material>(mat_name, object_name, current_parameters, tid);
 
       // Store the material objects
       _all_materials.addObjects(material, neighbor_material, face_material, tid);
@@ -2002,46 +2310,59 @@ FEProblemBase::addMaterial(const std::string & mat_name, const std::string & nam
       else
         _materials.addObjects(material, neighbor_material, face_material, tid);
 
-        // link enabled parameter of face and neighbor materials
+      // link enabled parameter of face and neighbor materials
       MooseObjectParameterName name(MooseObjectName("Material", material->name()), "enabled");
-      MooseObjectParameterName face_name(MooseObjectName("Material", face_material->name()), "enabled");
-      MooseObjectParameterName neighbor_name(MooseObjectName("Material", neighbor_material->name()), "enabled");
+      MooseObjectParameterName face_name(MooseObjectName("Material", face_material->name()),
+                                         "enabled");
+      MooseObjectParameterName neighbor_name(MooseObjectName("Material", neighbor_material->name()),
+                                             "enabled");
       _app.getInputParameterWarehouse().addControllableParameterConnection(name, face_name);
       _app.getInputParameterWarehouse().addControllableParameterConnection(name, neighbor_name);
-
     }
   }
 }
 
-
 void
 FEProblemBase::prepareMaterials(SubdomainID blk_id, THREAD_ID tid)
 {
-  std::set<MooseVariable *> needed_moose_vars;
+  std::set<MooseVariableFE *> needed_moose_vars;
+  std::set<unsigned int> needed_mat_props;
 
   if (_all_materials.hasActiveBlockObjects(blk_id, tid))
+  {
     _all_materials.updateVariableDependency(needed_moose_vars, tid);
+    _all_materials.updateBlockMatPropDependency(blk_id, needed_mat_props, tid);
+  }
 
   const std::set<BoundaryID> & ids = _mesh.getSubdomainBoundaryIds(blk_id);
   for (const auto & id : ids)
+  {
     _materials.updateBoundaryVariableDependency(id, needed_moose_vars, tid);
+    _materials.updateBoundaryMatPropDependency(id, needed_mat_props, tid);
+  }
 
-  const std::set<MooseVariable *> & current_active_elemental_moose_variables = getActiveElementalMooseVariables(tid);
-  needed_moose_vars.insert(current_active_elemental_moose_variables.begin(), current_active_elemental_moose_variables.end());
+  const std::set<MooseVariableFE *> & current_active_elemental_moose_variables =
+      getActiveElementalMooseVariables(tid);
+  needed_moose_vars.insert(current_active_elemental_moose_variables.begin(),
+                           current_active_elemental_moose_variables.end());
 
-  if (!needed_moose_vars.empty())
-    setActiveElementalMooseVariables(needed_moose_vars, tid);
+  const std::set<unsigned int> & current_active_material_properties =
+      getActiveMaterialProperties(tid);
+  needed_mat_props.insert(current_active_material_properties.begin(),
+                          current_active_material_properties.end());
+
+  setActiveElementalMooseVariables(needed_moose_vars, tid);
+  setActiveMaterialProperties(needed_mat_props, tid);
 }
 
 void
 FEProblemBase::reinitMaterials(SubdomainID blk_id, THREAD_ID tid, bool swap_stateful)
 {
-  if (_all_materials.hasActiveBlockObjects(blk_id, tid))
+  if (hasActiveMaterialProperties(tid))
   {
-    const Elem * & elem = _assembly[tid]->elem();
+    const Elem *& elem = _assembly[tid]->elem();
     unsigned int n_points = _assembly[tid]->qRule()->n_points();
-    if (_material_data[tid]->nQPoints() != n_points)
-      _material_data[tid]->size(n_points);
+    _material_data[tid]->resize(n_points);
 
     // Only swap if requested
     if (swap_stateful)
@@ -2058,66 +2379,68 @@ FEProblemBase::reinitMaterials(SubdomainID blk_id, THREAD_ID tid, bool swap_stat
 void
 FEProblemBase::reinitMaterialsFace(SubdomainID blk_id, THREAD_ID tid, bool swap_stateful)
 {
-  if (_all_materials[Moose::FACE_MATERIAL_DATA].hasActiveBlockObjects(blk_id, tid))
+  if (hasActiveMaterialProperties(tid))
   {
-    const Elem * & elem = _assembly[tid]->elem();
+    const Elem *& elem = _assembly[tid]->elem();
     unsigned int side = _assembly[tid]->side();
     unsigned int n_points = _assembly[tid]->qRuleFace()->n_points();
 
-    if (_bnd_material_data[tid]->nQPoints() != n_points)
-      _bnd_material_data[tid]->size(n_points);
+    _bnd_material_data[tid]->resize(n_points);
 
     if (swap_stateful && !_bnd_material_data[tid]->isSwapped())
       _bnd_material_data[tid]->swap(*elem, side);
 
     if (_discrete_materials[Moose::FACE_MATERIAL_DATA].hasActiveBlockObjects(blk_id, tid))
-      _bnd_material_data[tid]->reset(_discrete_materials[Moose::FACE_MATERIAL_DATA].getActiveBlockObjects(blk_id, tid));
+      _bnd_material_data[tid]->reset(
+          _discrete_materials[Moose::FACE_MATERIAL_DATA].getActiveBlockObjects(blk_id, tid));
 
     if (_materials[Moose::FACE_MATERIAL_DATA].hasActiveBlockObjects(blk_id, tid))
-      _bnd_material_data[tid]->reinit(_materials[Moose::FACE_MATERIAL_DATA].getActiveBlockObjects(blk_id, tid));
+      _bnd_material_data[tid]->reinit(
+          _materials[Moose::FACE_MATERIAL_DATA].getActiveBlockObjects(blk_id, tid));
   }
 }
 
 void
 FEProblemBase::reinitMaterialsNeighbor(SubdomainID blk_id, THREAD_ID tid, bool swap_stateful)
 {
-  if (_all_materials[Moose::NEIGHBOR_MATERIAL_DATA].hasActiveBlockObjects(blk_id, tid))
+  if (hasActiveMaterialProperties(tid))
   {
     // NOTE: this will not work with h-adaptivity
-    const Elem * & neighbor = _assembly[tid]->neighbor();
+    const Elem *& neighbor = _assembly[tid]->neighbor();
     unsigned int neighbor_side = neighbor->which_neighbor_am_i(_assembly[tid]->elem());
     unsigned int n_points = _assembly[tid]->qRuleFace()->n_points();
-    if (_neighbor_material_data[tid]->nQPoints() != n_points)
-      _neighbor_material_data[tid]->size(n_points);
+    _neighbor_material_data[tid]->resize(n_points);
 
     // Only swap if requested
     if (swap_stateful)
       _neighbor_material_data[tid]->swap(*neighbor, neighbor_side);
 
     if (_discrete_materials[Moose::NEIGHBOR_MATERIAL_DATA].hasActiveBlockObjects(blk_id, tid))
-      _neighbor_material_data[tid]->reset(_discrete_materials[Moose::NEIGHBOR_MATERIAL_DATA].getActiveBlockObjects(blk_id, tid));
+      _neighbor_material_data[tid]->reset(
+          _discrete_materials[Moose::NEIGHBOR_MATERIAL_DATA].getActiveBlockObjects(blk_id, tid));
 
     if (_materials[Moose::NEIGHBOR_MATERIAL_DATA].hasActiveBlockObjects(blk_id, tid))
-      _neighbor_material_data[tid]->reinit(_materials[Moose::NEIGHBOR_MATERIAL_DATA].getActiveBlockObjects(blk_id, tid));
+      _neighbor_material_data[tid]->reinit(
+          _materials[Moose::NEIGHBOR_MATERIAL_DATA].getActiveBlockObjects(blk_id, tid));
   }
 }
 
 void
 FEProblemBase::reinitMaterialsBoundary(BoundaryID boundary_id, THREAD_ID tid, bool swap_stateful)
 {
-  if (_all_materials.hasActiveBoundaryObjects(boundary_id, tid))
+  if (hasActiveMaterialProperties(tid))
   {
-    const Elem * & elem = _assembly[tid]->elem();
+    const Elem *& elem = _assembly[tid]->elem();
     unsigned int side = _assembly[tid]->side();
     unsigned int n_points = _assembly[tid]->qRuleFace()->n_points();
-    if (_bnd_material_data[tid]->nQPoints() != n_points)
-      _bnd_material_data[tid]->size(n_points);
+    _bnd_material_data[tid]->resize(n_points);
 
     if (swap_stateful && !_bnd_material_data[tid]->isSwapped())
       _bnd_material_data[tid]->swap(*elem, side);
 
     if (_discrete_materials.hasActiveBoundaryObjects(boundary_id, tid))
-      _bnd_material_data[tid]->reset(_discrete_materials.getActiveBoundaryObjects(boundary_id, tid));
+      _bnd_material_data[tid]->reset(
+          _discrete_materials.getActiveBoundaryObjects(boundary_id, tid));
 
     if (_materials.hasActiveBoundaryObjects(boundary_id, tid))
       _bnd_material_data[tid]->reinit(_materials.getActiveBoundaryObjects(boundary_id, tid));
@@ -2127,14 +2450,14 @@ FEProblemBase::reinitMaterialsBoundary(BoundaryID boundary_id, THREAD_ID tid, bo
 void
 FEProblemBase::swapBackMaterials(THREAD_ID tid)
 {
-  const Elem * & elem = _assembly[tid]->elem();
+  const Elem *& elem = _assembly[tid]->elem();
   _material_data[tid]->swapBack(*elem);
 }
 
 void
 FEProblemBase::swapBackMaterialsFace(THREAD_ID tid)
 {
-  const Elem * & elem = _assembly[tid]->elem();
+  const Elem *& elem = _assembly[tid]->elem();
   unsigned int side = _assembly[tid]->side();
   _bnd_material_data[tid]->swapBack(*elem, side);
 }
@@ -2143,48 +2466,54 @@ void
 FEProblemBase::swapBackMaterialsNeighbor(THREAD_ID tid)
 {
   // NOTE: this will not work with h-adaptivity
-  const Elem * & neighbor = _assembly[tid]->neighbor();
+  const Elem *& neighbor = _assembly[tid]->neighbor();
   unsigned int neighbor_side = neighbor->which_neighbor_am_i(_assembly[tid]->elem());
   _neighbor_material_data[tid]->swapBack(*neighbor, neighbor_side);
 }
 
 /**
- * Small helper function used by addPostprocessor to try to get a Postprocessor pointer from a MooseObject
+ * Small helper function used by addPostprocessor to try to get a Postprocessor pointer from a
+ * MooseObject
  */
-MooseSharedPointer<Postprocessor>
-getPostprocessorPointer(MooseSharedPointer<MooseObject> mo)
+std::shared_ptr<Postprocessor>
+getPostprocessorPointer(std::shared_ptr<MooseObject> mo)
 {
   {
-    MooseSharedPointer<ElementPostprocessor> intermediate = MooseSharedNamespace::dynamic_pointer_cast<ElementPostprocessor>(mo);
+    std::shared_ptr<ElementPostprocessor> intermediate =
+        std::dynamic_pointer_cast<ElementPostprocessor>(mo);
     if (intermediate.get())
-      return MooseSharedNamespace::static_pointer_cast<Postprocessor>(intermediate);
+      return std::static_pointer_cast<Postprocessor>(intermediate);
   }
 
   {
-    MooseSharedPointer<NodalPostprocessor> intermediate = MooseSharedNamespace::dynamic_pointer_cast<NodalPostprocessor>(mo);
+    std::shared_ptr<NodalPostprocessor> intermediate =
+        std::dynamic_pointer_cast<NodalPostprocessor>(mo);
     if (intermediate.get())
-      return MooseSharedNamespace::static_pointer_cast<Postprocessor>(intermediate);
+      return std::static_pointer_cast<Postprocessor>(intermediate);
   }
 
   {
-    MooseSharedPointer<InternalSidePostprocessor> intermediate = MooseSharedNamespace::dynamic_pointer_cast<InternalSidePostprocessor>(mo);
+    std::shared_ptr<InternalSidePostprocessor> intermediate =
+        std::dynamic_pointer_cast<InternalSidePostprocessor>(mo);
     if (intermediate.get())
-      return MooseSharedNamespace::static_pointer_cast<Postprocessor>(intermediate);
+      return std::static_pointer_cast<Postprocessor>(intermediate);
   }
 
   {
-    MooseSharedPointer<SidePostprocessor> intermediate = MooseSharedNamespace::dynamic_pointer_cast<SidePostprocessor>(mo);
+    std::shared_ptr<SidePostprocessor> intermediate =
+        std::dynamic_pointer_cast<SidePostprocessor>(mo);
     if (intermediate.get())
-      return MooseSharedNamespace::static_pointer_cast<Postprocessor>(intermediate);
+      return std::static_pointer_cast<Postprocessor>(intermediate);
   }
 
   {
-    MooseSharedPointer<GeneralPostprocessor> intermediate = MooseSharedNamespace::dynamic_pointer_cast<GeneralPostprocessor>(mo);
+    std::shared_ptr<GeneralPostprocessor> intermediate =
+        std::dynamic_pointer_cast<GeneralPostprocessor>(mo);
     if (intermediate.get())
-      return MooseSharedNamespace::static_pointer_cast<Postprocessor>(intermediate);
+      return std::static_pointer_cast<Postprocessor>(intermediate);
   }
 
-  return MooseSharedPointer<Postprocessor>();
+  return std::shared_ptr<Postprocessor>();
 }
 
 template <typename UO_TYPE, typename PP_TYPE>
@@ -2198,7 +2527,6 @@ getPostprocessorPointer(UO_TYPE * uo)
   return NULL;
 }
 
-
 void
 FEProblemBase::initPostprocessorData(const std::string & name)
 {
@@ -2206,28 +2534,36 @@ FEProblemBase::initPostprocessorData(const std::string & name)
 }
 
 void
-FEProblemBase::addPostprocessor(std::string pp_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addPostprocessor(std::string pp_name,
+                                const std::string & name,
+                                InputParameters parameters)
 {
   // Check for name collision
   if (_all_user_objects.hasActiveObject(name))
-    mooseError(std::string("A UserObject with the name \"") + name + "\" already exists.  You may not add a Postprocessor by the same name.");
+    mooseError(std::string("A UserObject with the name \"") + name +
+               "\" already exists.  You may not add a Postprocessor by the same name.");
 
   addUserObject(pp_name, name, parameters);
   initPostprocessorData(name);
 }
 
 void
-FEProblemBase::addVectorPostprocessor(std::string pp_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addVectorPostprocessor(std::string pp_name,
+                                      const std::string & name,
+                                      InputParameters parameters)
 {
   // Check for name collision
   if (_all_user_objects.hasActiveObject(name))
-    mooseError(std::string("A UserObject with the name \"") + name + "\" already exists.  You may not add a VectorPostprocessor by the same name.");
+    mooseError(std::string("A UserObject with the name \"") + name +
+               "\" already exists.  You may not add a VectorPostprocessor by the same name.");
 
   addUserObject(pp_name, name, parameters);
 }
 
 void
-FEProblemBase::addUserObject(std::string user_object_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addUserObject(std::string user_object_name,
+                             const std::string & name,
+                             InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
@@ -2250,15 +2586,19 @@ FEProblemBase::addUserObject(std::string user_object_name, const std::string & n
   for (THREAD_ID tid = 0; tid < libMesh::n_threads(); ++tid)
   {
     // Create the UserObject
-    MooseSharedPointer<UserObject> user_object = _factory.create<UserObject>(user_object_name, name, parameters, tid);
+    std::shared_ptr<UserObject> user_object =
+        _factory.create<UserObject>(user_object_name, name, parameters, tid);
     _all_user_objects.addObject(user_object, tid);
 
     // Attempt to create all the possible UserObject types
-    MooseSharedPointer<ElementUserObject> euo = MooseSharedNamespace::dynamic_pointer_cast<ElementUserObject>(user_object);
-    MooseSharedPointer<SideUserObject> suo = MooseSharedNamespace::dynamic_pointer_cast<SideUserObject>(user_object);
-    MooseSharedPointer<InternalSideUserObject> isuo = MooseSharedNamespace::dynamic_pointer_cast<InternalSideUserObject>(user_object);
-    MooseSharedPointer<NodalUserObject> nuo = MooseSharedNamespace::dynamic_pointer_cast<NodalUserObject>(user_object);
-    MooseSharedPointer<GeneralUserObject> guo = MooseSharedNamespace::dynamic_pointer_cast<GeneralUserObject>(user_object);
+    std::shared_ptr<ElementUserObject> euo =
+        std::dynamic_pointer_cast<ElementUserObject>(user_object);
+    std::shared_ptr<SideUserObject> suo = std::dynamic_pointer_cast<SideUserObject>(user_object);
+    std::shared_ptr<InternalSideUserObject> isuo =
+        std::dynamic_pointer_cast<InternalSideUserObject>(user_object);
+    std::shared_ptr<NodalUserObject> nuo = std::dynamic_pointer_cast<NodalUserObject>(user_object);
+    std::shared_ptr<GeneralUserObject> guo =
+        std::dynamic_pointer_cast<GeneralUserObject>(user_object);
 
     // Account for displaced mesh use
     if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
@@ -2287,7 +2627,7 @@ FEProblemBase::addUserObject(std::string user_object_name, const std::string & n
 }
 
 const UserObject &
-FEProblemBase::getUserObjectBase(const std::string & name)
+FEProblemBase::getUserObjectBase(const std::string & name) const
 {
   if (_all_user_objects.hasActiveObject(name))
     return *(_all_user_objects.getActiveObject(name).get());
@@ -2296,7 +2636,7 @@ FEProblemBase::getUserObjectBase(const std::string & name)
 }
 
 bool
-FEProblemBase::hasUserObject(const std::string & name)
+FEProblemBase::hasUserObject(const std::string & name) const
 {
   return _all_user_objects.hasActiveObject(name);
 }
@@ -2338,24 +2678,27 @@ FEProblemBase::hasVectorPostprocessor(const std::string & name)
 }
 
 VectorPostprocessorValue &
-FEProblemBase::getVectorPostprocessorValue(const VectorPostprocessorName & name, const std::string & vector_name)
+FEProblemBase::getVectorPostprocessorValue(const VectorPostprocessorName & name,
+                                           const std::string & vector_name)
 {
   return _vpps_data.getVectorPostprocessorValue(name, vector_name);
 }
 
 VectorPostprocessorValue &
-FEProblemBase::getVectorPostprocessorValueOld(const std::string & name, const std::string & vector_name)
+FEProblemBase::getVectorPostprocessorValueOld(const std::string & name,
+                                              const std::string & vector_name)
 {
   return _vpps_data.getVectorPostprocessorValueOld(name, vector_name);
 }
 
 VectorPostprocessorValue &
-FEProblemBase::declareVectorPostprocessorVector(const VectorPostprocessorName & name, const std::string & vector_name)
+FEProblemBase::declareVectorPostprocessorVector(const VectorPostprocessorName & name,
+                                                const std::string & vector_name)
 {
   return _vpps_data.declareVector(name, vector_name);
 }
 
-const std::map<std::string, VectorPostprocessorData::VectorPostprocessorState> &
+const std::vector<std::pair<std::string, VectorPostprocessorData::VectorPostprocessorState>> &
 FEProblemBase::getVectorPostprocessorVectors(const std::string & vpp_name)
 {
   return _vpps_data.vectors(vpp_name);
@@ -2366,7 +2709,7 @@ FEProblemBase::parentOutputPositionChanged()
 {
   for (const auto & it : _multi_apps)
   {
-    const std::vector<MooseSharedPointer<MultiApp> > & objects = it.second.getActiveObjects();
+    const auto & objects = it.second.getActiveObjects();
     for (const auto & obj : objects)
       obj->parentOutputPositionChanged();
   }
@@ -2385,24 +2728,23 @@ FEProblemBase::computeIndicators()
   // Initialize indicator aux variable fields
   if (_indicators.hasActiveObjects() || _internal_side_indicators.hasActiveObjects())
   {
+    Moose::perf_log.push("Adaptivity: computeIndicators()", "Execution");
+
     std::vector<std::string> fields;
 
     // Indicator Fields
-    const std::vector<MooseSharedPointer<Indicator> > & indicators = _indicators.getActiveObjects();
+    const auto & indicators = _indicators.getActiveObjects();
     for (const auto & indicator : indicators)
       fields.push_back(indicator->name());
 
     // InternalSideIndicator Fields
-    const std::vector<MooseSharedPointer<InternalSideIndicator> > & internal_indicators = _internal_side_indicators.getActiveObjects();
+    const auto & internal_indicators = _internal_side_indicators.getActiveObjects();
     for (const auto & internal_indicator : internal_indicators)
       fields.push_back(internal_indicator->name());
 
     _aux->zeroVariables(fields);
-  }
 
-  // compute Indicators
-  if (_indicators.hasActiveObjects() || _internal_side_indicators.hasActiveObjects())
-  {
+    // compute Indicators
     ComputeIndicatorThread cit(*this);
     Threads::parallel_reduce(*_mesh.getActiveLocalElementRange(), cit);
     _aux->solution().close();
@@ -2412,33 +2754,32 @@ FEProblemBase::computeIndicators()
     Threads::parallel_reduce(*_mesh.getActiveLocalElementRange(), finalize_cit);
     _aux->solution().close();
     _aux->update();
+
+    Moose::perf_log.pop("Adaptivity: computeIndicators()", "Execution");
   }
 }
 
 void
 FEProblemBase::computeMarkers()
 {
-  // Initialize marker aux variable fields
   if (_markers.hasActiveObjects())
   {
+    Moose::perf_log.push("Adaptivity: computeMarkers()", "Execution");
+
     std::vector<std::string> fields;
 
     // Marker Fields
-    const std::vector<MooseSharedPointer<Marker> > & markers = _markers.getActiveObjects();
+    const auto & markers = _markers.getActiveObjects();
     for (const auto & marker : markers)
       fields.push_back(marker->name());
 
     _aux->zeroVariables(fields);
-  }
 
-  // compute Markers
-  if (_markers.hasActiveObjects())
-  {
     _adaptivity.updateErrorVectors();
 
     for (THREAD_ID tid = 0; tid < libMesh::n_threads(); ++tid)
     {
-      const std::vector<MooseSharedPointer<Marker> > & markers = _markers.getActiveObjects(tid);
+      const auto & markers = _markers.getActiveObjects(tid);
       for (const auto & marker : markers)
         marker->markerSetup();
     }
@@ -2448,6 +2789,8 @@ FEProblemBase::computeMarkers()
 
     _aux->solution().close();
     _aux->update();
+
+    Moose::perf_log.pop("Adaptivity: computeMarkers()", "Execution");
   }
 }
 
@@ -2457,38 +2800,36 @@ FEProblemBase::getCurrentExecuteOnFlag() const
   return _current_execute_on_flag;
 }
 
+void
+FEProblemBase::setCurrentExecuteOnFlag(const ExecFlagType & flag)
+{
+  _current_execute_on_flag = flag;
+}
 
 void
 FEProblemBase::execute(const ExecFlagType & exec_type)
 {
   // Set the current flag
-  _current_execute_on_flag = exec_type;
+  setCurrentExecuteOnFlag(exec_type);
   if (exec_type == EXEC_NONLINEAR)
     _currently_computing_jacobian = true;
-
+  // Samplers
+  executeSamplers(exec_type);
 
   // Pre-aux UserObjects
-  Moose::perf_log.push("computeUserObjects()", "Execution");
   computeUserObjects(exec_type, Moose::PRE_AUX);
-  Moose::perf_log.pop("computeUserObjects()", "Execution");
 
   // AuxKernels
-  Moose::perf_log.push("computeAuxiliaryKernels()", "Execution");
   computeAuxiliaryKernels(exec_type);
-  Moose::perf_log.pop("computeAuxiliaryKernels()", "Execution");
 
   // Post-aux UserObjects
-  Moose::perf_log.push("computeUserObjects()", "Execution");
   computeUserObjects(exec_type, Moose::POST_AUX);
-  Moose::perf_log.pop("computeUserObjects()", "Execution");
 
   // Controls
-  Moose::perf_log.push("computeControls()", "Execution");
   executeControls(exec_type);
-  Moose::perf_log.pop("computeControls()", "Execution");
 
   // Return the current flag to None
-  _current_execute_on_flag = EXEC_NONE;
+  setCurrentExecuteOnFlag(EXEC_NONE);
   _currently_computing_jacobian = false;
 }
 
@@ -2504,14 +2845,23 @@ FEProblemBase::computeUserObjects(const ExecFlagType & type, const Moose::AuxGro
   // Get convenience reference to active warehouse
   const MooseObjectWarehouse<ElementUserObject> & elemental = _elemental_user_objects[group][type];
   const MooseObjectWarehouse<SideUserObject> & side = _side_user_objects[group][type];
-  const MooseObjectWarehouse<InternalSideUserObject> & internal_side = _internal_side_user_objects[group][type];
+  const MooseObjectWarehouse<InternalSideUserObject> & internal_side =
+      _internal_side_user_objects[group][type];
   const MooseObjectWarehouse<NodalUserObject> & nodal = _nodal_user_objects[group][type];
   const MooseObjectWarehouse<GeneralUserObject> & general = _general_user_objects[group][type];
 
+  if (!elemental.hasActiveObjects() && !side.hasActiveObjects() &&
+      !internal_side.hasActiveObjects() && !nodal.hasActiveObjects() && !general.hasActiveObjects())
+    // Nothing to do, return early
+    return;
+
+  // Start the timer here since we have at least one active user object
+  std::string compute_uo_tag = "computeUserObjects(" + Moose::stringify(type) + ")";
+  Moose::perf_log.push(compute_uo_tag, "Execution");
+
   // Perform Residual/Jacobian setups
-  switch (type)
+  if (type == EXEC_LINEAR)
   {
-  case EXEC_LINEAR:
     for (THREAD_ID tid = 0; tid < libMesh::n_threads(); tid++)
     {
       elemental.residualSetup(tid);
@@ -2520,9 +2870,10 @@ FEProblemBase::computeUserObjects(const ExecFlagType & type, const Moose::AuxGro
       nodal.residualSetup(tid);
     }
     general.residualSetup();
-    break;
+  }
 
-  case EXEC_NONLINEAR:
+  else if (type == EXEC_NONLINEAR)
+  {
     for (THREAD_ID tid = 0; tid < libMesh::n_threads(); tid++)
     {
       elemental.jacobianSetup(tid);
@@ -2531,25 +2882,6 @@ FEProblemBase::computeUserObjects(const ExecFlagType & type, const Moose::AuxGro
       nodal.jacobianSetup(tid);
     }
     general.jacobianSetup();
-    break;
-
-  default:
-    break;
-  }
-
-  // Legacy AuxKernel computation
-  if (_elemental_user_objects[Moose::ALL][type].hasActiveBlockObjects() ||
-      _internal_side_user_objects[Moose::ALL][type].hasActiveBlockObjects() ||
-      _side_user_objects[Moose::ALL][type].hasActiveBoundaryObjects() ||
-      _internal_side_user_objects[Moose::ALL][type].hasActiveObjects() ||
-      _nodal_user_objects[Moose::ALL][type].hasActiveBlockObjects() )
-  {
-    serializeSolution();
-    if (_displaced_problem != NULL)
-    _displaced_problem->updateMesh();
-
-    if (_use_legacy_uo_aux_computation)
-        _aux->compute(EXEC_LINEAR);
   }
 
   // Initialize Elemental/Side/InternalSideUserObjects
@@ -2585,27 +2917,83 @@ FEProblemBase::computeUserObjects(const ExecFlagType & type, const Moose::AuxGro
   // Execute GeneralUserObjects
   if (general.hasActiveObjects())
   {
-    const std::vector<MooseSharedPointer<GeneralUserObject> > & objects = general.getActiveObjects();
+    const auto & objects = general.getActiveObjects();
     for (const auto & obj : objects)
     {
       obj->initialize();
       obj->execute();
       obj->finalize();
 
-      MooseSharedPointer<Postprocessor> pp = MooseSharedNamespace::dynamic_pointer_cast<Postprocessor>(obj);
+      std::shared_ptr<Postprocessor> pp = std::dynamic_pointer_cast<Postprocessor>(obj);
       if (pp)
         _pps_data.storeValue(obj->name(), pp->getValue());
     }
   }
+
+  Moose::perf_log.pop(compute_uo_tag, "Execution");
 }
 
 void
 FEProblemBase::executeControls(const ExecFlagType & exec_type)
 {
-  _control_warehouse.setup(exec_type);
-  const std::vector<MooseSharedPointer<Control> > & objects = _control_warehouse[exec_type].getActiveObjects();
-  for (const auto & control : objects)
-    control->execute();
+  DependencyResolver<std::shared_ptr<Control>> resolver;
+
+  auto controls_wh = _control_warehouse[exec_type];
+  // Add all of the dependencies into the resolver and sort them
+  for (const auto & it : controls_wh.getActiveObjects())
+  {
+    // Make sure an item with no dependencies comes out too!
+    resolver.addItem(it);
+
+    std::vector<std::string> & dependent_controls = it->getDependencies();
+    for (const auto & depend_name : dependent_controls)
+    {
+      if (controls_wh.hasActiveObject(depend_name))
+      {
+        auto dep_control = controls_wh.getActiveObject(depend_name);
+        resolver.insertDependency(it, dep_control);
+      }
+      else
+        mooseError("The Control \"",
+                   depend_name,
+                   "\" was not created, did you make a "
+                   "spelling mistake or forget to include it "
+                   "in your input file?");
+    }
+  }
+
+  const auto & ordered_controls = resolver.getSortedValues();
+
+  if (!ordered_controls.empty())
+  {
+    Moose::perf_log.push("computeControls()", "Execution");
+
+    _control_warehouse.setup(exec_type);
+    // Run the controls in the proper order
+    for (const auto & control : ordered_controls)
+      control->execute();
+
+    Moose::perf_log.pop("computeControls()", "Execution");
+  }
+}
+
+void
+FEProblemBase::executeSamplers(const ExecFlagType & exec_type)
+{
+  // TODO: This should be done in a threaded loop, but this should be super quick so for now
+  // do a serial loop.
+  for (THREAD_ID tid = 0; tid < libMesh::n_threads(); ++tid)
+  {
+    const auto & objects = _samplers[exec_type].getActiveObjects(tid);
+    if (!objects.empty())
+    {
+      Moose::perf_log.push("executeSamplers()", "Execution");
+      _samplers.setup(exec_type);
+      for (auto & sampler : objects)
+        sampler->execute();
+      Moose::perf_log.pop("executeSamplers()", "Execution");
+    }
+  }
 }
 
 void
@@ -2625,6 +3013,7 @@ FEProblemBase::updateActiveObjects()
     _elemental_user_objects.updateActive(tid);
     _side_user_objects.updateActive(tid);
     _internal_side_user_objects.updateActive(tid);
+    _samplers.updateActive(tid);
   }
 
   _general_user_objects.updateActive();
@@ -2646,9 +3035,11 @@ void
 FEProblemBase::reinitBecauseOfGhostingOrNewGeomObjects()
 {
   // Need to see if _any_ processor has ghosted elems or geometry objects.
-  bool needs_reinit = ! _ghosted_elems.empty();
-  needs_reinit = needs_reinit || ! _geometric_search_data._nearest_node_locators.empty();
-  needs_reinit = needs_reinit || ( _displaced_problem && ! _displaced_problem->geomSearchData()._nearest_node_locators.empty() );
+  bool needs_reinit = !_ghosted_elems.empty();
+  needs_reinit = needs_reinit || !_geometric_search_data._nearest_node_locators.empty();
+  needs_reinit =
+      needs_reinit ||
+      (_displaced_problem && !_displaced_problem->geomSearchData()._nearest_node_locators.empty());
   _communicator.max(needs_reinit);
 
   if (needs_reinit)
@@ -2662,11 +3053,13 @@ FEProblemBase::reinitBecauseOfGhostingOrNewGeomObjects()
 }
 
 void
-FEProblemBase::addDamper(std::string damper_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addDamper(std::string damper_name,
+                         const std::string & name,
+                         InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   parameters.set<SubProblem *>("_subproblem") = this;
-  parameters.set<SystemBase *>("_sys") = _nl;
+  parameters.set<SystemBase *>("_sys") = _nl.get();
 
   _has_dampers = true;
   _nl->addDamper(damper_name, name, parameters);
@@ -2679,7 +3072,9 @@ FEProblemBase::setupDampers()
 }
 
 void
-FEProblemBase::addIndicator(std::string indicator_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addIndicator(std::string indicator_name,
+                            const std::string & name,
+                            InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
@@ -2701,24 +3096,27 @@ FEProblemBase::addIndicator(std::string indicator_name, const std::string & name
     }
 
     parameters.set<SubProblem *>("_subproblem") = this;
-    parameters.set<SystemBase *>("_sys") = _aux;
+    parameters.set<SystemBase *>("_sys") = _aux.get();
   }
 
   for (THREAD_ID tid = 0; tid < libMesh::n_threads(); tid++)
   {
-    MooseSharedPointer<Indicator> indicator = _factory.create<Indicator>(indicator_name, name, parameters, tid);
+    std::shared_ptr<Indicator> indicator =
+        _factory.create<Indicator>(indicator_name, name, parameters, tid);
 
-    MooseSharedPointer<InternalSideIndicator> isi = MooseSharedNamespace::dynamic_pointer_cast<InternalSideIndicator>(indicator);
+    std::shared_ptr<InternalSideIndicator> isi =
+        std::dynamic_pointer_cast<InternalSideIndicator>(indicator);
     if (isi)
       _internal_side_indicators.addObject(isi, tid);
     else
       _indicators.addObject(indicator, tid);
-
   }
 }
 
 void
-FEProblemBase::addMarker(std::string marker_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addMarker(std::string marker_name,
+                         const std::string & name,
+                         InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
@@ -2740,22 +3138,24 @@ FEProblemBase::addMarker(std::string marker_name, const std::string & name, Inpu
     }
 
     parameters.set<SubProblem *>("_subproblem") = this;
-    parameters.set<SystemBase *>("_sys") = _aux;
+    parameters.set<SystemBase *>("_sys") = _aux.get();
   }
 
   for (THREAD_ID tid = 0; tid < libMesh::n_threads(); tid++)
   {
-    MooseSharedPointer<Marker> marker = _factory.create<Marker>(marker_name, name, parameters, tid);
+    std::shared_ptr<Marker> marker = _factory.create<Marker>(marker_name, name, parameters, tid);
     _markers.addObject(marker, tid);
   }
 }
 
 void
-FEProblemBase::addMultiApp(const std::string & multi_app_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addMultiApp(const std::string & multi_app_name,
+                           const std::string & name,
+                           InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   parameters.set<MPI_Comm>("_mpi_comm") = _communicator.get();
-  parameters.set<MooseSharedPointer<CommandLine> >("_command_line") = _app.commandLine();
+  parameters.set<std::shared_ptr<CommandLine>>("_command_line") = _app.commandLine();
 
   if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
   {
@@ -2776,48 +3176,48 @@ FEProblemBase::addMultiApp(const std::string & multi_app_name, const std::string
     }
 
     parameters.set<SubProblem *>("_subproblem") = this;
-    parameters.set<SystemBase *>("_sys") = _aux;
+    parameters.set<SystemBase *>("_sys") = _aux.get();
   }
 
-  MooseSharedPointer<MultiApp> multi_app = _factory.create<MultiApp>(multi_app_name, name, parameters);
+  std::shared_ptr<MultiApp> multi_app = _factory.create<MultiApp>(multi_app_name, name, parameters);
+
+  multi_app->setupPositions();
 
   _multi_apps.addObject(multi_app);
 
   // Store TranseintMultiApp objects in another container, this is needed for calling computeDT
-  MooseSharedPointer<TransientMultiApp> trans_multi_app = MooseSharedNamespace::dynamic_pointer_cast<TransientMultiApp>(multi_app);
+  std::shared_ptr<TransientMultiApp> trans_multi_app =
+      std::dynamic_pointer_cast<TransientMultiApp>(multi_app);
   if (trans_multi_app)
     _transient_multi_apps.addObject(trans_multi_app);
 }
 
 bool
-FEProblemBase::hasMultiApp(const std::string & multi_app_name)
+FEProblemBase::hasMultiApp(const std::string & multi_app_name) const
 {
   return _multi_apps.hasActiveObject(multi_app_name);
 }
 
-
-MooseSharedPointer<MultiApp>
-FEProblemBase::getMultiApp(const std::string & multi_app_name)
+std::shared_ptr<MultiApp>
+FEProblemBase::getMultiApp(const std::string & multi_app_name) const
 {
   return _multi_apps.getActiveObject(multi_app_name);
 }
 
-bool
-FEProblemBase::execMultiApps(ExecFlagType type, bool auto_advance)
+void
+FEProblemBase::execMultiAppTransfers(ExecFlagType type, MultiAppTransfer::DIRECTION direction)
 {
-  // Active MultiApps
-  const std::vector<MooseSharedPointer<MultiApp> > & multi_apps = _multi_apps[type].getActiveObjects();
+  bool to_multiapp = direction == MultiAppTransfer::TO_MULTIAPP;
+  std::string string_direction = to_multiapp ? " To " : " From ";
+  const MooseObjectWarehouse<Transfer> & wh =
+      to_multiapp ? _to_multi_app_transfers[type] : _from_multi_app_transfers[type];
 
-  // Do anything that needs to be done to Apps before transfers
-  for (const auto & multi_app : multi_apps)
-    multi_app->preTransfer(_dt, _time);
-
-  // Execute Transfers _to_ MultiApps
-  if (_to_multi_app_transfers[type].hasActiveObjects())
+  if (wh.hasActiveObjects())
   {
-    const std::vector<MooseSharedPointer<Transfer> > & transfers = _to_multi_app_transfers[type].getActiveObjects();
+    const auto & transfers = wh.getActiveObjects();
 
-    _console << COLOR_CYAN << "\nStarting Transfers on " <<  Moose::stringify(type) << " To MultiApps" << COLOR_DEFAULT << std::endl;
+    _console << COLOR_CYAN << "\nStarting Transfers on " << Moose::stringify(type)
+             << string_direction << "MultiApps" << COLOR_DEFAULT << std::endl;
     for (const auto & transfer : transfers)
     {
       Moose::perf_log.push(transfer->name(), "Transfers");
@@ -2826,18 +3226,44 @@ FEProblemBase::execMultiApps(ExecFlagType type, bool auto_advance)
     }
 
     _console << "Waiting For Transfers To Finish" << '\n';
-    MooseUtils::parallelBarrierNotify(_communicator);
+    MooseUtils::parallelBarrierNotify(_communicator, _parallel_barrier_messaging);
 
-    _console << COLOR_CYAN << "Transfers on " <<  Moose::stringify(type) << " Are Finished\n" << COLOR_DEFAULT << std::endl;
+    _console << COLOR_CYAN << "Transfers on " << Moose::stringify(type) << " Are Finished\n"
+             << COLOR_DEFAULT << std::endl;
   }
-  else if (multi_apps.size())
-    _console << COLOR_CYAN << "\nNo Transfers on " <<  Moose::stringify(type) << " To MultiApps\n" << COLOR_DEFAULT << std::endl;
+  else if (_multi_apps[type].getActiveObjects().size())
+    _console << COLOR_CYAN << "\nNo Transfers on " << Moose::stringify(type) << " To MultiApps\n"
+             << COLOR_DEFAULT << std::endl;
+}
 
+std::vector<std::shared_ptr<Transfer>>
+FEProblemBase::getTransfers(ExecFlagType type, MultiAppTransfer::DIRECTION direction) const
+{
+  const MooseObjectWarehouse<Transfer> & wh = direction == MultiAppTransfer::TO_MULTIAPP
+                                                  ? _to_multi_app_transfers[type]
+                                                  : _from_multi_app_transfers[type];
+  return wh.getActiveObjects();
+}
+
+bool
+FEProblemBase::execMultiApps(ExecFlagType type, bool auto_advance)
+{
+  // Active MultiApps
+  const std::vector<MooseSharedPointer<MultiApp>> & multi_apps =
+      _multi_apps[type].getActiveObjects();
+
+  // Do anything that needs to be done to Apps before transfers
+  for (const auto & multi_app : multi_apps)
+    multi_app->preTransfer(_dt, _time);
+
+  // Execute Transfers _to_ MultiApps
+  execMultiAppTransfers(type, MultiAppTransfer::TO_MULTIAPP);
 
   // Execute MultiApps
   if (multi_apps.size())
   {
-    _console << COLOR_CYAN << "\nExecuting MultiApps on " <<  Moose::stringify(type) << COLOR_DEFAULT << std::endl;
+    _console << COLOR_CYAN << "\nExecuting MultiApps on " << Moose::stringify(type) << COLOR_DEFAULT
+             << std::endl;
 
     bool success = true;
 
@@ -2845,56 +3271,59 @@ FEProblemBase::execMultiApps(ExecFlagType type, bool auto_advance)
       success = multi_app->solveStep(_dt, _time, auto_advance);
 
     _console << "Waiting For Other Processors To Finish" << '\n';
-    MooseUtils::parallelBarrierNotify(_communicator);
+    MooseUtils::parallelBarrierNotify(_communicator, _parallel_barrier_messaging);
 
     _communicator.max(success);
 
     if (!success)
       return false;
 
-    _console << COLOR_CYAN << "Finished Executing MultiApps on " <<  Moose::stringify(type) << "\n" << COLOR_DEFAULT << std::endl;
+    _console << COLOR_CYAN << "Finished Executing MultiApps on " << Moose::stringify(type) << "\n"
+             << COLOR_DEFAULT << std::endl;
   }
 
   // Execute Transfers _from_ MultiApps
-  if (_from_multi_app_transfers[type].hasActiveObjects())
-  {
-    const std::vector<MooseSharedPointer<Transfer> > & transfers = _from_multi_app_transfers[type].getActiveObjects();
-
-    _console << COLOR_CYAN << "\nStarting Transfers on " <<  Moose::stringify(type) << " From MultiApps" << COLOR_DEFAULT << std::endl;
-    for (const auto & transfer : transfers)
-    {
-      Moose::perf_log.push(transfer->name(), "Transfers");
-      transfer->execute();
-      Moose::perf_log.pop(transfer->name(), "Transfers");
-    }
-
-    _console << "Waiting For Transfers To Finish" << '\n';
-    MooseUtils::parallelBarrierNotify(_communicator);
-
-    _console << COLOR_CYAN << "Transfers " << Moose::stringify(type) << " Are Finished\n" << COLOR_DEFAULT << std::endl;
-  }
-  else if (multi_apps.size())
-    _console << COLOR_CYAN << "\nNo Transfers on " <<  Moose::stringify(type) << " From MultiApps\n" << COLOR_DEFAULT << std::endl;
-
+  execMultiAppTransfers(type, MultiAppTransfer::FROM_MULTIAPP);
 
   // If we made it here then everything passed
   return true;
 }
 
 void
-FEProblemBase::advanceMultiApps(ExecFlagType type)
+FEProblemBase::postExecute()
 {
-  const std::vector<MooseSharedPointer<MultiApp> > multi_apps = _multi_apps[type].getActiveObjects();
+  const auto & multi_apps = _multi_apps.getActiveObjects();
+
+  for (const auto & multi_app : multi_apps)
+    // If the app has been solved, then postExecute() will have been called already too
+    if (!multi_app->isSolved())
+      multi_app->postExecute();
+}
+
+void
+FEProblemBase::incrementMultiAppTStep(ExecFlagType type)
+{
+  const auto & multi_apps = _multi_apps[type].getActiveObjects();
+
+  if (multi_apps.size())
+    for (const auto & multi_app : multi_apps)
+      multi_app->incrementTStep();
+}
+
+void
+FEProblemBase::finishMultiAppStep(ExecFlagType type)
+{
+  const auto & multi_apps = _multi_apps[type].getActiveObjects();
 
   if (multi_apps.size())
   {
     _console << COLOR_CYAN << "\nAdvancing MultiApps" << COLOR_DEFAULT << std::endl;
 
     for (const auto & multi_app : multi_apps)
-      multi_app->advanceStep();
+      multi_app->finishStep();
 
     _console << "Waiting For Other Processors To Finish" << std::endl;
-    MooseUtils::parallelBarrierNotify(_communicator);
+    MooseUtils::parallelBarrierNotify(_communicator, _parallel_barrier_messaging);
 
     _console << COLOR_CYAN << "Finished Advancing MultiApps\n" << COLOR_DEFAULT << std::endl;
   }
@@ -2903,7 +3332,7 @@ FEProblemBase::advanceMultiApps(ExecFlagType type)
 void
 FEProblemBase::backupMultiApps(ExecFlagType type)
 {
-  const std::vector<MooseSharedPointer<MultiApp> > multi_apps = _multi_apps[type].getActiveObjects();
+  const auto & multi_apps = _multi_apps[type].getActiveObjects();
 
   if (multi_apps.size())
   {
@@ -2913,7 +3342,7 @@ FEProblemBase::backupMultiApps(ExecFlagType type)
       multi_app->backup();
 
     _console << "Waiting For Other Processors To Finish" << std::endl;
-    MooseUtils::parallelBarrierNotify(_communicator);
+    MooseUtils::parallelBarrierNotify(_communicator, _parallel_barrier_messaging);
 
     _console << COLOR_CYAN << "Finished Backing Up MultiApps\n" << COLOR_DEFAULT << std::endl;
   }
@@ -2922,12 +3351,13 @@ FEProblemBase::backupMultiApps(ExecFlagType type)
 void
 FEProblemBase::restoreMultiApps(ExecFlagType type, bool force)
 {
-  const std::vector<MooseSharedPointer<MultiApp> > multi_apps = _multi_apps[type].getActiveObjects();
+  const auto & multi_apps = _multi_apps[type].getActiveObjects();
 
   if (multi_apps.size())
   {
     if (force)
-      _console << COLOR_CYAN << "\nRestoring Multiapps because of solve failure!" << COLOR_DEFAULT << std::endl;
+      _console << COLOR_CYAN << "\nRestoring Multiapps because of solve failure!" << COLOR_DEFAULT
+               << std::endl;
     else
       _console << COLOR_CYAN << "\nRestoring MultiApps" << COLOR_DEFAULT << std::endl;
 
@@ -2936,7 +3366,7 @@ FEProblemBase::restoreMultiApps(ExecFlagType type, bool force)
         multi_app->restore();
 
     _console << "Waiting For Other Processors To Finish" << std::endl;
-    MooseUtils::parallelBarrierNotify(_communicator);
+    MooseUtils::parallelBarrierNotify(_communicator, _parallel_barrier_messaging);
 
     _console << COLOR_CYAN << "Finished Restoring MultiApps\n" << COLOR_DEFAULT << std::endl;
   }
@@ -2945,7 +3375,7 @@ FEProblemBase::restoreMultiApps(ExecFlagType type, bool force)
 Real
 FEProblemBase::computeMultiAppsDT(ExecFlagType type)
 {
-  const std::vector<MooseSharedPointer<TransientMultiApp> > & multi_apps = _transient_multi_apps[type].getActiveObjects();
+  const auto & multi_apps = _transient_multi_apps[type].getActiveObjects();
 
   Real smallest_dt = std::numeric_limits<Real>::max();
 
@@ -2955,21 +3385,21 @@ FEProblemBase::computeMultiAppsDT(ExecFlagType type)
   return smallest_dt;
 }
 
-
 void
 FEProblemBase::execTransfers(ExecFlagType type)
 {
   if (_transfers[type].hasActiveObjects())
   {
-    const std::vector<MooseSharedPointer<Transfer> > & transfers = _transfers[type].getActiveObjects();
+    const auto & transfers = _transfers[type].getActiveObjects();
     for (const auto & transfer : transfers)
       transfer->execute();
   }
 }
 
-
 void
-FEProblemBase::addTransfer(const std::string & transfer_name, const std::string & name, InputParameters parameters)
+FEProblemBase::addTransfer(const std::string & transfer_name,
+                           const std::string & name,
+                           InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   if (_displaced_problem != NULL && parameters.get<bool>("use_displaced_mesh"))
@@ -2991,14 +3421,23 @@ FEProblemBase::addTransfer(const std::string & transfer_name, const std::string 
     }
 
     parameters.set<SubProblem *>("_subproblem") = this;
-    parameters.set<SystemBase *>("_sys") = _aux;
+    parameters.set<SystemBase *>("_sys") = _aux.get();
+  }
+
+  // Handle the "SAME_AS_MULTIAPP" execute option
+  ExecFlagEnum & exec_enum = parameters.set<ExecFlagEnum>("execute_on", true);
+  if (exec_enum.contains(EXEC_SAME_AS_MULTIAPP))
+  {
+    std::shared_ptr<MultiApp> multiapp = getMultiApp(parameters.get<MultiAppName>("multi_app"));
+    exec_enum = multiapp->getParam<ExecFlagEnum>("execute_on");
   }
 
   // Create the Transfer objects
-  MooseSharedPointer<Transfer> transfer = _factory.create<Transfer>(transfer_name, name, parameters);
+  std::shared_ptr<Transfer> transfer = _factory.create<Transfer>(transfer_name, name, parameters);
 
   // Add MultiAppTransfer object
-  MooseSharedPointer<MultiAppTransfer> multi_app_transfer = MooseSharedNamespace::dynamic_pointer_cast<MultiAppTransfer>(transfer);
+  std::shared_ptr<MultiAppTransfer> multi_app_transfer =
+      std::dynamic_pointer_cast<MultiAppTransfer>(transfer);
   if (multi_app_transfer)
   {
     if (multi_app_transfer->direction() == MultiAppTransfer::TO_MULTIAPP)
@@ -3011,7 +3450,7 @@ FEProblemBase::addTransfer(const std::string & transfer_name, const std::string 
 }
 
 bool
-FEProblemBase::hasVariable(const std::string & var_name)
+FEProblemBase::hasVariable(const std::string & var_name) const
 {
   if (_nl->hasVariable(var_name))
     return true;
@@ -3021,7 +3460,7 @@ FEProblemBase::hasVariable(const std::string & var_name)
     return false;
 }
 
-MooseVariable &
+MooseVariableFE &
 FEProblemBase::getVariable(THREAD_ID tid, const std::string & var_name)
 {
   if (_nl->hasVariable(var_name))
@@ -3032,8 +3471,30 @@ FEProblemBase::getVariable(THREAD_ID tid, const std::string & var_name)
   return _aux->getVariable(tid, var_name);
 }
 
+MooseVariable &
+FEProblemBase::getStandardVariable(THREAD_ID tid, const std::string & var_name)
+{
+  if (_nl->hasVariable(var_name))
+    return _nl->getFieldVariable<Real>(tid, var_name);
+  else if (!_aux->hasVariable(var_name))
+    mooseError("Unknown variable " + var_name);
+
+  return _aux->getFieldVariable<Real>(tid, var_name);
+}
+
+VectorMooseVariable &
+FEProblemBase::getVectorVariable(THREAD_ID tid, const std::string & var_name)
+{
+  if (_nl->hasVariable(var_name))
+    return _nl->getFieldVariable<RealVectorValue>(tid, var_name);
+  else if (!_aux->hasVariable(var_name))
+    mooseError("Unknown variable " + var_name);
+
+  return _aux->getFieldVariable<RealVectorValue>(tid, var_name);
+}
+
 bool
-FEProblemBase::hasScalarVariable(const std::string & var_name)
+FEProblemBase::hasScalarVariable(const std::string & var_name) const
 {
   if (_nl->hasScalarVariable(var_name))
     return true;
@@ -3054,25 +3515,25 @@ FEProblemBase::getScalarVariable(THREAD_ID tid, const std::string & var_name)
     mooseError("Unknown variable " + var_name);
 }
 
+System &
+FEProblemBase::getSystem(const std::string & var_name)
+{
+  if (_nl->hasVariable(var_name))
+    return _nl->system();
+  else if (_aux->hasVariable(var_name))
+    return _aux->system();
+  else
+    mooseError("Unable to find a system containing the variable " + var_name);
+}
+
 void
-FEProblemBase::setActiveElementalMooseVariables(const std::set<MooseVariable *> & moose_vars, THREAD_ID tid)
+FEProblemBase::setActiveElementalMooseVariables(const std::set<MooseVariableFE *> & moose_vars,
+                                                THREAD_ID tid)
 {
   SubProblem::setActiveElementalMooseVariables(moose_vars, tid);
 
   if (_displaced_problem)
     _displaced_problem->setActiveElementalMooseVariables(moose_vars, tid);
-}
-
-const std::set<MooseVariable *> &
-FEProblemBase::getActiveElementalMooseVariables(THREAD_ID tid)
-{
-  return SubProblem::getActiveElementalMooseVariables(tid);
-}
-
-bool
-FEProblemBase::hasActiveElementalMooseVariables(THREAD_ID tid)
-{
-  return SubProblem::hasActiveElementalMooseVariables(tid);
 }
 
 void
@@ -3085,13 +3546,33 @@ FEProblemBase::clearActiveElementalMooseVariables(THREAD_ID tid)
 }
 
 void
+FEProblemBase::setActiveMaterialProperties(const std::set<unsigned int> & mat_prop_ids,
+                                           THREAD_ID tid)
+{
+  SubProblem::setActiveMaterialProperties(mat_prop_ids, tid);
+
+  if (_displaced_problem)
+    _displaced_problem->setActiveMaterialProperties(mat_prop_ids, tid);
+}
+
+void
+FEProblemBase::clearActiveMaterialProperties(THREAD_ID tid)
+{
+  SubProblem::clearActiveMaterialProperties(tid);
+
+  if (_displaced_problem)
+    _displaced_problem->clearActiveMaterialProperties(tid);
+}
+
+void
 FEProblemBase::createQRules(QuadratureType type, Order order, Order volume_order, Order face_order)
 {
   if (order == INVALID_ORDER)
   {
     // automatically determine the integration order
     order = _nl->getMinQuadratureOrder();
-    if (order<_aux->getMinQuadratureOrder()) order = _aux->getMinQuadratureOrder();
+    if (order < _aux->getMinQuadratureOrder())
+      order = _aux->getMinQuadratureOrder();
   }
 
   if (volume_order == INVALID_ORDER)
@@ -3112,14 +3593,26 @@ FEProblemBase::createQRules(QuadratureType type, Order order, Order volume_order
     Threads::parallel_reduce(*_mesh.getActiveLocalElementRange(), mqt);
     _max_qps = mqt.max();
     _max_shape_funcs = mqt.max_shape_funcs();
+
+    // If we have more shape functions or more quadrature points on
+    // another processor, then we may need to handle those elements
+    // ourselves later after repartitioning.
+    _communicator.max(_max_qps);
+    _communicator.max(_max_shape_funcs);
   }
 
+  unsigned int max_qpts = getMaxQps();
   for (unsigned int tid = 0; tid < libMesh::n_threads(); ++tid)
   {
-    _zero[tid].resize(getMaxQps(), 0);
-    _grad_zero[tid].resize(getMaxQps(), RealGradient(0.));
-    _second_zero[tid].resize(getMaxQps(), RealTensor(0.));
-    _second_phi_zero[tid].resize(getMaxQps(), std::vector<RealTensor>(getMaxShapeFunctions(), RealTensor(0.)));
+    // the highest available order in libMesh is 43
+    _scalar_zero[tid].resize(FORTYTHIRD, 0);
+    _zero[tid].resize(max_qpts, 0);
+    _grad_zero[tid].resize(max_qpts, RealGradient(0.));
+    _second_zero[tid].resize(max_qpts, RealTensor(0.));
+    _second_phi_zero[tid].resize(max_qpts,
+                                 std::vector<RealTensor>(getMaxShapeFunctions(), RealTensor(0.)));
+    _vector_zero[tid].resize(max_qpts, RealGradient(0.));
+    _vector_curl_zero[tid].resize(max_qpts, RealGradient(0.));
   }
 }
 
@@ -3132,9 +3625,17 @@ FEProblemBase::setCoupling(Moose::CouplingType type)
 void
 FEProblemBase::setCouplingMatrix(CouplingMatrix * cm)
 {
+  // TODO: Deprecate method
+
   _coupling = Moose::COUPLING_CUSTOM;
-  delete _cm;
-  _cm = cm;
+  _cm.reset(cm);
+}
+
+void
+FEProblemBase::setCouplingMatrix(std::unique_ptr<CouplingMatrix> cm)
+{
+  _coupling = Moose::COUPLING_CUSTOM;
+  _cm = std::move(cm);
 }
 
 void
@@ -3142,9 +3643,9 @@ FEProblemBase::setNonlocalCouplingMatrix()
 {
   unsigned int n_vars = _nl->nVariables();
   _nonlocal_cm.resize(n_vars);
-  const std::vector<MooseVariable *> & vars = _nl->getVariables(0);
-  const std::vector<MooseSharedPointer<KernelBase> > & nonlocal_kernel = _nonlocal_kernels.getObjects();
-  const std::vector<MooseSharedPointer<IntegratedBC> > & nonlocal_integrated_bc = _nonlocal_integrated_bcs.getObjects();
+  const auto & vars = _nl->getVariables(0);
+  const auto & nonlocal_kernel = _nonlocal_kernels.getObjects();
+  const auto & nonlocal_integrated_bc = _nonlocal_integrated_bcs.getObjects();
   for (const auto & ivar : vars)
   {
     for (const auto & kernel : nonlocal_kernel)
@@ -3157,7 +3658,7 @@ FEProblemBase::setNonlocalCouplingMatrix()
           if (it != _var_dof_map.end())
           {
             unsigned int j = jvar->number();
-            _nonlocal_cm(i,j) = 1;
+            _nonlocal_cm(i, j) = 1;
           }
         }
     }
@@ -3171,7 +3672,7 @@ FEProblemBase::setNonlocalCouplingMatrix()
           if (it != _var_dof_map.end())
           {
             unsigned int j = jvar->number();
-            _nonlocal_cm(i,j) = 1;
+            _nonlocal_cm(i, j) = 1;
           }
         }
     }
@@ -3184,28 +3685,16 @@ FEProblemBase::areCoupled(unsigned int ivar, unsigned int jvar)
   return (*_cm)(ivar, jvar);
 }
 
-std::vector<std::pair<MooseVariable *, MooseVariable *> > &
+std::vector<std::pair<MooseVariableFE *, MooseVariableFE *>> &
 FEProblemBase::couplingEntries(THREAD_ID tid)
 {
   return _assembly[tid]->couplingEntries();
 }
 
-std::vector<std::pair<MooseVariable *, MooseVariable *> > &
+std::vector<std::pair<MooseVariableFE *, MooseVariableFE *>> &
 FEProblemBase::nonlocalCouplingEntries(THREAD_ID tid)
 {
   return _assembly[tid]->nonlocalCouplingEntries();
-}
-
-void
-FEProblemBase::useFECache(bool fe_cache)
-{
-  if (fe_cache)
-    _console << "\nUtilizing FE Shape Function Caching\n" << std::endl;
-
-  unsigned int n_threads = libMesh::n_threads();
-
-  for (unsigned int i = 0; i < n_threads; ++i)
-    _assembly[i]->useFECache(fe_cache); //fe_cache);
 }
 
 void
@@ -3217,36 +3706,39 @@ FEProblemBase::init()
   unsigned int n_vars = _nl->nVariables();
   switch (_coupling)
   {
-  case Moose::COUPLING_DIAG:
-    _cm = new CouplingMatrix(n_vars);
-    for (unsigned int i = 0; i < n_vars; i++)
-      for (unsigned int j = 0; j < n_vars; j++)
-        (*_cm)(i, j) = (i == j ? 1 : 0);
-    break;
+    case Moose::COUPLING_DIAG:
+      _cm = libmesh_make_unique<CouplingMatrix>(n_vars);
+      for (unsigned int i = 0; i < n_vars; i++)
+        for (unsigned int j = 0; j < n_vars; j++)
+          (*_cm)(i, j) = (i == j ? 1 : 0);
+      break;
 
-  // for full jacobian
-  case Moose::COUPLING_FULL:
-    _cm = new CouplingMatrix(n_vars);
-    for (unsigned int i = 0; i < n_vars; i++)
-      for (unsigned int j = 0; j < n_vars; j++)
-        (*_cm)(i, j) = 1;
-    break;
+    // for full jacobian
+    case Moose::COUPLING_FULL:
+      _cm = libmesh_make_unique<CouplingMatrix>(n_vars);
+      for (unsigned int i = 0; i < n_vars; i++)
+        for (unsigned int j = 0; j < n_vars; j++)
+          (*_cm)(i, j) = 1;
+      break;
 
-  case Moose::COUPLING_CUSTOM:
-    // do nothing, _cm was already set through couplingMatrix() call
-    break;
+    case Moose::COUPLING_CUSTOM:
+      // do nothing, _cm was already set through couplingMatrix() call
+      break;
   }
 
-  _nl->dofMap()._dof_coupling = _cm;
-  _nl->dofMap().attach_extra_sparsity_function(&extraSparsity, _nl);
-  _nl->dofMap().attach_extra_send_list_function(&extraSendList, _nl);
-  _aux->dofMap().attach_extra_send_list_function(&extraSendList, _aux);
-
+  _nl->dofMap()._dof_coupling = _cm.get();
+  _nl->dofMap().attach_extra_sparsity_function(&extraSparsity, _nl.get());
+  _nl->dofMap().attach_extra_send_list_function(&extraSendList, _nl.get());
+  _aux->dofMap().attach_extra_send_list_function(&extraSendList, _aux.get());
 
   if (_solve && n_vars == 0)
-    mooseError("No variables specified in the FEProblemBase '" << name() << "'.");
+    mooseError("No variables specified in the FEProblemBase '", name(), "'.");
 
   ghostGhostedBoundaries(); // We do this again right here in case new boundaries have been added
+
+  // do not assemble system matrix for JFNK solve
+  if (solverParams()._type == Moose::ST_JFNK)
+    _nl->turnOffJacobian();
 
   Moose::perf_log.push("eq.init()", "Setup");
   _eq.init();
@@ -3263,7 +3755,7 @@ FEProblemBase::init()
   Moose::perf_log.pop("NonlinearSystem::update()", "Setup");
 
   for (THREAD_ID tid = 0; tid < libMesh::n_threads(); ++tid)
-    _assembly[tid]->init();
+    _assembly[tid]->init(_cm.get());
 
   _nl->init();
 
@@ -3309,14 +3801,12 @@ FEProblemBase::solve()
   Moose::perf_log.pop("solve()", "Execution");
 }
 
-
 void
 FEProblemBase::setException(const std::string & message)
 {
   _has_exception = true;
   _exception_message = message;
 }
-
 
 void
 FEProblemBase::checkExceptionAndStopSolve()
@@ -3352,7 +3842,6 @@ FEProblemBase::checkExceptionAndStopSolve()
   }
 }
 
-
 bool
 FEProblemBase::converged()
 {
@@ -3363,25 +3852,25 @@ FEProblemBase::converged()
 }
 
 unsigned int
-FEProblemBase::nNonlinearIterations()
+FEProblemBase::nNonlinearIterations() const
 {
   return _nl->nNonlinearIterations();
 }
 
 unsigned int
-FEProblemBase::nLinearIterations()
+FEProblemBase::nLinearIterations() const
 {
   return _nl->nLinearIterations();
 }
 
 Real
-FEProblemBase::finalNonlinearResidual()
+FEProblemBase::finalNonlinearResidual() const
 {
   return _nl->finalNonlinearResidual();
 }
 
 bool
-FEProblemBase::computingInitialResidual()
+FEProblemBase::computingInitialResidual() const
 {
   return _nl->computingInitialResidual();
 }
@@ -3399,7 +3888,7 @@ FEProblemBase::advanceState()
   _nl->copyOldSolutions();
   _aux->copyOldSolutions();
 
-  if ( _displaced_problem != NULL )
+  if (_displaced_problem != NULL)
   {
     _displaced_problem->nlSys().copyOldSolutions();
     _displaced_problem->auxSys().copyOldSolutions();
@@ -3443,6 +3932,8 @@ FEProblemBase::outputStep(ExecFlagType type)
 {
   _nl->update();
   _aux->update();
+  if (_displaced_problem != NULL)
+    _displaced_problem->syncSolutions();
   _app.getOutputWarehouse().outputStep(type);
 }
 
@@ -3465,16 +3956,6 @@ FEProblemBase::initPetscOutput()
   Moose::PetscSupport::petscSetDefaults(*this);
 }
 
-
-Real
-FEProblemBase::relativeSolutionDifferenceNorm()
-{
-  if (_solve)
-    return _nl->relativeSolutionDifferenceNorm();
-  else
-    return 0;
-}
-
 void
 FEProblemBase::onTimestepBegin()
 {
@@ -3487,7 +3968,9 @@ FEProblemBase::onTimestepEnd()
 }
 
 void
-FEProblemBase::addTimeIntegrator(const std::string & type, const std::string & name, InputParameters parameters)
+FEProblemBase::addTimeIntegrator(const std::string & type,
+                                 const std::string & name,
+                                 InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   parameters.set<SubProblem *>("_subproblem") = this;
@@ -3497,11 +3980,13 @@ FEProblemBase::addTimeIntegrator(const std::string & type, const std::string & n
 }
 
 void
-FEProblemBase::addPredictor(const std::string & type, const std::string & name, InputParameters parameters)
+FEProblemBase::addPredictor(const std::string & type,
+                            const std::string & name,
+                            InputParameters parameters)
 {
   setInputParametersFEProblem(parameters);
   parameters.set<SubProblem *>("_subproblem") = this;
-  MooseSharedPointer<Predictor> predictor = _factory.create<Predictor>(type, name, parameters);
+  std::shared_ptr<Predictor> predictor = _factory.create<Predictor>(type, name, parameters);
   _nl->setPredictor(predictor);
 }
 
@@ -3514,7 +3999,9 @@ FEProblemBase::computeResidualL2Norm()
 }
 
 void
-FEProblemBase::computeResidual(NonlinearImplicitSystem &/*sys*/, const NumericVector<Number> & soln, NumericVector<Number> & residual)
+FEProblemBase::computeResidual(NonlinearImplicitSystem & /*sys*/,
+                               const NumericVector<Number> & soln,
+                               NumericVector<Number> & residual)
 {
   computeResidual(soln, residual);
 }
@@ -3535,12 +4022,16 @@ FEProblemBase::computeResidual(const NumericVector<Number> & soln, NumericVector
     // *possible* to handle exceptions from other systems, but in the
     // meantime, we don't want to silently swallow any unhandled
     // exceptions here.
-    mooseError("An unhandled MooseException was raised during residual computation.  Please contact the MOOSE team for assistance.");
+    mooseError("An unhandled MooseException was raised during residual computation.  Please "
+               "contact the MOOSE team for assistance.");
   }
 }
 
 void
-FEProblemBase::computeTransientImplicitResidual(Real time, const NumericVector<Number> & u, const NumericVector<Number> & udot, NumericVector<Number> & residual)
+FEProblemBase::computeTransientImplicitResidual(Real time,
+                                                const NumericVector<Number> & u,
+                                                const NumericVector<Number> & udot,
+                                                NumericVector<Number> & residual)
 {
   _nl->setSolutionUDot(udot);
   _time = time;
@@ -3548,7 +4039,9 @@ FEProblemBase::computeTransientImplicitResidual(Real time, const NumericVector<N
 }
 
 void
-FEProblemBase::computeResidualType(const NumericVector<Number>& soln, NumericVector<Number>& residual, Moose::KernelType type)
+FEProblemBase::computeResidualType(const NumericVector<Number> & soln,
+                                   NumericVector<Number> & residual,
+                                   Moose::KernelType type)
 {
   _nl->setSolution(soln);
 
@@ -3556,6 +4049,8 @@ FEProblemBase::computeResidualType(const NumericVector<Number>& soln, NumericVec
   _aux->zeroVariablesForResidual();
 
   unsigned int n_threads = libMesh::n_threads();
+
+  _current_execute_on_flag = EXEC_LINEAR;
 
   // Random interface objects
   for (const auto & it : _random_data_objects)
@@ -3573,8 +4068,6 @@ FEProblemBase::computeResidualType(const NumericVector<Number>& soln, NumericVec
   if (_displaced_problem != NULL)
     _displaced_problem->updateMesh();
 
-
-
   for (THREAD_ID tid = 0; tid < n_threads; tid++)
   {
     _all_materials.residualSetup(tid);
@@ -3591,7 +4084,8 @@ FEProblemBase::computeResidualType(const NumericVector<Number>& soln, NumericVec
   catch (MooseException & e)
   {
     _console << "\nA MooseException was raised during Auxiliary variable computation.\n"
-             << "The next solve will fail, the timestep will be reduced, and we will try again.\n" << std::endl;
+             << "The next solve will fail, the timestep will be reduced, and we will try again.\n"
+             << std::endl;
 
     // We know the next solve is going to fail, so there's no point in
     // computing anything else after this.  Plus, using incompletely
@@ -3604,20 +4098,25 @@ FEProblemBase::computeResidualType(const NumericVector<Number>& soln, NumericVec
 
   executeControls(EXEC_LINEAR);
 
+  _current_execute_on_flag = EXEC_NONE;
+
   _app.getOutputWarehouse().residualSetup();
 
   _nl->computeResidual(residual, type);
 }
 
 void
-FEProblemBase::computeJacobian(NonlinearImplicitSystem & /*sys*/, const NumericVector<Number> & soln, SparseMatrix<Number> & jacobian)
+FEProblemBase::computeJacobian(NonlinearImplicitSystem & /*sys*/,
+                               const NumericVector<Number> & soln,
+                               SparseMatrix<Number> & jacobian)
 {
-  computeJacobian(soln, jacobian);
+  computeJacobian(soln, jacobian, Moose::KT_ALL);
 }
 
-
 void
-FEProblemBase::computeJacobian(const NumericVector<Number> & soln, SparseMatrix<Number> & jacobian)
+FEProblemBase::computeJacobian(const NumericVector<Number> & soln,
+                               SparseMatrix<Number> & jacobian,
+                               Moose::KernelType kernel_type)
 {
   if (!_has_jacobian || !_const_jacobian)
   {
@@ -3632,6 +4131,7 @@ FEProblemBase::computeJacobian(const NumericVector<Number> & soln, SparseMatrix<
     for (const auto & it : _random_data_objects)
       it.second->updateSeeds(EXEC_NONLINEAR);
 
+    _current_execute_on_flag = EXEC_NONLINEAR;
     _currently_computing_jacobian = true;
 
     execTransfers(EXEC_NONLINEAR);
@@ -3661,33 +4161,30 @@ FEProblemBase::computeJacobian(const NumericVector<Number> & soln, SparseMatrix<
 
     _app.getOutputWarehouse().jacobianSetup();
 
-    _nl->computeJacobian(jacobian);
+    _nl->computeJacobian(jacobian, kernel_type);
 
+    _current_execute_on_flag = EXEC_NONE;
     _currently_computing_jacobian = false;
     _has_jacobian = true;
-  }
-
-  if (_solver_params._type == Moose::ST_JFNK || _solver_params._type == Moose::ST_PJFNK)
-  {
-    // This call is here to make sure the residual vector is up to date with any decisions that have been made in
-    // the Jacobian evaluation.  That is important in JFNK because that residual is used for finite differencing
-    computeResidual(soln, _nl->RHS());
-    _nl->RHS().close();
   }
 }
 
 void
-FEProblemBase::computeTransientImplicitJacobian(Real time, const NumericVector<Number> & u, const NumericVector<Number> & udot, Real shift, SparseMatrix<Number> & jacobian)
+FEProblemBase::computeTransientImplicitJacobian(Real time,
+                                                const NumericVector<Number> & u,
+                                                const NumericVector<Number> & udot,
+                                                Real shift,
+                                                SparseMatrix<Number> & jacobian)
 {
   if (0)
-  { // The current interface guarantees that the residual is called before Jacobian, thus udot has already been set
+  { // The current interface guarantees that the residual is called before Jacobian, thus udot has
+    // already been set
     _nl->setSolutionUDot(udot);
   }
   _nl->duDotDu() = shift;
   _time = time;
   computeJacobian(u, jacobian);
 }
-
 
 void
 FEProblemBase::computeJacobianBlocks(std::vector<JacobianBlock *> & blocks)
@@ -3701,7 +4198,10 @@ FEProblemBase::computeJacobianBlocks(std::vector<JacobianBlock *> & blocks)
 }
 
 void
-FEProblemBase::computeJacobianBlock(SparseMatrix<Number> & jacobian, libMesh::System & precond_system, unsigned int ivar, unsigned int jvar)
+FEProblemBase::computeJacobianBlock(SparseMatrix<Number> & jacobian,
+                                    libMesh::System & precond_system,
+                                    unsigned int ivar,
+                                    unsigned int jvar)
 {
   std::vector<JacobianBlock *> blocks;
   JacobianBlock * block = new JacobianBlock(precond_system, jacobian, ivar, jvar);
@@ -3711,9 +4211,12 @@ FEProblemBase::computeJacobianBlock(SparseMatrix<Number> & jacobian, libMesh::Sy
 }
 
 void
-FEProblemBase::computeBounds(NonlinearImplicitSystem & /*sys*/, NumericVector<Number>& lower, NumericVector<Number>& upper)
+FEProblemBase::computeBounds(NonlinearImplicitSystem & /*sys*/,
+                             NumericVector<Number> & lower,
+                             NumericVector<Number> & upper)
 {
-  if (!_nl->hasVector("lower_bound") || !_nl->hasVector("upper_bound")) return;
+  if (!_nl->hasVector("lower_bound") || !_nl->hasVector("upper_bound"))
+    return;
 
   NumericVector<Number> & _lower = _nl->getVector("lower_bound");
   NumericVector<Number> & _upper = _nl->getVector("upper_bound");
@@ -3731,10 +4234,12 @@ FEProblemBase::computeBounds(NonlinearImplicitSystem & /*sys*/, NumericVector<Nu
 }
 
 void
-FEProblemBase::computeNearNullSpace(NonlinearImplicitSystem & /*sys*/, std::vector<NumericVector<Number>*>& sp)
+FEProblemBase::computeNearNullSpace(NonlinearImplicitSystem & /*sys*/,
+                                    std::vector<NumericVector<Number> *> & sp)
 {
   sp.clear();
-  for (unsigned int i = 0; i < subspaceDim("NearNullSpace"); ++i) {
+  for (unsigned int i = 0; i < subspaceDim("NearNullSpace"); ++i)
+  {
     std::stringstream postfix;
     postfix << "_" << i;
     std::string modename = "NearNullSpace" + postfix.str();
@@ -3743,34 +4248,38 @@ FEProblemBase::computeNearNullSpace(NonlinearImplicitSystem & /*sys*/, std::vect
 }
 
 void
-FEProblemBase::computeNullSpace(NonlinearImplicitSystem & /*sys*/, std::vector<NumericVector<Number>*>& sp)
+FEProblemBase::computeNullSpace(NonlinearImplicitSystem & /*sys*/,
+                                std::vector<NumericVector<Number> *> & sp)
 {
   sp.clear();
-  for (unsigned int i = 0; i < subspaceDim("NullSpace"); ++i) {
+  for (unsigned int i = 0; i < subspaceDim("NullSpace"); ++i)
+  {
     std::stringstream postfix;
     postfix << "_" << i;
-    sp.push_back(&_nl->getVector("NullSpace"+postfix.str()));
+    sp.push_back(&_nl->getVector("NullSpace" + postfix.str()));
   }
 }
 
 void
-FEProblemBase::computeTransposeNullSpace(NonlinearImplicitSystem & /*sys*/, std::vector<NumericVector<Number>*>& sp)
+FEProblemBase::computeTransposeNullSpace(NonlinearImplicitSystem & /*sys*/,
+                                         std::vector<NumericVector<Number> *> & sp)
 {
   sp.clear();
-  for (unsigned int i = 0; i < subspaceDim("TransposeNullSpace"); ++i) {
+  for (unsigned int i = 0; i < subspaceDim("TransposeNullSpace"); ++i)
+  {
     std::stringstream postfix;
     postfix << "_" << i;
-    sp.push_back(&_nl->getVector("TransposeNullSpace"+postfix.str()));
+    sp.push_back(&_nl->getVector("TransposeNullSpace" + postfix.str()));
   }
 }
 
 void
 FEProblemBase::computePostCheck(NonlinearImplicitSystem & sys,
-                            const NumericVector<Number> & old_soln,
-                            NumericVector<Number> & search_direction,
-                            NumericVector<Number> & new_soln,
-                            bool & changed_search_direction,
-                            bool & changed_new_soln)
+                                const NumericVector<Number> & old_soln,
+                                NumericVector<Number> & search_direction,
+                                NumericVector<Number> & new_soln,
+                                bool & changed_search_direction,
+                                bool & changed_new_soln)
 {
   // This function replaces the old PetscSupport::dampedCheck() function.
   //
@@ -3783,8 +4292,7 @@ FEProblemBase::computePostCheck(NonlinearImplicitSystem & sys,
   Moose::perf_log.push("computePostCheck()", "Execution");
 
   // MOOSE's FEProblemBase doesn't update the solution during the
-  // postcheck, but FEProblemBase-derived classes (see e.g.
-  // FrictionalContactProblem) might.
+  // postcheck, but FEProblemBase-derived classes might.
   if (_has_dampers || shouldUpdateSolution())
   {
     // We need ghosted versions of new_soln and search_direction (the
@@ -3794,9 +4302,10 @@ FEProblemBase::computePostCheck(NonlinearImplicitSystem & sys,
 
     // Construct zeroed-out clones with the same ghosted dofs as the
     // System's current_local_solution.
-    std::unique_ptr<NumericVector<Number> >
-      ghosted_solution = sys.current_local_solution->zero_clone(),
-      ghosted_search_direction = sys.current_local_solution->zero_clone();
+    std::unique_ptr<NumericVector<Number>> ghosted_solution =
+                                               sys.current_local_solution->zero_clone(),
+                                           ghosted_search_direction =
+                                               sys.current_local_solution->zero_clone();
 
     // Copy values from input vectors into clones with ghosted values.
     *ghosted_solution = new_soln;
@@ -3827,7 +4336,12 @@ FEProblemBase::computePostCheck(NonlinearImplicitSystem & sys,
       if (updated_solution)
         changed_new_soln = true;
     }
+  }
 
+  if (_needs_old_newton_iter)
+  {
+    _nl->setPreviousNewtonSolution(old_soln);
+    _aux->setPreviousNewtonSolution();
   }
 
   // MOOSE doesn't change the search_direction
@@ -3837,7 +4351,8 @@ FEProblemBase::computePostCheck(NonlinearImplicitSystem & sys,
 }
 
 Real
-FEProblemBase::computeDamping(const NumericVector<Number>& soln, const NumericVector<Number>& update)
+FEProblemBase::computeDamping(const NumericVector<Number> & soln,
+                              const NumericVector<Number> & update)
 {
   Moose::perf_log.push("compute_dampers()", "Execution");
 
@@ -3847,14 +4362,14 @@ FEProblemBase::computeDamping(const NumericVector<Number>& soln, const NumericVe
   if (_has_dampers)
   {
     // Save pointer to the current solution
-    const NumericVector<Number>* _saved_current_solution = _nl->currentSolution();
+    const NumericVector<Number> * _saved_current_solution = _nl->currentSolution();
 
     _nl->setSolution(soln);
     // For now, do not re-compute auxiliary variables.  Doing so allows a wild solution increment
     //   to get to the material models, which may not be able to cope with drastically different
     //   values.  Once more complete dependency checking is in place, auxiliary variables (and
     //   material properties) will be computed as needed by dampers.
-//    _aux.compute();
+    //    _aux.compute();
     damping = _nl->computeDamping(soln, update);
 
     // restore saved solution
@@ -3873,18 +4388,19 @@ FEProblemBase::shouldUpdateSolution()
 }
 
 bool
-FEProblemBase::updateSolution(NumericVector<Number>& /*vec_solution*/, NumericVector<Number>& /*ghosted_solution*/)
+FEProblemBase::updateSolution(NumericVector<Number> & /*vec_solution*/,
+                              NumericVector<Number> & /*ghosted_solution*/)
 {
   return false;
 }
 
 void
-FEProblemBase::predictorCleanup(NumericVector<Number>& /*ghosted_solution*/)
+FEProblemBase::predictorCleanup(NumericVector<Number> & /*ghosted_solution*/)
 {
 }
 
 void
-FEProblemBase::addDisplacedProblem(MooseSharedPointer<DisplacedProblem> displaced_problem)
+FEProblemBase::addDisplacedProblem(std::shared_ptr<DisplacedProblem> displaced_problem)
 {
   _displaced_mesh = &displaced_problem->mesh();
   _displaced_problem = displaced_problem;
@@ -3906,9 +4422,28 @@ FEProblemBase::possiblyRebuildGeomSearchPatches()
   {
     switch (_mesh.getPatchUpdateStrategy())
     {
-      case 0: // Never
+      case Moose::Never:
         break;
-      case 2: // Auto
+      case Moose::Iteration:
+        // Update the list of ghosted elements at the start of the time step
+        _geometric_search_data.updateGhostedElems();
+        _mesh.updateActiveSemiLocalNodeRange(_ghosted_elems);
+
+        _displaced_problem->geomSearchData().updateGhostedElems();
+        _displaced_mesh->updateActiveSemiLocalNodeRange(_ghosted_elems);
+
+        // The commands below ensure that the sparsity of the Jacobian matrix is
+        // augmented at the start of the time step using neighbor nodes from the end
+        // of the previous time step.
+
+        reinitBecauseOfGhostingOrNewGeomObjects();
+
+        // This is needed to reinitialize PETSc output
+        initPetscOutput();
+
+        break;
+
+      case Moose::Auto:
       {
         Real max = _displaced_problem->geomSearchData().maxPatchPercentage();
         _communicator.max(max);
@@ -3917,12 +4452,13 @@ FEProblemBase::possiblyRebuildGeomSearchPatches()
         if (max < 0.4)
           break;
       }
+        libmesh_fallthrough();
 
       // Let this fall through if things do need to be updated...
-
-      case 1: // Always
-        // Flush output here to see the message before the reinitialization, which could take a while
-        _console << "\n\nUpdating geometric search patches\n"<<std::endl;
+      case Moose::Always:
+        // Flush output here to see the message before the reinitialization, which could take a
+        // while
+        _console << "\n\nUpdating geometric search patches\n" << std::endl;
 
         _geometric_search_data.clearNearestNodeLocators();
         _mesh.updateActiveSemiLocalNodeRange(_ghosted_elems);
@@ -3946,7 +4482,7 @@ FEProblemBase::initialAdaptMesh()
   _cycles_completed = 0;
   for (unsigned int i = 0; i < n; i++)
   {
-    _console << "Initial adaptivity step " << i+1 << " of " << n << std::endl;
+    _console << "Initial adaptivity step " << i + 1 << " of " << n << std::endl;
     computeIndicators();
     computeMarkers();
 
@@ -3967,44 +4503,64 @@ FEProblemBase::initialAdaptMesh()
   }
 }
 
-void
+bool
 FEProblemBase::adaptMesh()
 {
+  // reset cycle counter
+  _cycles_completed = 0;
+
   if (!_adaptivity.isAdaptivityDue())
-    return;
+    return false;
 
   unsigned int cycles_per_step = _adaptivity.getCyclesPerStep();
-  _cycles_completed = 0;
+
+  Moose::perf_log.push("Adaptivity: adaptMesh()", "Execution");
+
+  bool mesh_changed = false;
+
   for (unsigned int i = 0; i < cycles_per_step; ++i)
   {
-    _console << "Adaptivity step " << i+1 << " of " << cycles_per_step << '\n';
+    _console << "Adaptivity step " << i + 1 << " of " << cycles_per_step << '\n';
+
     // Markers were already computed once by Executioner
     if (_adaptivity.getRecomputeMarkersFlag() && i > 0)
       computeMarkers();
+
     if (_adaptivity.adaptMesh())
     {
-      meshChanged();
+      mesh_changed = true;
+
+      meshChangedHelper(true); // This may be an intermediate change
       _cycles_completed++;
     }
     else
     {
       _console << "Mesh unchanged, skipping remaining steps..." << std::endl;
-      return;
+      break;
     }
 
     // Show adaptivity progress
     _console << std::flush;
   }
+
+  // We're done with all intermediate changes; now get systems ready
+  // for real if necessary.
+  if (mesh_changed)
+    _eq.reinit_systems();
+
+  Moose::perf_log.pop("Adaptivity: adaptMesh()", "Execution");
+
+  return mesh_changed;
 }
-#endif //LIBMESH_ENABLE_AMR
+#endif // LIBMESH_ENABLE_AMR
 
 void
-FEProblemBase::initXFEM(MooseSharedPointer<XFEMInterface> xfem)
+FEProblemBase::initXFEM(std::shared_ptr<XFEMInterface> xfem)
 {
   _xfem = xfem;
-  _xfem->setMesh(&_mesh.getMesh());
+  _xfem->setMesh(&_mesh);
   if (_displaced_mesh)
-    _xfem->setSecondMesh(&_displaced_mesh->getMesh());
+    _xfem->setDisplacedMesh(_displaced_mesh);
   _xfem->setMaterialData(&_material_data);
   _xfem->setBoundaryMaterialData(&_bnd_material_data);
 
@@ -4023,7 +4579,7 @@ FEProblemBase::updateMeshXFEM()
   bool updated = false;
   if (haveXFEM())
   {
-    updated = _xfem->update(_time);
+    updated = _xfem->update(_time, *_nl, *_aux);
     if (updated)
     {
       meshChanged();
@@ -4037,25 +4593,41 @@ FEProblemBase::updateMeshXFEM()
 void
 FEProblemBase::meshChanged()
 {
+  this->meshChangedHelper();
+}
+
+void
+FEProblemBase::meshChangedHelper(bool intermediate_change)
+{
   if (_material_props.hasStatefulProperties() || _bnd_material_props.hasStatefulProperties())
-    _mesh.cacheChangedLists(); // Currently only used with adaptivity and stateful material properties
+    _mesh.cacheChangedLists(); // Currently only used with adaptivity and stateful material
+                               // properties
 
   // Clear these out because they corresponded to the old mesh
   _ghosted_elems.clear();
 
   ghostGhostedBoundaries();
 
-  // mesh changed
-  _eq.reinit();
+  // The mesh changed.  We notify the MooseMesh first, because
+  // callbacks (e.g. for sparsity calculations) triggered by the
+  // EquationSystems reinit may require up-to-date MooseMesh caches.
+  _mesh.meshChanged();
+
+  // If we're just going to alter the mesh again, all we need to
+  // handle here is AMR and projections, not full system reinit
+  if (intermediate_change)
+    _eq.reinit_solutions();
+  else
+    _eq.reinit();
+
+  // Updating MooseMesh first breaks other adaptivity code, unless we
+  // then *again* update the MooseMesh caches.  E.g. the definition of
+  // "active" and "local" may have been *changed* by refinement and
+  // repartitioning done in EquationSystems::reinit().
   _mesh.meshChanged();
 
   // Since the Mesh changed, update the PointLocator object used by DiracKernels.
   _dirac_kernel_info.updatePointLocator(_mesh);
-
-  unsigned int n_threads = libMesh::n_threads();
-
-  for (unsigned int i = 0; i < n_threads; ++i)
-    _assembly[i]->invalidateCache();
 
   // Need to redo ghosting
   _geometric_search_data.reinit();
@@ -4070,16 +4642,32 @@ FEProblemBase::meshChanged()
 
   reinitBecauseOfGhostingOrNewGeomObjects();
 
-  // We need to create new storage for the new elements and copy stateful properties from the old elements.
-  if (_has_initialized_stateful && (_material_props.hasStatefulProperties() || _bnd_material_props.hasStatefulProperties()))
+  // We need to create new storage for the new elements and copy stateful properties from the old
+  // elements.
+  if (_has_initialized_stateful &&
+      (_material_props.hasStatefulProperties() || _bnd_material_props.hasStatefulProperties()))
   {
     {
-      ProjectMaterialProperties pmp(true, *this, *_nl, _material_data, _bnd_material_data, _material_props, _bnd_material_props, _assembly);
+      ProjectMaterialProperties pmp(true,
+                                    *this,
+                                    *_nl,
+                                    _material_data,
+                                    _bnd_material_data,
+                                    _material_props,
+                                    _bnd_material_props,
+                                    _assembly);
       Threads::parallel_reduce(*_mesh.refinedElementRange(), pmp);
     }
 
     {
-      ProjectMaterialProperties pmp(false, *this, *_nl, _material_data, _bnd_material_data, _material_props, _bnd_material_props, _assembly);
+      ProjectMaterialProperties pmp(false,
+                                    *this,
+                                    *_nl,
+                                    _material_data,
+                                    _bnd_material_data,
+                                    _material_props,
+                                    _bnd_material_props,
+                                    _assembly);
       Threads::parallel_reduce(*_mesh.coarsenedElementRange(), pmp);
     }
   }
@@ -4087,7 +4675,7 @@ FEProblemBase::meshChanged()
   if (_calculate_jacobian_in_uo)
     setVariableAllDoFMap(_uo_jacobian_moose_vars[0]);
 
-  _has_jacobian = false;                    // we have to recompute jacobian when mesh changed
+  _has_jacobian = false; // we have to recompute jacobian when mesh changed
 
   for (const auto & mci : _notify_when_mesh_changes)
     mci->meshChanged();
@@ -4112,18 +4700,25 @@ FEProblemBase::checkProblemIntegrity()
   // Check materials
   {
 #ifdef LIBMESH_ENABLE_AMR
-    if (_adaptivity.isOn() && (_material_props.hasStatefulProperties() || _bnd_material_props.hasStatefulProperties()))
+    if (_adaptivity.isOn() &&
+        (_material_props.hasStatefulProperties() || _bnd_material_props.hasStatefulProperties()))
     {
       _console << "Using EXPERIMENTAL Stateful Material Property projection with Adaptivity!\n";
 
       if (n_processors() > 1)
       {
         if (_mesh.uniformRefineLevel() > 0 && _mesh.getMesh().skip_partitioning() == false)
-          mooseError("This simulation is using uniform refinement on the mesh, with stateful properties and adaptivity. "
+          mooseError("This simulation is using uniform refinement on the mesh, with stateful "
+                     "properties and adaptivity. "
                      "You must skip partitioning to run this case:\nMesh/skip_partitioning=true");
 
-        _console << "\nWarning! Mesh re-partitioning is disabled while using stateful material properties!  This can lead to large load imbalances and degraded performance!!\n\n";
+        _console << "\nWarning! Mesh re-partitioning is disabled while using stateful material "
+                    "properties!  This can lead to large load imbalances and degraded "
+                    "performance!!\n\n";
         _mesh.getMesh().skip_partitioning(true);
+
+        _mesh.errorIfDistributedMesh("StatefulMaterials + Adaptivity");
+
         if (_displaced_problem)
           _displaced_problem->mesh().getMesh().skip_partitioning(true);
       }
@@ -4156,18 +4751,23 @@ FEProblemBase::checkProblemIntegrity()
       {
         std::stringstream extra_subdomain_ids;
         /// unsigned int is necessary to print SubdomainIDs in the statement below
-        std::copy (local_mesh_subs.begin(), local_mesh_subs.end(), std::ostream_iterator<unsigned int>(extra_subdomain_ids, " "));
+        std::copy(local_mesh_subs.begin(),
+                  local_mesh_subs.end(),
+                  std::ostream_iterator<unsigned int>(extra_subdomain_ids, " "));
 
-        mooseError("The following blocks from your input mesh do not contain an active material: " + extra_subdomain_ids.str() + "\nWhen ANY mesh block contains a Material object, all blocks must contain a Material object.\n");
+        mooseError("The following blocks from your input mesh do not contain an active material: " +
+                   extra_subdomain_ids.str() +
+                   "\nWhen ANY mesh block contains a Material object, "
+                   "all blocks must contain a Material object.\n");
       }
     }
 
     // Check material properties on blocks and boundaries
     checkBlockMatProps();
-    //checkBoundaryMatProps();
+    checkBoundaryMatProps();
 
     // Check that material properties exist when requested by other properties on a given block
-    const std::vector<MooseSharedPointer<Material> > & materials = _all_materials.getActiveObjects();
+    const auto & materials = _all_materials.getActiveObjects();
     for (const auto & material : materials)
       material->checkStatefulSanity();
 
@@ -4191,9 +4791,8 @@ FEProblemBase::checkDisplacementOrders()
 {
   if (_displaced_problem)
   {
-    MeshBase::const_element_iterator
-      it = _displaced_mesh->activeLocalElementsBegin(),
-      end = _displaced_mesh->activeLocalElementsEnd();
+    MeshBase::const_element_iterator it = _displaced_mesh->activeLocalElementsBegin(),
+                                     end = _displaced_mesh->activeLocalElementsEnd();
 
     bool mesh_has_second_order_elements = false;
     for (; it != end; ++it)
@@ -4213,13 +4812,14 @@ FEProblemBase::checkDisplacementOrders()
     if (mesh_has_second_order_elements)
     {
       const std::vector<std::string> & displacement_variables =
-        _displaced_problem->getDisplacementVarNames();
+          _displaced_problem->getDisplacementVarNames();
 
       for (const auto & var_name : displacement_variables)
       {
-        MooseVariable & mv = _displaced_problem->getVariable(/*tid=*/0, var_name);
+        MooseVariableFE & mv = _displaced_problem->getVariable(/*tid=*/0, var_name);
         if (mv.order() != SECOND)
-          mooseError("Error: mesh has SECOND order elements, so all displacement variables must be SECOND order.");
+          mooseError("Error: mesh has SECOND order elements, so all displacement variables must be "
+                     "SECOND order.");
       }
     }
   }
@@ -4236,14 +4836,17 @@ FEProblemBase::checkUserObjects()
   // and the blocks that they are defined on
   std::set<std::string> names;
 
-  const std::vector<MooseSharedPointer<UserObject> > & objects = _all_user_objects.getActiveObjects();
+  const auto & objects = _all_user_objects.getActiveObjects();
   for (const auto & obj : objects)
     names.insert(obj->name());
 
   // See if all referenced blocks are covered
   mesh_subdomains.insert(Moose::ANY_BLOCK_ID);
   std::set<SubdomainID> difference;
-  std::set_difference(user_objects_blocks.begin(), user_objects_blocks.end(), mesh_subdomains.begin(), mesh_subdomains.end(),
+  std::set_difference(user_objects_blocks.begin(),
+                      user_objects_blocks.end(),
+                      mesh_subdomains.begin(),
+                      mesh_subdomains.end(),
                       std::inserter(difference, difference.end()));
 
   if (!difference.empty())
@@ -4263,10 +4866,12 @@ FEProblemBase::checkUserObjects()
   }
 }
 
-
 void
-FEProblemBase::checkDependMaterialsHelper(const std::map<SubdomainID, std::vector<MooseSharedPointer<Material> > > & materials_map)
+FEProblemBase::checkDependMaterialsHelper(
+    const std::map<SubdomainID, std::vector<std::shared_ptr<Material>>> & materials_map)
 {
+  auto & prop_names = _material_props.statefulPropNames();
+
   for (const auto & it : materials_map)
   {
     /// These two sets are used to make sure that all dependent props on a block are actually supplied
@@ -4277,25 +4882,33 @@ FEProblemBase::checkDependMaterialsHelper(const std::map<SubdomainID, std::vecto
       const std::set<std::string> & depend_props = mat1->getRequestedItems();
       block_depend_props.insert(depend_props.begin(), depend_props.end());
 
+      auto & alldeps = mat1->getMatPropDependencies(); // includes requested stateful props
+      for (auto & dep : alldeps)
+      {
+        if (prop_names.count(dep) > 0)
+          block_depend_props.insert(prop_names.at(dep));
+      }
+
       // See if any of the active materials supply this property
       for (const auto & mat2 : it.second)
       {
-        // Don't check THIS material for a coupled property
-        if (mat1 == mat2)
-          continue;
-
         const std::set<std::string> & supplied_props = mat2->Material::getSuppliedItems();
         block_supplied_props.insert(supplied_props.begin(), supplied_props.end());
       }
     }
 
     // Add zero material properties specific to this block and unrestricted
-    block_supplied_props.insert(_zero_block_material_props[it.first].begin(), _zero_block_material_props[it.first].end());
-    block_supplied_props.insert(_zero_block_material_props[Moose::ANY_BLOCK_ID].begin(), _zero_block_material_props[Moose::ANY_BLOCK_ID].end());
+    block_supplied_props.insert(_zero_block_material_props[it.first].begin(),
+                                _zero_block_material_props[it.first].end());
+    block_supplied_props.insert(_zero_block_material_props[Moose::ANY_BLOCK_ID].begin(),
+                                _zero_block_material_props[Moose::ANY_BLOCK_ID].end());
 
     // Error check to make sure all properties consumed by materials are supplied on this block
     std::set<std::string> difference;
-    std::set_difference(block_depend_props.begin(), block_depend_props.end(), block_supplied_props.begin(), block_supplied_props.end(),
+    std::set_difference(block_depend_props.begin(),
+                        block_depend_props.end(),
+                        block_supplied_props.begin(),
+                        block_supplied_props.end(),
                         std::inserter(difference, difference.end()));
 
     if (!difference.empty())
@@ -4311,7 +4924,7 @@ FEProblemBase::checkDependMaterialsHelper(const std::map<SubdomainID, std::vecto
   // This loop checks that materials are not supplied by multiple Material objects
   for (const auto & it : materials_map)
   {
-    const std::vector<MooseSharedPointer<Material> > & materials = it.second;
+    const auto & materials = it.second;
     std::set<std::string> inner_supplied, outer_supplied;
 
     for (const auto & outer_mat : materials)
@@ -4321,7 +4934,7 @@ FEProblemBase::checkDependMaterialsHelper(const std::map<SubdomainID, std::vecto
       inner_supplied.clear();
 
       // Property to material map for error reporting
-      std::map<std::string, std::set<std::string> > prop_to_mat;
+      std::map<std::string, std::set<std::string>> prop_to_mat;
       for (const auto & name : outer_supplied)
         prop_to_mat[name].insert(outer_mat->name());
 
@@ -4338,15 +4951,19 @@ FEProblemBase::checkDependMaterialsHelper(const std::map<SubdomainID, std::vecto
 
       // Test that a property isn't supplied on multiple blocks
       std::set<std::string> intersection;
-      std::set_intersection(outer_supplied.begin(), outer_supplied.end(),
-                            inner_supplied.begin(), inner_supplied.end(),
+      std::set_intersection(outer_supplied.begin(),
+                            outer_supplied.end(),
+                            inner_supplied.begin(),
+                            inner_supplied.end(),
                             std::inserter(intersection, intersection.end()));
 
       if (!intersection.empty())
       {
         std::ostringstream oss;
-        oss << "The following material properties are declared on block " << it.first << " by multiple materials:\n";
-        oss << ConsoleUtils::indent(2) << std::setw(30) << std::left << "Material Property" << "Material Objects\n";
+        oss << "The following material properties are declared on block " << it.first
+            << " by multiple materials:\n";
+        oss << ConsoleUtils::indent(2) << std::setw(30) << std::left << "Material Property"
+            << "Material Objects\n";
         for (const auto & outer_name : intersection)
         {
           oss << ConsoleUtils::indent(2) << std::setw(30) << std::left << outer_name;
@@ -4355,28 +4972,25 @@ FEProblemBase::checkDependMaterialsHelper(const std::map<SubdomainID, std::vecto
           oss << '\n';
         }
 
-        oss << "\nThis will result in ambiguous material property calculations and lead to incorrect results.\n";
-        mooseWarning(oss.str());
+        mooseError(oss.str());
         break;
       }
     }
   }
 }
 
-
 void
 FEProblemBase::checkCoordinateSystems()
 {
-  MeshBase::const_element_iterator it = _mesh.getMesh().elements_begin();
-  MeshBase::const_element_iterator it_end = _mesh.getMesh().elements_end();
-
-  for ( ; it != it_end; ++it)
+  for (const auto & elem : _mesh.getMesh().element_ptr_range())
   {
-    SubdomainID sid = (*it)->subdomain_id();
-    if (_coord_sys[sid] == Moose::COORD_RZ && (*it)->dim() == 3)
-      mooseError("An RZ coordinate system was requested for subdomain " + Moose::stringify(sid) + " which contains 3D elements.");
-    if (_coord_sys[sid] == Moose::COORD_RSPHERICAL && (*it)->dim() > 1)
-      mooseError("An RSPHERICAL coordinate system was requested for subdomain " + Moose::stringify(sid) + " which contains 2D or 3D elements.");
+    SubdomainID sid = elem->subdomain_id();
+    if (_coord_sys[sid] == Moose::COORD_RZ && elem->dim() == 3)
+      mooseError("An RZ coordinate system was requested for subdomain " + Moose::stringify(sid) +
+                 " which contains 3D elements.");
+    if (_coord_sys[sid] == Moose::COORD_RSPHERICAL && elem->dim() > 1)
+      mooseError("An RSPHERICAL coordinate system was requested for subdomain " +
+                 Moose::stringify(sid) + " which contains 2D or 3D elements.");
   }
 }
 
@@ -4392,6 +5006,8 @@ FEProblemBase::setRestartFile(const std::string & file_name)
 {
   _app.setRestart(true);
   _resurrector->setRestartFile(file_name);
+  if (_app.getRecoverFileSuffix() == "cpa")
+    _resurrector->setRestartSuffix("xda");
 }
 
 std::vector<VariableName>
@@ -4409,18 +5025,19 @@ FEProblemBase::getVariableNames()
 }
 
 MooseNonlinearConvergenceReason
-FEProblemBase::checkNonlinearConvergence(std::string &msg,
-                                     const PetscInt it,
-                                     const Real xnorm,
-                                     const Real snorm,
-                                     const Real fnorm,
-                                     const Real rtol,
-                                     const Real stol,
-                                     const Real abstol,
-                                     const PetscInt nfuncs,
-                                     const PetscInt max_funcs,
-                                     const Real initial_residual_before_preset_bcs,
-                                     const Real div_threshold)
+FEProblemBase::checkNonlinearConvergence(std::string & msg,
+                                         const PetscInt it,
+                                         const Real xnorm,
+                                         const Real snorm,
+                                         const Real fnorm,
+                                         const Real rtol,
+                                         const Real stol,
+                                         const Real abstol,
+                                         const PetscInt nfuncs,
+                                         const PetscInt max_funcs,
+                                         const PetscBool force_iteration,
+                                         const Real initial_residual_before_preset_bcs,
+                                         const Real div_threshold)
 {
   NonlinearSystemBase & system = getNonlinearSystemBase();
   MooseNonlinearConvergenceReason reason = MOOSE_NONLINEAR_ITERATING;
@@ -4429,7 +5046,7 @@ FEProblemBase::checkNonlinearConvergence(std::string &msg,
   // but after PresetBCs (if any) have been imposed on the solution
   // vector.  We save it, and use it to detect convergence if
   // compute_initial_residual_before_preset_bcs=false.
-  if (it==0)
+  if (it == 0)
     system._initial_residual_after_preset_bcs = fnorm;
 
   std::ostringstream oss;
@@ -4438,19 +5055,18 @@ FEProblemBase::checkNonlinearConvergence(std::string &msg,
     oss << "Failed to converge, function norm is NaN\n";
     reason = MOOSE_DIVERGED_FNORM_NAN;
   }
-  else if (fnorm < abstol)
+  else if (fnorm < abstol && (it || !force_iteration))
   {
     oss << "Converged due to function norm " << fnorm << " < " << abstol << '\n';
     reason = MOOSE_CONVERGED_FNORM_ABS;
   }
   else if (nfuncs >= max_funcs)
   {
-    oss << "Exceeded maximum number of function evaluations: " << nfuncs << " > " << max_funcs << '\n';
+    oss << "Exceeded maximum number of function evaluations: " << nfuncs << " > " << max_funcs
+        << '\n';
     reason = MOOSE_DIVERGED_FUNCTION_COUNT;
   }
-  else if (it &&
-          fnorm > system._last_nl_rnorm &&
-          fnorm >= div_threshold)
+  else if (it && fnorm > system._last_nl_rnorm && fnorm >= div_threshold)
   {
     oss << "Nonlinear solve was blowing up!\n";
     reason = MOOSE_DIVERGED_LINE_SEARCH;
@@ -4460,15 +5076,19 @@ FEProblemBase::checkNonlinearConvergence(std::string &msg,
   {
     // If compute_initial_residual_before_preset_bcs==false, then use the
     // first residual computed by Petsc to determine convergence.
-    Real the_residual = system._compute_initial_residual_before_preset_bcs ? initial_residual_before_preset_bcs : system._initial_residual_after_preset_bcs;
-    if (fnorm <= the_residual*rtol)
+    Real the_residual = system._compute_initial_residual_before_preset_bcs
+                            ? initial_residual_before_preset_bcs
+                            : system._initial_residual_after_preset_bcs;
+    if (fnorm <= the_residual * rtol)
     {
-      oss << "Converged due to function norm " << fnorm << " < " << " (relative tolerance)\n";
+      oss << "Converged due to function norm " << fnorm << " < "
+          << " (relative tolerance)\n";
       reason = MOOSE_CONVERGED_FNORM_RELATIVE;
     }
-    else if (snorm < stol*xnorm)
+    else if (snorm < stol * xnorm)
     {
-      oss << "Converged due to small update length: " << snorm << " < " << stol << " * " << xnorm << '\n';
+      oss << "Converged due to small update length: " << snorm << " < " << stol << " * " << xnorm
+          << '\n';
       reason = MOOSE_CONVERGED_SNORM_RELATIVE;
     }
   }
@@ -4480,19 +5100,17 @@ FEProblemBase::checkNonlinearConvergence(std::string &msg,
   if (_app.multiAppLevel() > 0)
     MooseUtils::indentMessage(_app.name(), msg);
 
-  return(reason);
+  return (reason);
 }
-
-
 
 MooseLinearConvergenceReason
 FEProblemBase::checkLinearConvergence(std::string & /*msg*/,
-                                  const PetscInt n,
-                                  const Real rnorm,
-                                  const Real /*rtol*/,
-                                  const Real /*atol*/,
-                                  const Real /*dtol*/,
-                                  const PetscInt maxits)
+                                      const PetscInt n,
+                                      const Real rnorm,
+                                      const Real /*rtol*/,
+                                      const Real /*atol*/,
+                                      const Real /*dtol*/,
+                                      const PetscInt maxits)
 {
   if (_fail_next_linear_convergence_check)
   {
@@ -4535,7 +5153,6 @@ FEProblemBase::checkLinearConvergence(std::string & /*msg*/,
   return reason;
 }
 
-
 SolverParams &
 FEProblemBase::solverParams()
 {
@@ -4545,16 +5162,11 @@ FEProblemBase::solverParams()
 void
 FEProblemBase::registerRandomInterface(RandomInterface & random_interface, const std::string & name)
 {
-  RandomData *random_data;
-  if (_random_data_objects.find(name) == _random_data_objects.end())
-  {
-    random_data = new RandomData(*this, random_interface);
-    random_interface.setRandomDataPointer(random_data);
+  auto insert_pair = moose_try_emplace(
+      _random_data_objects, name, libmesh_make_unique<RandomData>(*this, random_interface));
 
-    _random_data_objects[name] = random_data;
-  }
-  else
-    random_interface.setRandomDataPointer(_random_data_objects[name]);
+  auto random_data_ptr = insert_pair.first->second.get();
+  random_interface.setRandomDataPointer(random_data_ptr);
 }
 
 bool
@@ -4588,4 +5200,16 @@ FEProblemBase::needMaterialOnSide(SubdomainID subdomain_id, THREAD_ID tid)
   }
 
   return _block_mat_side_cache[tid][subdomain_id];
+}
+
+bool
+FEProblemBase::needsPreviousNewtonIteration() const
+{
+  return _needs_old_newton_iter;
+}
+
+void
+FEProblemBase::needsPreviousNewtonIteration(bool state /* = true*/)
+{
+  _needs_old_newton_iter = state;
 }

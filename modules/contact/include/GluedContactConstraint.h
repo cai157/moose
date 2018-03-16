@@ -1,34 +1,35 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef GLUEDCONTACTCONSTRAINT_H
 #define GLUEDCONTACTCONSTRAINT_H
 
-//MOOSE includes
+// MOOSE includes
 #include "SparsityBasedContactConstraint.h"
 
 #include "ContactMaster.h"
 
-//Forward Declarations
+// Forward Declarations
 class GluedContactConstraint;
 
-template<>
+template <>
 InputParameters validParams<GluedContactConstraint>();
 
 /**
- * A GluedContactConstraint forces the value of a variable to be the same on both sides of an interface.
+ * A GluedContactConstraint forces the value of a variable to be the same on both sides of an
+ * interface.
  */
-class GluedContactConstraint :
-  public SparsityBasedContactConstraint
+class GluedContactConstraint : public SparsityBasedContactConstraint
 {
 public:
   GluedContactConstraint(const InputParameters & parameters);
-  virtual ~GluedContactConstraint(){}
+  virtual ~GluedContactConstraint() {}
 
   virtual void timestepSetup();
   virtual void jacobianSetup();
@@ -46,10 +47,10 @@ public:
    * @param type The type of coupling
    * @param jvar The index of the coupled variable
    */
-  virtual Real computeQpOffDiagJacobian(Moose::ConstraintJacobianType type,
-                                        unsigned int jvar);
+  virtual Real computeQpOffDiagJacobian(Moose::ConstraintJacobianType type, unsigned int jvar);
 
   bool shouldApply();
+
 protected:
   const unsigned int _component;
   const ContactModel _model;
@@ -66,7 +67,7 @@ protected:
   unsigned int _y_var;
   unsigned int _z_var;
 
-  VectorValue<unsigned> _vars;
+  std::vector<unsigned int> _vars;
 
   MooseVariable * _nodal_area_var;
   SystemBase & _aux_system;

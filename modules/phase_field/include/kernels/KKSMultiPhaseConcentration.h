@@ -1,19 +1,22 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef KKSMULTIPHASECONCENTRATION_H
 #define KKSMULTIPHASECONCENTRATION_H
 
 #include "Kernel.h"
 #include "DerivativeMaterialInterface.h"
 
-//Forward Declarations
+// Forward Declarations
 class KKSMultiPhaseConcentration;
 
-template<>
+template <>
 InputParameters validParams<KKSMultiPhaseConcentration>();
 
 /**
@@ -58,7 +61,7 @@ private:
   std::vector<unsigned int> _eta_vars;
 
   /// Derivative of the switching function \f$ \frac d{d\eta} h(\eta) \f$
-  std::vector<std::vector<const MaterialProperty<Real> *> > _prop_dhjdetai;
+  std::vector<std::vector<const MaterialProperty<Real> *>> _prop_dhjdetai;
 };
 
-#endif //KKSMULTIPHASECONCENTRATION_H
+#endif // KKSMULTIPHASECONCENTRATION_H

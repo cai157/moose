@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef FLUIDPROPERTIESMATERIAL_H
 #define FLUIDPROPERTIESMATERIAL_H
@@ -13,11 +15,11 @@
 class FluidPropertiesMaterial;
 class SinglePhaseFluidProperties;
 
-template<>
+template <>
 InputParameters validParams<FluidPropertiesMaterial>();
 
 /**
- * Computes values of pressure and its derivatives using (u, v) formulation
+ * Computes fluid properties using (u, v) formulation
  */
 class FluidPropertiesMaterial : public Material
 {
@@ -26,7 +28,7 @@ public:
   virtual ~FluidPropertiesMaterial();
 
 protected:
-  virtual void computeQpProperties();
+  virtual void computeQpProperties() override;
 
   /// Specific internal energy
   const VariableValue & _e;
@@ -36,12 +38,18 @@ protected:
   MaterialProperty<Real> & _p;
   /// Temperature
   MaterialProperty<Real> & _T;
-  /// Sound speed
+  /// Speed of sound
   MaterialProperty<Real> & _c;
+  /// Isobaric specific heat capacity
   MaterialProperty<Real> & _cp;
+  /// Isochoric specific heat capacity
   MaterialProperty<Real> & _cv;
+  /// Dynamic viscosity
   MaterialProperty<Real> & _mu;
+  /// Thermal conductivity
   MaterialProperty<Real> & _k;
+  /// Gibbs free energy
+  MaterialProperty<Real> & _g;
 
   /// Fluid properties
   const SinglePhaseFluidProperties & _fp;

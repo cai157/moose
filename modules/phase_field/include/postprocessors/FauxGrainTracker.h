@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef FAUXGRAINTRACKER_H
 #define FAUXGRAINTRACKER_H
@@ -13,9 +15,8 @@
 
 class FauxGrainTracker;
 
-template<>
+template <>
 InputParameters validParams<FauxGrainTracker>();
-
 
 /**
  * This class is a fake grain tracker object, it will not actually track grains nor remap them
@@ -35,8 +36,11 @@ public:
   virtual void execute() override;
 
   // GrainTrackerInterface methods
-  virtual Real getEntityValue(dof_id_type entity_id, FeatureFloodCount::FieldType field_type, std::size_t var_idx) const override;
-  virtual const std::vector<unsigned int> & getVarToFeatureVector(dof_id_type elem_id) const override;
+  virtual Real getEntityValue(dof_id_type entity_id,
+                              FeatureFloodCount::FieldType field_type,
+                              std::size_t var_idx) const override;
+  virtual const std::vector<unsigned int> &
+  getVarToFeatureVector(dof_id_type elem_id) const override;
   virtual unsigned int getFeatureVar(unsigned int feature_id) const override;
   virtual std::size_t getNumberActiveGrains() const override;
   virtual std::size_t getTotalFeatureCount() const override;
@@ -47,7 +51,7 @@ private:
   /// The mapping of entities to grains, in this case always the order parameter
   std::map<dof_id_type, unsigned int> _entity_id_to_var_num;
 
-  std::map<dof_id_type, std::vector<unsigned int> > _entity_var_to_features;
+  std::map<dof_id_type, std::vector<unsigned int>> _entity_var_to_features;
   std::vector<unsigned int> _empty_var_to_features;
 
   /// Used as the lightweight grain counter
@@ -63,7 +67,7 @@ private:
   const int _tracking_step;
 
   /// Order parameter to grain indices (just a reflexive vector)
-  std::vector<unsigned int > _op_to_grains;
+  std::vector<unsigned int> _op_to_grains;
 
   /// The volume of the feature
   std::map<unsigned int, Real> _volume;

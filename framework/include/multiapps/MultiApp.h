@@ -1,16 +1,12 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef MULTIAPP_H
 #define MULTIAPP_H
 
@@ -29,18 +25,24 @@ class Backup;
 // libMesh forward declarations
 namespace libMesh
 {
-namespace MeshTools { class BoundingBox; }
-template <typename T> class NumericVector;
+class BoundingBox;
+namespace MeshTools
+{
+class BoundingBox;
+}
+template <typename T>
+class NumericVector;
 }
 
-template<>
+template <>
 InputParameters validParams<MultiApp>();
 
 /**
  * Helper class for holding Sub-app backups
  */
-class SubAppBackups : public std::vector<MooseSharedPointer<Backup> >
-{};
+class SubAppBackups : public std::vector<std::shared_ptr<Backup>>
+{
+};
 
 /**
  * A MultiApp represents one or more MOOSE applications that are running simultaneously.
@@ -50,16 +52,28 @@ class SubAppBackups : public std::vector<MooseSharedPointer<Backup> >
  * path using "MOOSE_LIBRARY_PATH" or by specifying a single input file library path
  * in Multiapps InputParameters object.
  */
-class MultiApp :
-  public MooseObject,
-  public SetupInterface,
-  public Restartable
+class MultiApp : public MooseObject, public SetupInterface, public Restartable
 {
 public:
   MultiApp(const InputParameters & parameters);
-  virtual ~MultiApp();
+
+  virtual void preExecute() {}
+
+  virtual void postExecute();
+
+  /**
+   * Called just after construction to allow derived classes to set _positions;
+   */
+  void setupPositions();
 
   virtual void initialSetup() override;
+
+  /**
+   * Method that reports whether the application has been fully solved or not.
+   * Most transient multiapps are never fully solved, however this method can be
+   * overridden in derived classes.
+   */
+  virtual bool isSolved() const { return false; }
 
   /**
    * Gets called just before transfers are done _to_ the MultiApp
@@ -77,17 +91,35 @@ public:
    * Note that auto_advance=false might not be compatible with
    * the options for the MultiApp
    *
-   * @return Whether or not all of the solves were successful (i.e. all solves made it to the target_time)
+   * @return Whether or not all of the solves were successful (i.e. all solves made it to the
+   * target_time)
    */
-  virtual bool solveStep(Real dt, Real target_time, bool auto_advance=true) = 0;
+  virtual bool solveStep(Real dt, Real target_time, bool auto_advance = true) = 0;
 
   /**
-   * Actually advances time and causes output.
-   *
-   * If auto_advance=true was used in solveStep() then this function
-   * will do nothing.
+   * Advances the multi-apps time step which is important for dt selection.
+   * (Note this does not advance the *time*. That is done in Transient::endStep,
+   * which is called either directly from solveStep() for loose coupling cases
+   * or through finishStep() for Picard coupling cases)
    */
-  virtual void advanceStep() = 0;
+  virtual void incrementTStep() {}
+
+  /**
+   * Deprecated method. Use finishStep
+   */
+  virtual void advanceStep()
+  {
+    mooseDeprecated("advanceStep() is deprecated; please use finishStep() instead");
+    finishStep();
+  }
+
+  /**
+   * Calls multi-apps executioners' endStep and postStep methods which creates output and advances
+   * time (not the time step; see incrementTStep()) among other things. This method is only called
+   * for Picard calculations because for loosely coupled calculations the executioners' endStep and
+   * postStep methods are called from solveStep().
+   */
+  virtual void finishStep() {}
 
   /**
    * Save off the state of every Sub App
@@ -124,17 +156,12 @@ public:
    * the geometry around the axis to create the 3D geometry).
    * @param app The global app number you want to get the bounding box for
    */
-  virtual MeshTools::BoundingBox getBoundingBox(unsigned int app);
+  virtual BoundingBox getBoundingBox(unsigned int app);
 
   /**
    * Get the FEProblemBase this MultiApp is part of.
    */
   FEProblemBase & problemBase() { return _fe_problem; }
-
-  /**
-   * Get the FEProblem this MultiApp is part of.
-   */
-  FEProblem & problem();
 
   /**
    * Get the FEProblemBase for the global app is part of.
@@ -180,7 +207,7 @@ public:
   /**
    * @return Number of Apps on local processor.
    */
-  unsigned int numLocalApps() { return _my_num_apps; }
+  unsigned int numLocalApps() { return _apps.size(); }
 
   /**
    * @return The global number of the first app on the local processor.
@@ -221,7 +248,8 @@ public:
    * by a "new" piece of material.
    *
    * @param global_app The global app number to reset.
-   * @param time The time to set as the the time for the new app, this should really be the time the old app was at.
+   * @param time The time to set as the the time for the new app, this should really be the time the
+   * old app was at.
    */
   virtual void resetApp(unsigned int global_app, Real time = 0.0);
 
@@ -284,6 +312,13 @@ protected:
   /// call back executed right before app->runInputFile()
   virtual void preRunInputFile();
 
+  /**
+   * Initialize the MultiApp by creating the provided number of apps.
+   *
+   * This is called in the constructor, by default it utilizes the 'positions' input parameters.
+   */
+  void init(unsigned int num);
+
   /// The FEProblemBase this MultiApp is part of
   FEProblemBase & _fe_problem;
 
@@ -292,6 +327,9 @@ protected:
 
   /// The positions of all of the apps
   std::vector<Point> _positions;
+
+  /// Toggle use of "positions"
+  const bool _use_positions;
 
   /// The input file for each app's simulation
   std::vector<FileName> _input_files;
@@ -327,7 +365,7 @@ protected:
   int _my_rank;
 
   /// Pointers to each of the Apps
-  std::vector<MooseApp *> _apps;
+  std::vector<std::shared_ptr<MooseApp>> _apps;
 
   /// Relative bounding box inflation
   Real _inflation;
@@ -366,7 +404,7 @@ protected:
   SubAppBackups & _backups;
 };
 
-template<>
+template <>
 inline void
 dataStore(std::ostream & stream, SubAppBackups & backups, void * context)
 {
@@ -377,11 +415,11 @@ dataStore(std::ostream & stream, SubAppBackups & backups, void * context)
   if (!multi_app)
     mooseError("Error storing std::vector<Backup*>");
 
-  for (unsigned int i=0; i<backups.size(); i++)
+  for (unsigned int i = 0; i < backups.size(); i++)
     dataStore(stream, backups[i], context);
 }
 
-template<>
+template <>
 inline void
 dataLoad(std::istream & stream, SubAppBackups & backups, void * context)
 {
@@ -390,7 +428,7 @@ dataLoad(std::istream & stream, SubAppBackups & backups, void * context)
   if (!multi_app)
     mooseError("Error loading std::vector<Backup*>");
 
-  for (unsigned int i=0; i<backups.size(); i++)
+  for (unsigned int i = 0; i < backups.size(); i++)
     dataLoad(stream, backups[i], context);
 
   multi_app->restore();

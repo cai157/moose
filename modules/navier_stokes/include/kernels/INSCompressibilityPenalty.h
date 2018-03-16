@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef INSCOMPRESSIBILITYPENALTY_H
 #define INSCOMPRESSIBILITYPENALTY_H
@@ -13,7 +15,7 @@
 // Forward Declarations
 class INSCompressibilityPenalty;
 
-template<>
+template <>
 InputParameters validParams<INSCompressibilityPenalty>();
 
 /**
@@ -24,7 +26,7 @@ class INSCompressibilityPenalty : public Kernel
 public:
   INSCompressibilityPenalty(const InputParameters & parameters);
 
-  virtual ~INSCompressibilityPenalty(){}
+  virtual ~INSCompressibilityPenalty() {}
 
 protected:
   virtual Real computeQpResidual();
@@ -32,7 +34,8 @@ protected:
   virtual Real computeQpOffDiagJacobian(unsigned jvar);
 
   // penalty value.
-  // smaller leads to more accurate solution, but the resulting system is also more difficult to solve
+  // smaller leads to more accurate solution, but the resulting system is also more difficult to
+  // solve
   Real _penalty;
 };
 

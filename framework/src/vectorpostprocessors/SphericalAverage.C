@@ -1,35 +1,36 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SphericalAverage.h"
 
-// libmesh includes
+// MOOSE includes
+#include "MooseVariableField.h"
+
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<SphericalAverage>()
+registerMooseObject("MooseApp", SphericalAverage);
+
+template <>
+InputParameters
+validParams<SphericalAverage>()
 {
   InputParameters params = validParams<ElementVectorPostprocessor>();
   params.addParam<unsigned int>("bin_number", 50, "Number of histogram bins");
   params.addCoupledVar("variable", "Variables to average radially");
   params.addRequiredParam<Real>("radius", "Radius to average out to");
-  params.addParam<Real>("empty_bin_value", 0.0, "Value to assign to bins into which no datapoints fall");
+  params.addParam<Real>(
+      "empty_bin_value", 0.0, "Value to assign to bins into which no datapoints fall");
   return params;
 }
 
-SphericalAverage::SphericalAverage(const InputParameters & parameters) :
-    ElementVectorPostprocessor(parameters),
+SphericalAverage::SphericalAverage(const InputParameters & parameters)
+  : ElementVectorPostprocessor(parameters),
     _nbins(getParam<unsigned int>("bin_number")),
     _radius(getParam<Real>("radius")),
     _deltaR(_radius / _nbins),
@@ -99,7 +100,8 @@ SphericalAverage::finalize()
     gatherSum(*_average[j]);
 
     for (auto i = beginIndex(_counts); i < _nbins; ++i)
-      (*_average[j])[i] = _counts[i] > 0 ? (*_average[j])[i] / static_cast<Real>(_counts[i]) : _empty_bin_value;
+      (*_average[j])[i] =
+          _counts[i] > 0 ? (*_average[j])[i] / static_cast<Real>(_counts[i]) : _empty_bin_value;
   }
 }
 

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOOSEENUM_H
 #define MOOSEENUM_H
@@ -38,13 +33,24 @@ class MooseEnum : public MooseEnumBase
 {
 public:
   /**
-   * Constructor that takes a list of enumeration values, and a separate string to set a default for this instance
+   * Enum item for controlling comparison in the compareCurrent method.
+   */
+  enum class CompareMode
+  {
+    COMPARE_NAME,
+    COMPARE_ID,
+    COMPARE_BOTH
+  };
+
+  /**
+   * Constructor that takes a list of enumeration values, and a separate string to set a default for
+   * this instance
    * @param names - a list of names for this enumeration
    * @param default_name - the default value for this enumeration instance
-   * @param allow_out_of_range - determines whether this enumeration will accept values outside of it's range of
-   *                       defined values.
+   * @param allow_out_of_range - determines whether this enumeration will accept values outside of
+   * it's range of defined values.
    */
-  MooseEnum(std::string names, std::string default_name="", bool allow_out_of_range=false);
+  MooseEnum(std::string names, std::string default_name = "", bool allow_out_of_range = false);
 
   /**
    * Copy Constructor for use when creating vectors of MooseEnums
@@ -52,21 +58,14 @@ public:
    */
   MooseEnum(const MooseEnum & other_enum);
 
-  /**
-   * Named constructor to build an empty MooseEnum with only the valid names
-   * and the allow_out_of_range flag taken from another enumeration
-   * @param other_enum - The other enumeration to copy the validity checking data from
-   */
-  static MooseEnum withNamesFrom(const MooseEnumBase & other_enum);
-
   virtual ~MooseEnum() = default;
 
   /**
    * Cast operators to make this object behave as value_types and std::string
    * these methods can be used so that this class behaves more like a normal value_type enumeration
    */
-  operator int() const { return _current_id; }
-  operator std::string() const { return _current_name_preserved; }
+  operator int() const { return _current.id(); }
+  operator std::string() const { return _current.rawName(); }
 
   /**
    * Comparison operators for comparing with character constants, MooseEnums
@@ -87,25 +86,36 @@ public:
   bool operator!=(const MooseEnum & value) const;
 
   /**
+   * Method for comparing currently set values between MooseEnum.
+   */
+  bool compareCurrent(const MooseEnum & other, CompareMode mode = CompareMode::COMPARE_NAME) const;
+
+  ///@{
+  /**
    * Assignment operators
-   *  TODO: Perhaps we should implement an int assignment operator
-   * @param name - a string representing one of the enumeration values.
+   * @param name/int - a string or int representing one of the enumeration values.
    * @return A reference to this object for chaining
    */
-  MooseEnum & operator=(const std::string &name);
+  MooseEnum & operator=(const std::string & name);
+  MooseEnum & operator=(int value);
+  ///@}
 
   /**
    * IsValid
    * @return - a Boolean indicating whether this Enumeration has been set
    */
-  virtual bool isValid() const override { return _current_id > INVALID_ID; }
+  virtual bool isValid() const override { return _current.id() > MooseEnumItem::INVALID_ID; }
 
   // InputParameters is allowed to create an empty enum but is responsible for
   // filling it in after the fact
   friend class libMesh::Parameters;
 
   /// Operator for printing to iostreams
-  friend std::ostream & operator<<(std::ostream & out, const MooseEnum & obj) { out << obj._current_name_preserved; return out; }
+  friend std::ostream & operator<<(std::ostream & out, const MooseEnum & obj)
+  {
+    out << obj._current.rawName();
+    return out;
+  }
 
   /// get the current value cast to the enum type T
   template <typename T>
@@ -116,35 +126,24 @@ protected:
   virtual void checkDeprecated() const override;
 
 private:
-
   /**
    * Private constructor for use by libmesh::Parameters
    */
   MooseEnum();
 
-  /**
-   * Private constructor that can accept a MooseEnumBase for ::withOptionsFrom()
-   * @param other_enum - MooseEnumBase type to copy names and out-of-range data from
-   */
-  MooseEnum(const MooseEnumBase & other_enum);
-
   /// The current id
-  int _current_id;
-
-  /// The corresponding name
-  std::string _current_name;
-  std::string _current_name_preserved;
+  MooseEnumItem _current;
 };
 
 template <typename T>
 T
 MooseEnum::getEnum() const
 {
-  #ifdef LIBMESH_HAVE_CXX11_TYPE_TRAITS
-    static_assert( std::is_enum<T>::value == true,
-      "The type requested from MooseEnum::getEnum must be an enum type!\n\n");
-  #endif
-  return static_cast<T>(_current_id);
+#ifdef LIBMESH_HAVE_CXX11_TYPE_TRAITS
+  static_assert(std::is_enum<T>::value == true,
+                "The type requested from MooseEnum::getEnum must be an enum type!\n\n");
+#endif
+  return static_cast<T>(_current.id());
 }
 
-#endif //MOOSEENUM_H
+#endif // MOOSEENUM_H

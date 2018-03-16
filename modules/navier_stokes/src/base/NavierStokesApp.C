@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "NavierStokesApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
@@ -103,45 +106,59 @@
 
 // Postprocessors
 #include "INSExplicitTimestepSelector.h"
+#include "VolumetricFlowRate.h"
 
 // Functions
 #include "WedgeFunction.h"
 
-template<>
-InputParameters validParams<NavierStokesApp>()
+template <>
+InputParameters
+validParams<NavierStokesApp>()
 {
   InputParameters params = validParams<MooseApp>();
-  params.set<bool>("use_legacy_uo_initialization") = false;
-  params.set<bool>("use_legacy_uo_aux_computation") = false;
   return params;
 }
 
-NavierStokesApp::NavierStokesApp(InputParameters parameters) :
-    MooseApp(parameters)
+NavierStokesApp::NavierStokesApp(InputParameters parameters) : MooseApp(parameters)
 {
   Moose::registerObjects(_factory);
-  FluidPropertiesApp::registerObjects(_factory);
+  NavierStokesApp::registerObjectDepends(_factory);
   NavierStokesApp::registerObjects(_factory);
 
   Moose::associateSyntax(_syntax, _action_factory);
-  FluidPropertiesApp::associateSyntax(_syntax, _action_factory);
+  NavierStokesApp::associateSyntaxDepends(_syntax, _action_factory);
   NavierStokesApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  NavierStokesApp::registerExecFlags(_factory);
 }
 
-NavierStokesApp::~NavierStokesApp()
-{
-}
+NavierStokesApp::~NavierStokesApp() {}
 
 // External entry point for dynamic application loading
-extern "C" void NavierStokesApp__registerApps() { NavierStokesApp::registerApps(); }
+extern "C" void
+NavierStokesApp__registerApps()
+{
+  NavierStokesApp::registerApps();
+}
 void
 NavierStokesApp::registerApps()
 {
   registerApp(NavierStokesApp);
 }
 
+void
+NavierStokesApp::registerObjectDepends(Factory & factory)
+{
+  FluidPropertiesApp::registerObjects(factory);
+}
+
 // External entry point for dynamic object registration
-extern "C" void NavierStokesApp__registerObjects(Factory & factory) { NavierStokesApp::registerObjects(factory); }
+extern "C" void
+NavierStokesApp__registerObjects(Factory & factory)
+{
+  NavierStokesApp::registerObjects(factory);
+}
 void
 NavierStokesApp::registerObjects(Factory & factory)
 {
@@ -204,12 +221,6 @@ NavierStokesApp::registerObjects(Factory & factory)
   registerKernel(INSMass);
   registerKernel(INSMassRZ);
   registerKernel(INSMomentumTimeDerivative);
-  // INSMomentum is now deprecated, convert input files to use
-  // INSMomentumLaplaceForm or INSMomentumTractionForm instead.
-  registerDeprecatedObjectName(INSMomentumTractionForm, "INSMomentum", "10/07/2017 12:00");
-  // INSMomentumRZ has been renamed, convert input files to use
-  // INSMomentumTractionFormRZ.
-  registerDeprecatedObjectName(INSMomentumTractionFormRZ, "INSMomentumRZ", "10/07/2017 12:00");
   registerKernel(INSMomentumTractionForm);
   registerKernel(INSMomentumTractionFormRZ);
   registerKernel(INSMomentumLaplaceForm);
@@ -225,9 +236,6 @@ NavierStokesApp::registerObjects(Factory & factory)
   registerKernel(INSCompressibilityPenalty);
 
   // BCs
-  // Register the newly-named class with the old name for a while in
-  // case anyone is using this in their app.
-  registerDeprecatedObjectName(INSMomentumNoBCBCTractionForm, "INSMomentumNoBCBC", "10/07/2017 12:00");
   registerBoundaryCondition(INSMomentumNoBCBCTractionForm);
   registerBoundaryCondition(INSMomentumNoBCBCLaplaceForm);
   registerBoundaryCondition(INSTemperatureNoBCBC);
@@ -239,6 +247,7 @@ NavierStokesApp::registerObjects(Factory & factory)
 
   // Postprocessors
   registerPostprocessor(INSExplicitTimestepSelector);
+  registerPostprocessor(VolumetricFlowRate);
 
   // Materials
   registerMaterial(Air);
@@ -247,20 +256,30 @@ NavierStokesApp::registerObjects(Factory & factory)
   registerFunction(WedgeFunction);
 }
 
-// External entry point for dynamic syntax association
-extern "C" void NavierStokesApp__associateSyntax(Syntax & syntax, ActionFactory & action_factory) { NavierStokesApp::associateSyntax(syntax, action_factory); }
+void
+NavierStokesApp::associateSyntaxDepends(Syntax & syntax, ActionFactory & action_factory)
+{
+  FluidPropertiesApp::associateSyntax(syntax, action_factory);
+}
 
+// External entry point for dynamic syntax association
+extern "C" void
+NavierStokesApp__associateSyntax(Syntax & syntax, ActionFactory & action_factory)
+{
+  NavierStokesApp::associateSyntax(syntax, action_factory);
+}
 void
 NavierStokesApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
 {
 #undef registerAction
-#define registerAction(type, action) action_factory.reg<type>(stringifyName(type), action)
+#define registerAction(type, action)                                                               \
+  action_factory.reg<type>(stringifyName(type), action, __FILE__, __LINE__)
 
   // Create the syntax
-  syntax.registerActionSyntax("AddNavierStokesVariablesAction", "Modules/NavierStokes/Variables");
-  syntax.registerActionSyntax("AddNavierStokesICsAction", "Modules/NavierStokes/ICs");
-  syntax.registerActionSyntax("AddNavierStokesKernelsAction", "Modules/NavierStokes/Kernels");
-  syntax.registerActionSyntax("AddNavierStokesBCsAction", "Modules/NavierStokes/BCs/*");
+  registerSyntax("AddNavierStokesVariablesAction", "Modules/NavierStokes/Variables");
+  registerSyntax("AddNavierStokesICsAction", "Modules/NavierStokes/ICs");
+  registerSyntax("AddNavierStokesKernelsAction", "Modules/NavierStokes/Kernels");
+  registerSyntax("AddNavierStokesBCsAction", "Modules/NavierStokes/BCs/*");
 
   // add variables action
   registerTask("add_navier_stokes_variables", /*is_required=*/false);
@@ -279,11 +298,22 @@ NavierStokesApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory
 
   // add BCs actions
   registerMooseObjectTask("add_navier_stokes_bcs", NSWeakStagnationInletBC, /*is_required=*/false);
-  appendMooseObjectTask  ("add_navier_stokes_bcs", NSNoPenetrationBC);
-  appendMooseObjectTask  ("add_navier_stokes_bcs", NSStaticPressureOutletBC);
+  appendMooseObjectTask("add_navier_stokes_bcs", NSNoPenetrationBC);
+  appendMooseObjectTask("add_navier_stokes_bcs", NSStaticPressureOutletBC);
   addTaskDependency("add_navier_stokes_bcs", "add_bc");
   registerAction(AddNavierStokesBCsAction, "add_navier_stokes_bcs");
 
 #undef registerAction
 #define registerAction(type, action) action_factory.regLegacy<type>(stringifyName(type), action)
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+NavierStokesApp__registerExecFlags(Factory & factory)
+{
+  NavierStokesApp::registerExecFlags(factory);
+}
+void
+NavierStokesApp::registerExecFlags(Factory & /*factory*/)
+{
 }

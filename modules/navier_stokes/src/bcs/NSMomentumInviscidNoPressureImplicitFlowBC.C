@@ -1,20 +1,27 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "NSMomentumInviscidNoPressureImplicitFlowBC.h"
 
-template<>
-InputParameters validParams<NSMomentumInviscidNoPressureImplicitFlowBC>()
+template <>
+InputParameters
+validParams<NSMomentumInviscidNoPressureImplicitFlowBC>()
 {
   InputParameters params = validParams<NSMomentumInviscidBC>();
+  params.addClassDescription(
+      "Momentum equation boundary condition used when pressure *is not* integrated by parts.");
   return params;
 }
 
-NSMomentumInviscidNoPressureImplicitFlowBC::NSMomentumInviscidNoPressureImplicitFlowBC(const InputParameters & parameters) :
-    NSMomentumInviscidBC(parameters)
+NSMomentumInviscidNoPressureImplicitFlowBC::NSMomentumInviscidNoPressureImplicitFlowBC(
+    const InputParameters & parameters)
+  : NSMomentumInviscidBC(parameters)
 {
 }
 
@@ -30,8 +37,7 @@ NSMomentumInviscidNoPressureImplicitFlowBC::computeQpResidual()
   // The current value of the vector (rho*u)(u.n)
   RealVectorValue rhou_udotn = u_dot_n * _rho[_qp] * vel;
 
-  return
-    convectiveQpResidualHelper(rhou_udotn(_component));
+  return convectiveQpResidualHelper(rhou_udotn(_component));
 }
 
 Real
@@ -46,5 +52,8 @@ NSMomentumInviscidNoPressureImplicitFlowBC::computeQpJacobian()
 Real
 NSMomentumInviscidNoPressureImplicitFlowBC::computeQpOffDiagJacobian(unsigned int jvar)
 {
-  return convectiveQpJacobianHelper(mapVarNumber(jvar));
+  if (isNSVariable(jvar))
+    return convectiveQpJacobianHelper(mapVarNumber(jvar));
+  else
+    return 0.0;
 }

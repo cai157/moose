@@ -48,7 +48,6 @@
 []
 
 [Executioner]
-  # Preconditioned JFNK (default)
   type = Transient
   num_steps = 10
   dt = 0.1
@@ -79,7 +78,7 @@
 [Controls]
   [./func_control]
     type = RealFunctionControl
-    parameter = 'coef'
+    parameter = '*/*/coef'
     function = 'func_coef'
     execute_on = 'initial timestep_begin'
   [../]

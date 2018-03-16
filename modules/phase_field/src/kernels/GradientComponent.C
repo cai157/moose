@@ -1,29 +1,35 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "GradientComponent.h"
 
-template<>
-InputParameters validParams<GradientComponent>()
+template <>
+InputParameters
+validParams<GradientComponent>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addClassDescription("Set the kernel variable to a specified component of the gradient of a coupled variable.");
+  params.addClassDescription(
+      "Set the kernel variable to a specified component of the gradient of a coupled variable.");
   params.addRequiredCoupledVar("v", "Coupled variable to match gradient component of");
-  params.addRequiredParam<unsigned int>("component", "Component of the gradient of the coupled variable v");
+  params.addRequiredParam<unsigned int>("component",
+                                        "Component of the gradient of the coupled variable v");
   return params;
 }
 
-GradientComponent::GradientComponent(const InputParameters & parameters) :
-    Kernel(parameters),
+GradientComponent::GradientComponent(const InputParameters & parameters)
+  : Kernel(parameters),
     _v_var(coupled("v")),
     _grad_v(coupledGradient("v")),
     _component(getParam<unsigned int>("component"))
 {
   if (_component >= LIBMESH_DIM)
-    mooseError("Component too large for LIBMESH_DIM");
+    paramError("component", "Component too large for LIBMESH_DIM");
 }
 
 Real

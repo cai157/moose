@@ -1,13 +1,17 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "SplitCHCRes.h"
 
-template<>
-InputParameters validParams<SplitCHCRes>()
+template <>
+InputParameters
+validParams<SplitCHCRes>()
 {
   InputParameters params = validParams<SplitCHBase>();
   params.addClassDescription("Split formulation Cahn-Hilliard Kernel");
@@ -16,8 +20,8 @@ InputParameters validParams<SplitCHCRes>()
   return params;
 }
 
-SplitCHCRes::SplitCHCRes(const InputParameters & parameters) :
-    SplitCHBase(parameters),
+SplitCHCRes::SplitCHCRes(const InputParameters & parameters)
+  : SplitCHBase(parameters),
     _kappa(getMaterialProperty<Real>("kappa_name")),
     _w_var(coupled("w")),
     _w(coupledValue("w"))
@@ -43,7 +47,8 @@ SplitCHCRes::computeDFDC(PFFunctionType type)
 Real
 SplitCHCRes::computeQpResidual()
 {
-  Real residual = SplitCHBase::computeQpResidual(); //(f_prime_zero+e_prime)*_test[_i][_qp] from SplitCHBase
+  Real residual =
+      SplitCHBase::computeQpResidual(); //(f_prime_zero+e_prime)*_test[_i][_qp] from SplitCHBase
 
   residual += -_w[_qp] * _test[_i][_qp];
   residual += _kappa[_qp] * _grad_u[_qp] * _grad_test[_i][_qp];
@@ -54,7 +59,8 @@ SplitCHCRes::computeQpResidual()
 Real
 SplitCHCRes::computeQpJacobian()
 {
-  Real jacobian = SplitCHBase::computeQpJacobian(); //(df_prime_zero_dc+de_prime_dc)*_test[_i][_qp]; from SplitCHBase
+  Real jacobian = SplitCHBase::computeQpJacobian(); //(df_prime_zero_dc+de_prime_dc)*_test[_i][_qp];
+                                                    // from SplitCHBase
 
   jacobian += _kappa[_qp] * _grad_phi[_j][_qp] * _grad_test[_i][_qp];
 
@@ -71,4 +77,3 @@ SplitCHCRes::computeQpOffDiagJacobian(unsigned int jvar)
 
   return 0.0;
 }
-

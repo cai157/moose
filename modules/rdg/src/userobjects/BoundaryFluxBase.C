@@ -1,24 +1,27 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "BoundaryFluxBase.h"
 
 // Static mutex definition
 Threads::spin_mutex BoundaryFluxBase::_mutex;
 
-template<>
-InputParameters validParams<BoundaryFluxBase>()
+template <>
+InputParameters
+validParams<BoundaryFluxBase>()
 {
   InputParameters params = validParams<GeneralUserObject>();
   return params;
 }
 
-BoundaryFluxBase::BoundaryFluxBase(const InputParameters & parameters) :
-    GeneralUserObject(parameters)
+BoundaryFluxBase::BoundaryFluxBase(const InputParameters & parameters)
+  : GeneralUserObject(parameters)
 {
   _flux.resize(libMesh::n_threads());
   _jac1.resize(libMesh::n_threads());
@@ -54,11 +57,7 @@ BoundaryFluxBase::getFlux(unsigned int iside,
     _cached_elem_id = ielem;
     _cached_side_id = iside;
 
-    calcFlux(iside,
-             ielem,
-             uvec1,
-             dwave,
-             _flux[tid]);
+    calcFlux(iside, ielem, uvec1, dwave, _flux[tid]);
   }
   return _flux[tid];
 }
@@ -76,11 +75,7 @@ BoundaryFluxBase::getJacobian(unsigned int iside,
     _cached_elem_id = ielem;
     _cached_side_id = iside;
 
-    calcJacobian(iside,
-                 ielem,
-                 uvec1,
-                 dwave,
-                 _jac1[tid]);
+    calcJacobian(iside, ielem, uvec1, dwave, _jac1[tid]);
   }
   return _jac1[tid];
 }

@@ -1,34 +1,32 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "AdaptAndModify.h"
 #include "TimeStepper.h"
 
-//Moose includes
+// Moose includes
 
-template<>
-InputParameters validParams<AdaptAndModify>()
+registerMooseObject("MooseTestApp", AdaptAndModify);
+
+template <>
+InputParameters
+validParams<AdaptAndModify>()
 {
   InputParameters params = validParams<Transient>();
   params.addParam<unsigned int>("adapt_cycles", 1, "Number of adaptivity cycles to do.");
   return params;
 }
 
-AdaptAndModify::AdaptAndModify(const InputParameters & parameters) :
-    Transient(parameters),
-    _adapt_cycles(parameters.get<unsigned int>("adapt_cycles"))
-{}
+AdaptAndModify::AdaptAndModify(const InputParameters & parameters)
+  : Transient(parameters), _adapt_cycles(parameters.get<unsigned int>("adapt_cycles"))
+{
+}
 
 void
 AdaptAndModify::incrementStepOrReject()
@@ -61,7 +59,7 @@ AdaptAndModify::endStep(Real input_time)
   if (_last_solve_converged)
   {
     // Compute the Error Indicators and Markers
-    for (unsigned int i=0; i<_adapt_cycles; i++)
+    for (unsigned int i = 0; i < _adapt_cycles; i++)
     {
       // Compute the Error Indicators and Markers
       _problem.computeIndicators();
@@ -81,5 +79,4 @@ AdaptAndModify::endStep(Real input_time)
   }
 
   _problem.outputStep(EXEC_TIMESTEP_END);
-
 }

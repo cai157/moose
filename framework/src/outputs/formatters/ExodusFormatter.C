@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "ExodusFormatter.h"
@@ -19,18 +14,13 @@
 #include "SystemInfo.h"
 #include "CommandLine.h"
 
-// libMesh includes
 #include "libmesh/exodusII.h"
 
 // C++
 #include <sstream>
 #include <vector>
 
-
-ExodusFormatter::ExodusFormatter() :
-    InputFileFormatter(false)
-{
-}
+ExodusFormatter::ExodusFormatter() : InputFileFormatter(false) {}
 
 void
 ExodusFormatter::printInputFile(ActionWarehouse & wh)
@@ -42,12 +32,15 @@ ExodusFormatter::printInputFile(ActionWarehouse & wh)
   // Grab the command line arguments first
   _ss << "### Command Line Arguments ###\n";
   if (wh.mooseApp().commandLine())
-    wh.mooseApp().commandLine()->print("", _ss, 1);
-
+  {
+    auto argc = wh.mooseApp().commandLine()->argc();
+    auto argv = wh.mooseApp().commandLine()->argv();
+    for (int i = 1; i < argc; i++)
+      _ss << " " << argv[i];
+  }
   if (wh.mooseApp().getSystemInfo() != NULL)
   {
-    _ss << "### Version Info ###\n"
-        << wh.mooseApp().getSystemInfo()->getInfo() << "\n";
+    _ss << "### Version Info ###\n" << wh.mooseApp().getSystemInfo()->getInfo() << "\n";
   }
 
   _ss << "### Input File ###" << std::endl;

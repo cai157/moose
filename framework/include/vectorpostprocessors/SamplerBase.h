@@ -1,28 +1,37 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef SAMPLERBASE_H
 #define SAMPLERBASE_H
 
 // MOOSE includes
-#include "InputParameters.h"
+#include "MooseTypes.h"
 
 // Forward Declarations
+class InputParameters;
 class SamplerBase;
 class VectorPostprocessor;
 
-template<>
+namespace libMesh
+{
+class Point;
+
+namespace Parallel
+{
+class Communicator;
+}
+}
+
+template <typename T>
+InputParameters validParams();
+
+template <>
 InputParameters validParams<SamplerBase>();
 
 /**
@@ -37,16 +46,18 @@ public:
    * @param vpp A pointer to the child object
    * @param comm The communicator of the child
    */
-  SamplerBase(const InputParameters & parameters, VectorPostprocessor * vpp, const libMesh::Parallel::Communicator & comm);
+  SamplerBase(const InputParameters & parameters,
+              VectorPostprocessor * vpp,
+              const libMesh::Parallel::Communicator & comm);
   virtual ~SamplerBase() = default;
 
 protected:
-
   /**
    * You MUST call this in the constructor of the child class and pass down the name
    * of the variables.
    *
-   * @param variable_names The names of the variables.  Note: The order of the variables sets the order of the values for addSample()
+   * @param variable_names The names of the variables.  Note: The order of the variables sets the
+   * order of the values for addSample()
    */
   void setupVariables(const std::vector<std::string> & variable_names);
 
@@ -77,7 +88,8 @@ protected:
    *
    * YOU MUST CALL THIS DURING threadJoin() in the child class!
    *
-   * @param y You must cast the UserObject to your child class type first then you can pass it in here.
+   * @param y You must cast the UserObject to your child class type first then you can pass it in
+   * here.
    */
   virtual void threadJoin(const SamplerBase & y);
 

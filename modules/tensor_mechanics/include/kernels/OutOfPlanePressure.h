@@ -1,19 +1,22 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef OUTOFPLANEPRESSURE_H
 #define OUTOFPLANEPRESSURE_H
 
 #include "Kernel.h"
 
-//Forward Declarations
+// Forward Declarations
 class Function;
 class OutOfPlanePressure;
 
-template<>
+template <>
 InputParameters validParams<OutOfPlanePressure>();
 
 /**
@@ -26,7 +29,6 @@ InputParameters validParams<OutOfPlanePressure>();
 class OutOfPlanePressure : public Kernel
 {
 public:
-
   OutOfPlanePressure(const InputParameters & parameters);
 
 protected:
@@ -37,4 +39,4 @@ private:
   Function & _function;
   const Real _factor;
 };
-#endif //OUTOFPLANEPRESSURE_H
+#endif // OUTOFPLANEPRESSURE_H

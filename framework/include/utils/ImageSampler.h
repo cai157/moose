@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef IMAGESAMPLER_H
 #define IMAGESAMPLER_H
@@ -19,8 +14,7 @@
 #include "FileRangeBuilder.h"
 #include "ConsoleStream.h"
 
-// libmesh includes
-#include "libmesh/mesh_tools.h"
+#include "libmesh/bounding_box.h"
 
 // VTK includes
 #ifdef LIBMESH_HAVE_VTK
@@ -45,12 +39,11 @@
 
 #endif
 
-
 // Forward declarations
 class ImageSampler;
 class MooseMesh;
 
-template<>
+template <>
 InputParameters validParams<ImageSampler>();
 
 /**
@@ -59,7 +52,6 @@ InputParameters validParams<ImageSampler>();
 class ImageSampler : public FileRangeBuilder
 {
 public:
-
   /**
    * Constructor.
    *
@@ -82,7 +74,6 @@ public:
   virtual void setupImageSampler(MooseMesh & mesh);
 
 protected:
-
   /**
    * Apply image re-scaling using the vtkImageShiftAndRescale object
    */
@@ -108,7 +99,6 @@ protected:
   void vtkFlip();
 
 private:
-
 #ifdef LIBMESH_HAVE_VTK
 
   /// List of file names to extract data
@@ -136,11 +126,11 @@ private:
   vtkSmartPointer<vtkImageFlip> _flip_filter;
 #endif
 
-  /**
-   * Helper method for flipping image
-   * @param axis Flag for determing the flip axis: "x=0", "y=1", "z=2"
-   * @return A smart pointer the flipping filter
-   */
+/**
+ * Helper method for flipping image
+ * @param axis Flag for determing the flip axis: "x=0", "y=1", "z=2"
+ * @return A smart pointer the flipping filter
+ */
 #ifdef LIBMESH_HAVE_VTK
   vtkSmartPointer<vtkImageFlip> imageFlip(const int & axis);
 #endif
@@ -157,13 +147,13 @@ private:
   /// Physical pixel size
   std::vector<double> _voxel;
 
-  /// Component to extract
+/// Component to extract
 #ifdef LIBMESH_HAVE_VTK
   unsigned int _component;
 #endif
 
   /// Bounding box for testing points
-  MeshTools::BoundingBox _bounding_box;
+  BoundingBox _bounding_box;
 
   /// Parameters for interface
   const InputParameters & _is_pars;

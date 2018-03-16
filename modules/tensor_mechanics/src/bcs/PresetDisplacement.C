@@ -1,17 +1,22 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "PresetDisplacement.h"
 #include "Function.h"
 
-template<>
-InputParameters validParams<PresetDisplacement>()
+template <>
+InputParameters
+validParams<PresetDisplacement>()
 {
   InputParameters params = validParams<NodalBC>();
-  params.addClassDescription("Prescribe the displacement on a given boundary in a given direction.");
+  params.addClassDescription(
+      "Prescribe the displacement on a given boundary in a given direction.");
   params.addParam<Real>("scale_factor", 1, "Scale factor if function is given.");
   params.addParam<FunctionName>("function", "1", "Function describing the displacement.");
   params.addRequiredCoupledVar("velocity", "The velocity variable.");
@@ -20,8 +25,8 @@ InputParameters validParams<PresetDisplacement>()
   return params;
 }
 
-PresetDisplacement::PresetDisplacement(const InputParameters & parameters) :
-    PresetNodalBC(parameters),
+PresetDisplacement::PresetDisplacement(const InputParameters & parameters)
+  : PresetNodalBC(parameters),
     _u_old(valueOld()),
     _scale_factor(parameters.get<Real>("scale_factor")),
     _function(getFunction("function")),
@@ -37,7 +42,8 @@ PresetDisplacement::computeQpValue()
   Point p;
   Real vel = _function.timeDerivative(_t, p);
   Real vel_old = _function.timeDerivative(_t - _dt, p);
-  Real accel = (vel - vel_old)/ _dt;
+  Real accel = (vel - vel_old) / _dt;
 
-  return _u_old[_qp] + _dt * _vel_old[_qp] + ((0.5 - _beta) * _accel_old[_qp] + _beta * accel) * _dt * _dt;
+  return _u_old[_qp] + _dt * _vel_old[_qp] +
+         ((0.5 - _beta) * _accel_old[_qp] + _beta * accel) * _dt * _dt;
 }

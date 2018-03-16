@@ -17,16 +17,11 @@
   [./temperature]
     initial_condition = 300 # Start at room temperature
   [../]
-  [./disp_r]
-  [../]
-  [./disp_z]
-  [../]
 []
 
 [AuxVariables]
   [./k_eff]
-    order = CONSTANT
-    family = MONOMIAL
+    initial_condition = 14.362648
   [../]
   [./velocity_x]
     order = CONSTANT
@@ -39,6 +34,15 @@
   [./velocity_z]
     order = CONSTANT
     family = MONOMIAL
+  [../]
+[]
+
+[Modules/TensorMechanics/Master]
+  [./all]
+    # This block adds all of the proper Kernels, strain calculators, and Variables
+    # for TensorMechanics in the correct coordinate system (autodetected)
+    add_variables = true
+    strain = FINITE
   [../]
 []
 
@@ -60,20 +64,9 @@
     variable = temperature
     darcy_pressure = pressure
   [../]
-  [./TensorMechanics]
-    # This block adds all of the proper Kernels for TensorMechanics in RZ
-    use_displaced_mesh = true
-    displacements = 'disp_r disp_z'
-  [../]
 []
 
 [AuxKernels]
-  [./keff_initial]
-    type = MaterialRealAux
-    variable = k_eff
-    property = thermal_conductivity
-    execute_on = 'initial'
-  [../]
   [./velocity_x]
     type = DarcyVelocity
     variable = velocity_x
@@ -144,7 +137,6 @@
 [Materials]
   [./column]
     type = PackedColumn
-    block = 0
     sphere_radius = 1
     thermal_conductivity = k_eff # Use the AuxVariable instead of calculating
   [../]
@@ -153,17 +145,9 @@
     type = ComputeIsotropicElasticityTensor
     youngs_modulus = 200e9 # (Pa) from wikipedia
     poissons_ratio = .3 # from wikipedia
-    block = 0
   [../]
-
-  [./small_strain_arz]
-    type = ComputeAxisymmetricRZFiniteStrain
-    block = 0
-  [../]
-
-  [./elastic_strain]
+  [./elastic_stress]
     type = ComputeFiniteStrainElasticStress
-    block = 0
   [../]
 []
 

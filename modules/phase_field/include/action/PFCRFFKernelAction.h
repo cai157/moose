@@ -1,25 +1,29 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef PFCRFFKERNELACTION_H
 #define PFCRFFKERNELACTION_H
 
-#include "Action.h"
+#include "HHPFCRFFSplitKernelAction.h"
 
-//Forward Declarations
+// Forward Declarations
 class PFCRFFKernelAction;
 
-template<>
+template <>
 InputParameters validParams<PFCRFFKernelAction>();
 
-class PFCRFFKernelAction: public Action
+class PFCRFFKernelAction : public HHPFCRFFSplitKernelAction
 {
 public:
   PFCRFFKernelAction(const InputParameters & params);
 
   virtual void act();
-
-private:
-  unsigned int _num_L;
-  std::string _L_name_base;
-  std::string _n_name;
 };
 
-#endif //PFCRFFKERNELACTION_H
+#endif // PFCRFFKERNELACTION_H

@@ -1,31 +1,28 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "FunctionIC.h"
 #include "Function.h"
 
-template<>
-InputParameters validParams<FunctionIC>()
+registerMooseObject("MooseApp", FunctionIC);
+
+template <>
+InputParameters
+validParams<FunctionIC>()
 {
   InputParameters params = validParams<InitialCondition>();
   params.addRequiredParam<FunctionName>("function", "The initial condition function.");
   return params;
 }
 
-FunctionIC::FunctionIC(const InputParameters & parameters) :
-    InitialCondition(parameters),
-    _func(getFunction("function"))
+FunctionIC::FunctionIC(const InputParameters & parameters)
+  : InitialCondition(parameters), _func(getFunction("function"))
 {
 }
 
@@ -40,4 +37,3 @@ FunctionIC::gradient(const Point & p)
 {
   return _func.gradient(_t, p);
 }
-

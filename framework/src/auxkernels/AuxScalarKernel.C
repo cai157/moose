@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "AuxScalarKernel.h"
 #include "Assembly.h"
@@ -19,15 +14,23 @@
 #include "SubProblem.h"
 #include "SystemBase.h"
 
-template<>
-InputParameters validParams<AuxScalarKernel>()
+template <>
+InputParameters
+validParams<AuxScalarKernel>()
 {
   InputParameters params = validParams<MooseObject>();
   params += validParams<SetupInterface>();
   params += validParams<MeshChangedInterface>();
 
-  params.addRequiredParam<AuxVariableName>("variable", "The name of the variable that this kernel operates on");
-  params.addParam<bool>("use_displaced_mesh", false, "Whether or not this object should use the displaced mesh for computation.  Note that in the case this is true but no displacements are provided in the Mesh block the undisplaced mesh will still be used.");
+  params.addRequiredParam<AuxVariableName>("variable",
+                                           "The name of the variable that this kernel operates on");
+  params.addParam<bool>("use_displaced_mesh",
+                        false,
+                        "Whether or not this object should use the "
+                        "displaced mesh for computation.  Note that "
+                        "in the case this is true but no "
+                        "displacements are provided in the Mesh block "
+                        "the undisplaced mesh will still be used.");
   params.addParamNamesToGroup("use_displaced_mesh", "Advanced");
 
   params.declareControllable("enable"); // allows Control to enable/disable this type of object
@@ -36,8 +39,8 @@ InputParameters validParams<AuxScalarKernel>()
   return params;
 }
 
-AuxScalarKernel::AuxScalarKernel(const InputParameters & parameters) :
-    MooseObject(parameters),
+AuxScalarKernel::AuxScalarKernel(const InputParameters & parameters)
+  : MooseObject(parameters),
     ScalarCoupleable(this),
     SetupInterface(this),
     FunctionInterface(this),
@@ -45,10 +48,9 @@ AuxScalarKernel::AuxScalarKernel(const InputParameters & parameters) :
     PostprocessorInterface(this),
     DependencyResolverInterface(),
     TransientInterface(this),
-    ZeroInterface(parameters),
     MeshChangedInterface(parameters),
-    _subproblem(*parameters.get<SubProblem *>("_subproblem")),
-    _sys(*parameters.get<SystemBase *>("_sys")),
+    _subproblem(*getCheckedPointerParam<SubProblem *>("_subproblem")),
+    _sys(*getCheckedPointerParam<SystemBase *>("_sys")),
     _tid(parameters.get<THREAD_ID>("_tid")),
     _assembly(_subproblem.assembly(_tid)),
     _var(_sys.getScalarVariable(_tid, parameters.get<AuxVariableName>("variable"))),
@@ -63,17 +65,25 @@ AuxScalarKernel::AuxScalarKernel(const InputParameters & parameters) :
     _depend_vars.insert(var->name());
 }
 
-AuxScalarKernel::~AuxScalarKernel()
-{
-}
+AuxScalarKernel::~AuxScalarKernel() {}
 
 void
 AuxScalarKernel::compute()
 {
+  // In general, we want to compute AuxScalarKernel values
+  // redundantly, on every processor, to avoid communication.
+  //
+  // However, in rare cases not all processors will have access to a
+  // particular scalar variable, in which case we skip computation
+  // there.
+  if (_var.dofIndices().empty() || !_var.dofMap().all_semilocal_indices(_var.dofIndices()))
+    return;
+
   for (_i = 0; _i < _var.order(); ++_i)
   {
     Real value = computeValue();
-    _var.setValue(_i, value);                  // update variable data, which is referenced by other kernels, so the value is up-to-date
+    _var.setValue(_i, value); // update variable data, which is referenced by other kernels, so the
+                              // value is up-to-date
   }
 }
 
@@ -88,7 +98,6 @@ AuxScalarKernel::getSuppliedItems()
 {
   return _supplied_vars;
 }
-
 
 bool
 AuxScalarKernel::isActive()

@@ -1,25 +1,22 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "Moose.h"
 #include "RandomInterface.h"
 #include "Assembly.h"
 #include "RandomData.h"
 #include "MooseRandom.h"
+#include "FEProblemBase.h"
 
-template<>
-InputParameters validParams<RandomInterface>()
+template <>
+InputParameters
+validParams<RandomInterface>()
 {
   InputParameters params = emptyInputParameters();
   params.addParam<unsigned int>("seed", 0, "The seed for the master random number generator");
@@ -28,8 +25,11 @@ InputParameters validParams<RandomInterface>()
   return params;
 }
 
-RandomInterface::RandomInterface(const InputParameters & parameters, FEProblemBase & problem, THREAD_ID tid, bool is_nodal) :
-    _random_data(NULL),
+RandomInterface::RandomInterface(const InputParameters & parameters,
+                                 FEProblemBase & problem,
+                                 THREAD_ID tid,
+                                 bool is_nodal)
+  : _random_data(NULL),
     _generator(NULL),
     _ri_problem(problem),
     _ri_name(parameters.get<std::string>("_object_name")),
@@ -41,9 +41,7 @@ RandomInterface::RandomInterface(const InputParameters & parameters, FEProblemBa
 {
 }
 
-RandomInterface::~RandomInterface()
-{
-}
+RandomInterface::~RandomInterface() {}
 
 void
 RandomInterface::setRandomResetFrequency(ExecFlagType exec_flag)
@@ -53,7 +51,7 @@ RandomInterface::setRandomResetFrequency(ExecFlagType exec_flag)
 }
 
 void
-RandomInterface::setRandomDataPointer(RandomData *random_data)
+RandomInterface::setRandomDataPointer(RandomData * random_data)
 {
   _random_data = random_data;
   _generator = &_random_data->getGenerator();

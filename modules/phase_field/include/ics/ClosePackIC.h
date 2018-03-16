@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef CLOSEPACKIC_H
 #define CLOSEPACKIC_H
 
@@ -13,7 +16,7 @@
 // Forward declarations
 class ClosePackIC;
 
-template<>
+template <>
 InputParameters validParams<ClosePackIC>();
 
 /**
@@ -22,34 +25,17 @@ InputParameters validParams<ClosePackIC>();
 class ClosePackIC : public SmoothCircleBaseIC
 {
 public:
-
-  /**
-   * Class constructor
-   * @param parameters Input parameters for this object
-   */
   ClosePackIC(const InputParameters & parameters);
-  /**
-   * Destructor
-   */
-  virtual ~ClosePackIC(){};
-
-  /**
-   * Does nothing, but required by the base class
-   *
-   * The radius are populated in the computeCircleCenters
-   */
-  virtual void computeCircleRadii();
-
-  /**
-   * Compute the close packed centers and radii
-   */
-  virtual void computeCircleCenters();
-
 
 protected:
+  /// The radius are populated in the computeCircleCenters
+  virtual void computeCircleRadii() {}
+
+  /// Compute the close packed centers and radii
+  virtual void computeCircleCenters();
 
   /// User-supplied circle radius
-  Real _radius;
+  const Real _radius;
 };
 
-#endif //CLOSEPACKIC_H
+#endif // CLOSEPACKIC_H

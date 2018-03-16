@@ -1,29 +1,26 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "LayeredAverage.h"
 
-template<>
-InputParameters validParams<LayeredAverage>()
+registerMooseObject("MooseApp", LayeredAverage);
+
+template <>
+InputParameters
+validParams<LayeredAverage>()
 {
   InputParameters params = validParams<LayeredIntegral>();
 
   return params;
 }
 
-LayeredAverage::LayeredAverage(const InputParameters & parameters) :
-    LayeredIntegral(parameters)
+LayeredAverage::LayeredAverage(const InputParameters & parameters) : LayeredIntegral(parameters)
 {
   _layer_volumes.resize(_num_layers);
 }
@@ -54,7 +51,7 @@ LayeredAverage::finalize()
   gatherSum(_layer_volumes);
 
   // Compute the average for each layer
-  for (unsigned int i=0; i<_layer_volumes.size(); i++)
+  for (unsigned int i = 0; i < _layer_volumes.size(); i++)
     if (layerHasValue(i))
       setLayerValue(i, getLayerValue(i) / _layer_volumes[i]);
 }
@@ -64,7 +61,6 @@ LayeredAverage::threadJoin(const UserObject & y)
 {
   LayeredIntegral::threadJoin(y);
   const LayeredAverage & la = static_cast<const LayeredAverage &>(y);
-  for (unsigned int i=0; i<_layer_volumes.size(); i++)
+  for (unsigned int i = 0; i < _layer_volumes.size(); i++)
     _layer_volumes[i] += la._layer_volumes[i];
 }
-

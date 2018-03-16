@@ -1,46 +1,45 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SideSetsFromNormals.h"
 #include "Parser.h"
 #include "InputParameters.h"
 #include "MooseMesh.h"
 
-// libMesh includes
 #include "libmesh/mesh_generation.h"
 #include "libmesh/mesh.h"
 #include "libmesh/string_to_enum.h"
 #include "libmesh/quadrature_gauss.h"
 #include "libmesh/point_locator_base.h"
 
-template<>
-InputParameters validParams<SideSetsFromNormals>()
+registerMooseObject("MooseApp", SideSetsFromNormals);
+
+template <>
+InputParameters
+validParams<SideSetsFromNormals>()
 {
   InputParameters params = validParams<AddSideSetsBase>();
-  params.addRequiredParam<std::vector<BoundaryName> >("new_boundary", "The name of the boundary to create");
-  params.addRequiredParam<std::vector<Point> >("normals", "A list of normals for which to start painting sidesets");
+  params.addClassDescription(
+      "Adds a new named sideset to the mesh for all faces matching the specified normal.");
+  params.addRequiredParam<std::vector<BoundaryName>>("new_boundary",
+                                                     "The name of the boundary to create");
+  params.addRequiredParam<std::vector<Point>>(
+      "normals", "A list of normals for which to start painting sidesets");
   return params;
 }
 
-SideSetsFromNormals::SideSetsFromNormals(const InputParameters & parameters) :
-    AddSideSetsBase(parameters),
-    _normals(getParam<std::vector<Point> >("normals"))
+SideSetsFromNormals::SideSetsFromNormals(const InputParameters & parameters)
+  : AddSideSetsBase(parameters), _normals(getParam<std::vector<Point>>("normals"))
 {
 
   // Get the BoundaryIDs from the mesh
-  _boundary_names = getParam<std::vector<BoundaryName> >("new_boundary");
-
+  _boundary_names = getParam<std::vector<BoundaryName>>("new_boundary");
 
   if (_normals.size() != _boundary_names.size())
     mooseError("normal list and boundary list are not the same length");
@@ -70,15 +69,10 @@ SideSetsFromNormals::modify()
 
   // We'll need to loop over all of the elements to find ones that match this normal.
   // We can't rely on flood catching them all here...
-  MeshBase::const_element_iterator       el     = _mesh_ptr->getMesh().elements_begin();
-  const MeshBase::const_element_iterator end_el = _mesh_ptr->getMesh().elements_end();
-  for (; el != end_el ; ++el)
-  {
-    const Elem *elem = *el;
-
+  for (const auto & elem : _mesh_ptr->getMesh().element_ptr_range())
     for (unsigned int side = 0; side < elem->n_sides(); ++side)
     {
-      if (elem->neighbor(side))
+      if (elem->neighbor_ptr(side))
         continue;
 
       _fe_face->reinit(elem, side);
@@ -86,11 +80,10 @@ SideSetsFromNormals::modify()
 
       for (unsigned int i = 0; i < boundary_ids.size(); ++i)
       {
-        if (std::abs(1.0 - _normals[i]*normals[0]) < 1e-5)
-          flood(*el, _normals[i], boundary_ids[i]);
+        if (std::abs(1.0 - _normals[i] * normals[0]) < 1e-5)
+          flood(elem, _normals[i], boundary_ids[i]);
       }
     }
-  }
 
   finalize();
 

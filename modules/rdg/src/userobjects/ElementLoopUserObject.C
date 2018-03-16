@@ -1,24 +1,28 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ElementLoopUserObject.h"
 
-template<>
-InputParameters validParams<ElementLoopUserObject>()
+template <>
+InputParameters
+validParams<ElementLoopUserObject>()
 {
   InputParameters params = validParams<GeneralUserObject>();
+  params += validParams<BlockRestrictable>();
   return params;
 }
 
-ElementLoopUserObject::ElementLoopUserObject(const InputParameters & parameters) :
-    GeneralUserObject(parameters),
+ElementLoopUserObject::ElementLoopUserObject(const InputParameters & parameters)
+  : GeneralUserObject(parameters),
+    BlockRestrictable(this),
     Coupleable(this, false),
     MooseVariableDependencyInterface(),
-    ZeroInterface(parameters),
     _mesh(_subproblem.mesh()),
     _current_elem(_assembly.elem()),
     _current_elem_volume(_assembly.elemVolume()),
@@ -29,16 +33,16 @@ ElementLoopUserObject::ElementLoopUserObject(const InputParameters & parameters)
     _have_interface_elems(false)
 {
   // Keep track of which variables are coupled so we know what we depend on
-  const std::vector<MooseVariable *> & coupled_vars = getCoupledMooseVars();
+  const std::vector<MooseVariableFE *> & coupled_vars = getCoupledMooseVars();
   for (unsigned int i = 0; i < coupled_vars.size(); i++)
     addMooseVariableDependency(coupled_vars[i]);
 }
 
-ElementLoopUserObject::ElementLoopUserObject(ElementLoopUserObject & x, Threads::split /*split*/) :
-    GeneralUserObject(x.parameters()),
+ElementLoopUserObject::ElementLoopUserObject(ElementLoopUserObject & x, Threads::split /*split*/)
+  : GeneralUserObject(x.parameters()),
+    BlockRestrictable(&x),
     Coupleable(this, false),
     MooseVariableDependencyInterface(),
-    ZeroInterface(x.parameters()),
     _mesh(x._subproblem.mesh()),
     _current_elem(x._assembly.elem()),
     _current_elem_volume(x._assembly.elemVolume()),
@@ -49,14 +53,12 @@ ElementLoopUserObject::ElementLoopUserObject(ElementLoopUserObject & x, Threads:
     _have_interface_elems(false)
 {
   // Keep track of which variables are coupled so we know what we depend on
-  const std::vector<MooseVariable *> & coupled_vars = x.getCoupledMooseVars();
+  const std::vector<MooseVariableFE *> & coupled_vars = x.getCoupledMooseVars();
   for (unsigned int i = 0; i < coupled_vars.size(); i++)
     addMooseVariableDependency(coupled_vars[i]);
 }
 
-ElementLoopUserObject::~ElementLoopUserObject()
-{
-}
+ElementLoopUserObject::~ElementLoopUserObject() {}
 
 void
 ElementLoopUserObject::initialize()
@@ -85,28 +87,35 @@ ElementLoopUserObject::execute()
       _old_subdomain = _subdomain;
       _subdomain = cur_subdomain;
 
-      if (_subdomain != _old_subdomain)
-        subdomainChanged();
-
-      onElement(elem);
-
-      for (unsigned int side = 0; side < elem->n_sides(); side++)
+      if (this->hasBlocks(_subdomain))
       {
-        std::vector<BoundaryID> boundary_ids = _mesh.getBoundaryIDs(elem, side);
+        if (_subdomain != _old_subdomain)
+          subdomainChanged();
 
-        if (boundary_ids.size() > 0)
-          for (std::vector<BoundaryID>::iterator it = boundary_ids.begin(); it != boundary_ids.end(); ++it)
-            onBoundary(elem, side, *it);
+        onElement(elem);
 
-        if (elem->neighbor(side) != NULL)
+        for (unsigned int side = 0; side < elem->n_sides(); side++)
         {
-          onInternalSide(elem, side);
-          if (boundary_ids.size() > 0)
-            for (std::vector<BoundaryID>::iterator it = boundary_ids.begin(); it != boundary_ids.end(); ++it)
-              onInterface(elem, side, *it);
-        }
-      } // sides
+          std::vector<BoundaryID> boundary_ids = _mesh.getBoundaryIDs(elem, side);
 
+          if (boundary_ids.size() > 0)
+            for (std::vector<BoundaryID>::iterator it = boundary_ids.begin();
+                 it != boundary_ids.end();
+                 ++it)
+              onBoundary(elem, side, *it);
+
+          if (elem->neighbor(side) != NULL)
+          {
+            if (this->hasBlocks(elem->neighbor(side)->subdomain_id()))
+              onInternalSide(elem, side);
+            if (boundary_ids.size() > 0)
+              for (std::vector<BoundaryID>::iterator it = boundary_ids.begin();
+                   it != boundary_ids.end();
+                   ++it)
+                onInterface(elem, side, *it);
+          }
+        } // sides
+      }
     } // range
 
     post();
@@ -148,7 +157,7 @@ ElementLoopUserObject::onBoundary(const Elem * /*elem*/, unsigned int side, Boun
 }
 
 void
-ElementLoopUserObject::onInternalSide(const Elem *elem, unsigned int side)
+ElementLoopUserObject::onInternalSide(const Elem * elem, unsigned int side)
 {
   _current_elem = elem;
   // Pointer to the neighbor we are currently working on.
@@ -159,21 +168,48 @@ ElementLoopUserObject::onInternalSide(const Elem *elem, unsigned int side)
   const dof_id_type neighbor_id = _current_neighbor->id();
 
   // TODO: add if-statement to check if this needs to be executed
-  if ((_current_neighbor->active() && (_current_neighbor->level() == elem->level()) && (elem_id < neighbor_id)) || (_current_neighbor->level() < elem->level()))
+  if ((_current_neighbor->active() && (_current_neighbor->level() == elem->level()) &&
+       (elem_id < neighbor_id)) ||
+      (_current_neighbor->level() < elem->level()))
   {
     computeInternalSide();
   }
 
-  if (!_have_interface_elems && (_current_elem->processor_id() != _current_neighbor->processor_id()))
+  if (!_have_interface_elems &&
+      (_current_elem->processor_id() != _current_neighbor->processor_id()))
   {
-    // if my current neighbor is on another processor store the current element ID for later communication
+    // if my current neighbor is on another processor store the current element ID for later
+    // communication
     _interface_elem_ids.insert(_current_elem->id());
   }
 }
 
 void
-ElementLoopUserObject::onInterface(const Elem * /*elem*/, unsigned int /*side*/, BoundaryID /*bnd_id*/)
+ElementLoopUserObject::onInterface(const Elem * elem, unsigned int side, BoundaryID /*bnd_id*/)
 {
+  _current_elem = elem;
+  // Pointer to the neighbor we are currently working on.
+  _current_neighbor = elem->neighbor(side);
+
+  // Get the global id of the element and the neighbor
+  const dof_id_type elem_id = elem->id();
+  const dof_id_type neighbor_id = _current_neighbor->id();
+
+  // TODO: add if-statement to check if this needs to be executed
+  if ((_current_neighbor->active() && (_current_neighbor->level() == elem->level()) &&
+       (elem_id < neighbor_id)) ||
+      (_current_neighbor->level() < elem->level()))
+  {
+    computeInterface();
+  }
+
+  if (!_have_interface_elems &&
+      (_current_elem->processor_id() != _current_neighbor->processor_id()))
+  {
+    // if my current neighbor is on another processor store the current element
+    // ID for later communication
+    _interface_elem_ids.insert(_current_elem->id());
+  }
 }
 
 void
@@ -198,6 +234,11 @@ ElementLoopUserObject::computeBoundary()
 
 void
 ElementLoopUserObject::computeInternalSide()
+{
+}
+
+void
+ElementLoopUserObject::computeInterface()
 {
 }
 

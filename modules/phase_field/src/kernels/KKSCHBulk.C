@@ -1,27 +1,42 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "KKSCHBulk.h"
 
-template<>
-InputParameters validParams<KKSCHBulk>()
+template <>
+InputParameters
+validParams<KKSCHBulk>()
 {
   InputParameters params = CHBulk<Real>::validParams();
-  params.addClassDescription("KKS model kernel for the Bulk Cahn-Hilliard term. This operates on the concentration 'c' as the non-linear variable");
-  params.addRequiredParam<MaterialPropertyName>("fa_name", "Base name of the free energy function F (f_name in the corresponding derivative function material)");
-  params.addRequiredParam<MaterialPropertyName>("fb_name", "Base name of the free energy function F (f_name in the corresponding derivative function material)");
-  params.addRequiredCoupledVar("ca", "phase concentration corresponding to the non-linear variable of this kernel");
-  params.addRequiredCoupledVar("cb", "phase concentration corresponding to the non-linear variable of this kernel");
+  params.addClassDescription("KKS model kernel for the Bulk Cahn-Hilliard term. This operates on "
+                             "the concentration 'c' as the non-linear variable");
+  params.addRequiredParam<MaterialPropertyName>("fa_name",
+                                                "Base name of the free energy function "
+                                                "F (f_name in the corresponding "
+                                                "derivative function material)");
+  params.addRequiredParam<MaterialPropertyName>("fb_name",
+                                                "Base name of the free energy function "
+                                                "F (f_name in the corresponding "
+                                                "derivative function material)");
+  params.addRequiredCoupledVar(
+      "ca", "phase concentration corresponding to the non-linear variable of this kernel");
+  params.addRequiredCoupledVar(
+      "cb", "phase concentration corresponding to the non-linear variable of this kernel");
   params.addCoupledVar("args_a", "Vector of additional arguments to Fa");
-  params.addParam<MaterialPropertyName>("h_name", "h", "Base name for the switching function h(eta)"); // TODO: everywhere else this is called just "h"
+  params.addParam<MaterialPropertyName>(
+      "h_name", "h", "Base name for the switching function h(eta)"); // TODO: everywhere else this
+                                                                     // is called just "h"
   return params;
 }
 
-KKSCHBulk::KKSCHBulk(const InputParameters & parameters) :
-    CHBulk<Real>(parameters),
+KKSCHBulk::KKSCHBulk(const InputParameters & parameters)
+  : CHBulk<Real>(parameters),
     // number of coupled variables (ca, args_a[])
     _nvar(_coupled_moose_vars.size()),
     _ca_var(coupled("ca")),
@@ -41,18 +56,21 @@ KKSCHBulk::KKSCHBulk(const InputParameters & parameters) :
   // Iterate over all coupled variables
   for (unsigned int i = 0; i < _nvar; ++i)
   {
-    MooseVariable *cvar = _coupled_moose_vars[i];
+    MooseVariable * cvar = _coupled_standard_moose_vars[i];
 
     // get the second derivative material property (TODO:warn)
-    _second_derivatives[i] = &getMaterialPropertyDerivative<Real>("fa_name", _ca_name, cvar->name());
+    _second_derivatives[i] =
+        &getMaterialPropertyDerivative<Real>("fa_name", _ca_name, cvar->name());
 
     // get the third derivative material properties
     _third_derivatives[i].resize(_nvar);
     for (unsigned int j = 0; j < _nvar; ++j)
-      _third_derivatives[i][j] = &getMaterialPropertyDerivative<Real>("fa_name", _ca_name, cvar->name(), _coupled_moose_vars[j]->name());
+      _third_derivatives[i][j] = &getMaterialPropertyDerivative<Real>(
+          "fa_name", _ca_name, cvar->name(), _coupled_moose_vars[j]->name());
 
     // third derivative for the on-diagonal jacobian
-    _third_derivatives_ca[i] = &getMaterialPropertyDerivative<Real>("fa_name", _ca_name, cvar->name(), _ca_name);
+    _third_derivatives_ca[i] =
+        &getMaterialPropertyDerivative<Real>("fa_name", _ca_name, cvar->name(), _ca_name);
 
     // get the gradient
     _grad_args[i] = &(cvar->gradSln());
@@ -61,7 +79,8 @@ KKSCHBulk::KKSCHBulk(const InputParameters & parameters) :
 
 /**
  * Note that per product and chain rules:
- * \f$ \frac{d}{du_j}\left(F(u)\nabla u\right) = \nabla u \frac {dF(u)}{du}\frac{du}{du_j} + F(u)\frac{d\nabla u}{du_j} \f$
+ * \f$ \frac{d}{du_j}\left(F(u)\nabla u\right) = \nabla u \frac {dF(u)}{du}\frac{du}{du_j} +
+ * F(u)\frac{d\nabla u}{du_j} \f$
  * which is:
  * \f$ \nabla u \frac {dF(u)}{du} \phi_j + F(u) \nabla \phi_j \f$
  */
@@ -111,5 +130,5 @@ KKSCHBulk::computeQpOffDiagJacobian(unsigned int jvar)
     res += (*_third_derivatives[i][cvar])[_qp] * (*_grad_args[i])[_qp] * _phi[_j][_qp];
 
   // keeping this term seems to improve the solution.
-  return res * _grad_test[_j][_qp];
+  return res * _grad_test[_i][_qp];
 }

@@ -1,33 +1,34 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "NodalEqualValueConstraint.h"
-#include "Assembly.h"
 
-template<>
-InputParameters validParams<NodalEqualValueConstraint>()
+// MOOSE includes
+#include "Assembly.h"
+#include "MooseVariableScalar.h"
+
+registerMooseObject("MooseApp", NodalEqualValueConstraint);
+
+template <>
+InputParameters
+validParams<NodalEqualValueConstraint>()
 {
   InputParameters params = validParams<NodalScalarKernel>();
   params.addRequiredCoupledVar("var", "Variable(s) to put the constraint on");
   return params;
 }
 
-NodalEqualValueConstraint::NodalEqualValueConstraint(const InputParameters & parameters) :
-    NodalScalarKernel(parameters)
+NodalEqualValueConstraint::NodalEqualValueConstraint(const InputParameters & parameters)
+  : NodalScalarKernel(parameters)
 {
   if (_node_ids.size() != 2)
-    mooseError(name() << ": The number of nodes has to be 2, but it is " << _node_ids.size() << ".");
+    paramError("nodes", "invalid number of nodes: want 2, got ", _node_ids.size());
 
   unsigned int n = coupledComponents("var");
   _value.resize(n);
@@ -63,7 +64,7 @@ NodalEqualValueConstraint::computeJacobian()
   {
     DenseMatrix<Number> & ken = _assembly.jacobianBlock(_var.number(), _val_number[k]);
 
-    ken(k, 0) =  1.;
+    ken(k, 0) = 1.;
     ken(k, 1) = -1.;
   }
 }

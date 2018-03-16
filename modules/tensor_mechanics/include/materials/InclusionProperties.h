@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef INCLUSIONPROPERTIES_H
 #define INCLUSIONPROPERTIES_H
@@ -11,10 +13,10 @@
 #include "Material.h"
 #include "RankTwoTensor.h"
 
-//Forward Declarations
+// Forward Declarations
 class InclusionProperties;
 
-template<>
+template <>
 InputParameters validParams<InclusionProperties>();
 
 /**
@@ -50,7 +52,6 @@ private:
   /// Kolosov's first constant
   Real _kappa;
 
-
   /**
    * Interior stress and strain values are constant so they only need to be
    * calculated once
@@ -65,4 +66,4 @@ private:
   MaterialProperty<Real> & _elastic_energy;
 };
 
-#endif //INCLUSIONPROPERTIES_H
+#endif // INCLUSIONPROPERTIES_H

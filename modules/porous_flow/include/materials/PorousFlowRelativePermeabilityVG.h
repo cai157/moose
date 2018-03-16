@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWRELATIVEPERMEABILITYVG_H
 #define POROUSFLOWRELATIVEPERMEABILITYVG_H
@@ -13,7 +15,7 @@
 
 class PorousFlowRelativePermeabilityVG;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowRelativePermeabilityVG>();
 
 /**
@@ -35,7 +37,6 @@ public:
 
 protected:
   virtual Real relativePermeability(Real seff) const override;
-
   virtual Real dRelativePermeability(Real seff) const override;
 
   /// van Genuchten exponent m for the specified phase
@@ -54,4 +55,4 @@ protected:
   const Real _cub3;
 };
 
-#endif //POROUSFLOWRELATIVEPERMEABILITYVG_H
+#endif // POROUSFLOWRELATIVEPERMEABILITYVG_H

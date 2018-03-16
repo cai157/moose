@@ -1,13 +1,17 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "HEVPLinearHardening.h"
 
-template<>
-InputParameters validParams<HEVPLinearHardening>()
+template <>
+InputParameters
+validParams<HEVPLinearHardening>()
 {
   InputParameters params = validParams<HEVPStrengthUOBase>();
   params.addParam<Real>("yield_stress", "Yield strength");
@@ -16,8 +20,8 @@ InputParameters validParams<HEVPLinearHardening>()
   return params;
 }
 
-HEVPLinearHardening::HEVPLinearHardening(const InputParameters & parameters) :
-    HEVPStrengthUOBase(parameters),
+HEVPLinearHardening::HEVPLinearHardening(const InputParameters & parameters)
+  : HEVPStrengthUOBase(parameters),
     _sig0(getParam<Real>("yield_stress")),
     _slope(getParam<Real>("slope"))
 {
@@ -31,7 +35,9 @@ HEVPLinearHardening::computeValue(unsigned int qp, Real & val) const
 }
 
 bool
-HEVPLinearHardening::computeDerivative(unsigned int /*qp*/, const std::string & coupled_var_name, Real & val) const
+HEVPLinearHardening::computeDerivative(unsigned int /*qp*/,
+                                       const std::string & coupled_var_name,
+                                       Real & val) const
 {
   val = 0;
 

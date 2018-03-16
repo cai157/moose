@@ -1,22 +1,17 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef OVERSAMPLEOUTPUT_H
 #define OVERSAMPLEOUTPUT_H
 
 // MOOSE includes
-#include "FileOutput.h"
+#include "AdvancedOutput.h"
 
 // Forward declerations
 class OversampleOutput;
@@ -25,12 +20,12 @@ class MooseMesh;
 // libMesh forward declarations
 namespace libMesh
 {
-template <typename T> class NumericVector;
+template <typename T>
+class NumericVector;
 class MeshFunction;
 }
 
-
-template<>
+template <>
 InputParameters validParams<OversampleOutput>();
 
 /**
@@ -40,7 +35,7 @@ InputParameters validParams<OversampleOutput>();
  * changes to the libMesh::EquationsSystems() pointer (_es_ptr), i.e., this pointer is
  * will point to the oversampled system, if oversamping is utilized.
  *
- * Additionally, the class adds a pointer the the mesh object (_mesh_ptr) that again
+ * Additionally, the class adds a pointer to the mesh object (_mesh_ptr) that again
  * points to the correct mesh depending on the use of oversampling.
  *
  * The use of oversampling is triggered by setting the oversample input parameter to a
@@ -48,11 +43,9 @@ InputParameters validParams<OversampleOutput>();
  *
  * @see Exodus
  */
-class OversampleOutput :
-  public FileOutput
+class OversampleOutput : public AdvancedOutput
 {
 public:
-
   /**
    * Class constructor
    *
@@ -75,17 +68,16 @@ public:
    */
   virtual void meshChanged() override;
 
-protected:
+  virtual void outputStep(const ExecFlagType & type) override;
 
+protected:
   /**
    * Performs the update of the solution vector for the oversample/re-positioned mesh
    */
   virtual void updateOversample();
 
   /**
-   * A pointer to the current mesh
-   * When using oversampling this points to the created oversampled, which must
-   * be cleaned up by the destructor.
+   * A convenience pointer to the current mesh (reference or displaced depending on "use_displaced")
    */
   MooseMesh * _mesh_ptr;
 
@@ -99,7 +91,6 @@ protected:
   bool _change_position;
 
 private:
-
   /**
    * Setups the output object to produce re-positioned and/or oversampled results.
    * This is accomplished by creating a new, finer mesh that the existing solution is projected
@@ -120,7 +111,7 @@ private:
    * This is only populated when the oversample() function is called, it must
    * be cleaned up by the destructor.
    */
-  std::vector<std::vector<MeshFunction *> > _mesh_functions;
+  std::vector<std::vector<std::unique_ptr<MeshFunction>>> _mesh_functions;
 
   /// When oversampling, the output is shift by this amount
   Point _position;
@@ -128,11 +119,16 @@ private:
   /// A flag indicating that the mesh has changed and the oversampled mesh needs to be re-initialized
   bool _oversample_mesh_changed;
 
+  std::unique_ptr<EquationSystems> _oversample_es;
+  std::unique_ptr<MooseMesh> _cloned_mesh_ptr;
+
   /// Oversample solution vector
-  /* Each of the MeshFunctions keeps a reference to this vector, the vector is updated for the current system
-   * and variable before the MeshFunction is applied. This allows for the same MeshFunction object to be
+  /* Each of the MeshFunctions keeps a reference to this vector, the vector is updated for the
+   * current system
+   * and variable before the MeshFunction is applied. This allows for the same MeshFunction object
+   * to be
    * re-used, unless the mesh has changed due to adaptivity */
-  std::unique_ptr<NumericVector<Number> > _serialized_solution;
+  std::unique_ptr<NumericVector<Number>> _serialized_solution;
 };
 
 #endif // OVERSAMPLEOUTPUT_H

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "RandomData.h"
 #include "FEProblem.h"
@@ -19,8 +14,8 @@
 
 const unsigned int MASTER = std::numeric_limits<unsigned int>::max();
 
-RandomData::RandomData(FEProblemBase &problem, const RandomInterface & random_interface) :
-    _rd_problem(problem),
+RandomData::RandomData(FEProblemBase & problem, const RandomInterface & random_interface)
+  : _rd_problem(problem),
     _rd_mesh(problem.mesh()),
     _is_nodal(random_interface.isNodal()),
     _reset_on(random_interface.getResetOnTime()),
@@ -33,7 +28,8 @@ RandomData::RandomData(FEProblemBase &problem, const RandomInterface & random_in
 unsigned int
 RandomData::getSeed(dof_id_type id)
 {
-  mooseAssert(_seeds.find(id) != _seeds.end(), "Call to updateSeeds() is stale! Check your initialize() or timestepSetup() calls");
+  mooseAssert(_seeds.find(id) != _seeds.end(),
+              "Call to updateSeeds() is stale! Check your initialize() or timestepSetup() calls");
 
   return _seeds[id];
 }
@@ -62,11 +58,11 @@ RandomData::updateSeeds(ExecFlagType exec_flag)
   {
     _current_master_seed = _new_seed;
     updateGenerators();
-    _generator.saveState();       // Save states so that we can reset on demand
+    _generator.saveState(); // Save states so that we can reset on demand
   }
 
   if (_reset_on == exec_flag)
-    _generator.restoreState();    // Restore states here
+    _generator.restoreState(); // Restore states here
 }
 
 void
@@ -96,12 +92,14 @@ RandomData::updateGenerators()
   }
 
   if (_is_nodal)
-    updateGeneratorHelper(_rd_mesh.getMesh().active_nodes_begin(), _rd_mesh.getMesh().active_nodes_end());
+    updateGeneratorHelper(_rd_mesh.getMesh().active_nodes_begin(),
+                          _rd_mesh.getMesh().active_nodes_end());
   else
-    updateGeneratorHelper(_rd_mesh.getMesh().active_elements_begin(),_rd_mesh.getMesh().active_elements_end());
+    updateGeneratorHelper(_rd_mesh.getMesh().active_elements_begin(),
+                          _rd_mesh.getMesh().active_elements_end());
 }
 
-template<typename T>
+template <typename T>
 void
 RandomData::updateGeneratorHelper(T it, T end_it)
 {

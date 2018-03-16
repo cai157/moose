@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWTEMPERATURE_H
 #define POROUSFLOWTEMPERATURE_H
@@ -13,7 +15,7 @@
 
 class PorousFlowTemperature;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowTemperature>();
 
 /**
@@ -35,7 +37,7 @@ protected:
   const VariableValue & _temperature_var;
 
   /// Gradient(_temperature at quadpoints)
-  const VariableGradient * _grad_temperature_var;
+  const VariableGradient * const _grad_temperature_var;
 
   /// Whether the temperature coupled variable is a PorousFlow variable
   const bool _temperature_is_PF;
@@ -47,19 +49,16 @@ protected:
   MaterialProperty<Real> & _temperature;
 
   /// d(computed temperature)/d(PorousFlow variable)
-  MaterialProperty<std::vector<Real> > & _dtemperature_dvar;
-
-  /// Old value of computed temperature at the nodes
-  MaterialProperty<Real> * const _temperature_old;
+  MaterialProperty<std::vector<Real>> & _dtemperature_dvar;
 
   /// Grad(temperature) at the quadpoints (not needed for nodal_materials)
   MaterialProperty<RealGradient> * const _grad_temperature;
 
   /// d(grad temperature)/d(grad PorousFlow variable) at the quadpoints
-  MaterialProperty<std::vector<Real> > * const _dgrad_temperature_dgradv;
+  MaterialProperty<std::vector<Real>> * const _dgrad_temperature_dgradv;
 
   /// d(grad temperature)/d(PorousFlow variable) at the quadpoints
-  MaterialProperty<std::vector<RealGradient> > * const _dgrad_temperature_dv;
+  MaterialProperty<std::vector<RealGradient>> * const _dgrad_temperature_dv;
 };
 
-#endif //POROUSFLOWTEMPERATURE_H
+#endif // POROUSFLOWTEMPERATURE_H

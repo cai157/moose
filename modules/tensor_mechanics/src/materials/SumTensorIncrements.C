@@ -1,28 +1,35 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "SumTensorIncrements.h"
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<SumTensorIncrements>()
+template <>
+InputParameters
+validParams<SumTensorIncrements>()
 {
   InputParameters params = validParams<Material>();
   params.addClassDescription("Compute tensor property by summing tensor increments");
   params.addRequiredParam<MaterialPropertyName>("tensor_name", "Name of strain property");
-  params.addParam<std::vector<MaterialPropertyName> >("coupled_tensor_increment_names", "Name of strain increment properties");
+  params.addParam<std::vector<MaterialPropertyName>>("coupled_tensor_increment_names",
+                                                     "Name of strain increment properties");
   return params;
 }
 
-SumTensorIncrements::SumTensorIncrements(const InputParameters & parameters) :
-    DerivativeMaterialInterface<Material>(parameters),
-    _property_names(getParam<std::vector<MaterialPropertyName> >("coupled_tensor_increment_names")),
+SumTensorIncrements::SumTensorIncrements(const InputParameters & parameters)
+  : DerivativeMaterialInterface<Material>(parameters),
+    _property_names(getParam<std::vector<MaterialPropertyName>>("coupled_tensor_increment_names")),
     _tensor(declareProperty<RankTwoTensor>(getParam<MaterialPropertyName>("tensor_name"))),
-    _tensor_old(declarePropertyOld<RankTwoTensor>(getParam<MaterialPropertyName>("tensor_name"))),
-    _tensor_increment(declareProperty<RankTwoTensor>(getParam<MaterialPropertyName>("tensor_name") + "_increment"))
+    _tensor_old(
+        getMaterialPropertyOld<RankTwoTensor>(getParam<MaterialPropertyName>("tensor_name"))),
+    _tensor_increment(declareProperty<RankTwoTensor>(getParam<MaterialPropertyName>("tensor_name") +
+                                                     "_increment"))
 {
   _num_property = _property_names.size();
 

@@ -1,20 +1,19 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "VarCouplingMaterialEigen.h"
 
-template<>
-InputParameters validParams<VarCouplingMaterialEigen>()
+registerMooseObject("MooseTestApp", VarCouplingMaterialEigen);
+
+template <>
+InputParameters
+validParams<VarCouplingMaterialEigen>()
 {
   InputParameters params = validParams<Material>();
   params.addRequiredCoupledVar("var", "The variable to be coupled in");
@@ -22,13 +21,13 @@ InputParameters validParams<VarCouplingMaterialEigen>()
   return params;
 }
 
-VarCouplingMaterialEigen::VarCouplingMaterialEigen(const InputParameters & parameters) :
-    Material(parameters),
+VarCouplingMaterialEigen::VarCouplingMaterialEigen(const InputParameters & parameters)
+  : Material(parameters),
     _var(coupledValue("var")),
     _var_old(coupledValueOld("var")),
     _propname(getParam<std::string>("material_prop_name")),
     _mat(declareProperty<Real>(_propname)),
-    _mat_old(declareProperty<Real>(_propname+"_old"))
+    _mat_old(declareProperty<Real>(_propname + "_old"))
 {
 }
 

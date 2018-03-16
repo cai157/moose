@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // C POSIX includes
 #include <sys/stat.h>
@@ -23,27 +18,38 @@
 #include <unistd.h>
 #include <time.h>
 
-template<>
-InputParameters validParams<FileOutput>()
+template <>
+InputParameters
+validParams<FileOutput>()
 {
   // Create InputParameters object for this stand-alone object
   InputParameters params = validParams<PetscOutput>();
-  params.addParam<std::string>("file_base", "The desired solution output name without an extension");
-  params.addParam<bool>("append_date", false, "When true the date and time are appended to the output filename.");
-  params.addParam<std::string>("append_date_format", "The format of the date/time to append, if not given UTC format used (see http://www.cplusplus.com/reference/ctime/strftime).");
+  params.addParam<std::string>("file_base",
+                               "The desired solution output name without an extension");
+  params.addParam<bool>(
+      "append_date", false, "When true the date and time are appended to the output filename.");
+  params.addParam<std::string>("append_date_format",
+                               "The format of the date/time to append, if not given UTC format "
+                               "used (see http://www.cplusplus.com/reference/ctime/strftime).");
   // Add the padding option and list it as 'Advanced'
-  params.addParam<unsigned int>("padding", 4, "The number of for extension suffix (e.g., out.e-s002)");
-  params.addParam<std::vector<std::string> >("output_if_base_contains", std::vector<std::string>(), "If this is supplied then output will only be done in the case that the output base contains one of these strings.  This is helpful in outputting only a subset of outputs when using MultiApps.");
+  params.addParam<unsigned int>(
+      "padding", 4, "The number of for extension suffix (e.g., out.e-s002)");
+  params.addParam<std::vector<std::string>>("output_if_base_contains",
+                                            std::vector<std::string>(),
+                                            "If this is supplied then output will only be done in "
+                                            "the case that the output base contains one of these "
+                                            "strings.  This is helpful in outputting only a subset "
+                                            "of outputs when using MultiApps.");
   params.addParamNamesToGroup("padding output_if_base_contains", "Advanced");
 
   return params;
 }
 
-FileOutput::FileOutput(const InputParameters & parameters) :
-    PetscOutput(parameters),
+FileOutput::FileOutput(const InputParameters & parameters)
+  : PetscOutput(parameters),
     _file_num(declareRecoverableData<unsigned int>("file_num", 0)),
     _padding(getParam<unsigned int>("padding")),
-    _output_if_base_contains(parameters.get<std::vector<std::string> >("output_if_base_contains"))
+    _output_if_base_contains(parameters.get<std::vector<std::string>>("output_if_base_contains"))
 {
   // If restarting reset the file number
   if (_app.isRestarting())
@@ -51,7 +57,11 @@ FileOutput::FileOutput(const InputParameters & parameters) :
 
   // Set the file base
   if (isParamValid("file_base"))
+  {
     _file_base = getParam<std::string>("file_base");
+    if (!_file_base.empty() && _file_base[0] == '/')
+      mooseError("absolute paths not allowed in output 'file_base' param");
+  }
   else if (getParam<bool>("_built_by_moose"))
     _file_base = getOutputFileBase(_app);
   else
@@ -83,7 +93,7 @@ FileOutput::FileOutput(const InputParameters & parameters) :
 
   if (_app.processor_id() == 0 && access(base.c_str(), W_OK) == -1)
   {
-    //Directory does not exist. Loop through incremental directories and create as needed.
+    // Directory does not exist. Loop through incremental directories and create as needed.
     std::vector<std::string> path_names;
     MooseUtils::tokenize(base, path_names);
     std::string inc_path = path_names[0];
@@ -119,15 +129,18 @@ FileOutput::getOutputFileBase(MooseApp & app, std::string suffix)
   mooseAssert(pos != std::string::npos, "Unable to determine suffix of input file name");
 
   // Append the "_out" to the name and return it
-  return input_filename.substr(0, pos) + suffix;
+  size_t start = 0;
+  if (input_filename.find_last_of('/') != std::string::npos)
+    start = input_filename.find_last_of('/') + 1;
+  return input_filename.substr(start, pos - start) + suffix;
 }
 
 bool
 FileOutput::shouldOutput(const ExecFlagType & type)
 {
-  if (checkFilename())
-    return PetscOutput::shouldOutput(type);
-  return false;
+  if (!checkFilename())
+    return false;
+  return Output::shouldOutput(type);
 }
 
 bool

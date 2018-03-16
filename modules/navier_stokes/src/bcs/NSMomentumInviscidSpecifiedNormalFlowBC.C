@@ -1,25 +1,33 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // Navier-Stokes includes
-#include "NSMomentumInviscidSpecifiedNormalFlowBC.h"
 #include "NS.h"
+#include "NSMomentumInviscidSpecifiedNormalFlowBC.h"
 
-template<>
-InputParameters validParams<NSMomentumInviscidSpecifiedNormalFlowBC>()
+template <>
+InputParameters
+validParams<NSMomentumInviscidSpecifiedNormalFlowBC>()
 {
   InputParameters params = validParams<NSMomentumInviscidBC>();
+  params.addClassDescription("Momentum equation boundary condition in which pressure is specified "
+                             "(given) and the value of the convective part is allowed to vary (is "
+                             "computed implicitly).");
   params.addRequiredCoupledVar(NS::pressure, "pressure");
-  params.addRequiredParam<Real>("rhou_udotn", "The _component'th entry of the (rho*u)(u.n) vector for this boundary");
+  params.addRequiredParam<Real>(
+      "rhou_udotn", "The _component'th entry of the (rho*u)(u.n) vector for this boundary");
   return params;
 }
 
-NSMomentumInviscidSpecifiedNormalFlowBC::NSMomentumInviscidSpecifiedNormalFlowBC(const InputParameters & parameters) :
-    NSMomentumInviscidBC(parameters),
+NSMomentumInviscidSpecifiedNormalFlowBC::NSMomentumInviscidSpecifiedNormalFlowBC(
+    const InputParameters & parameters)
+  : NSMomentumInviscidBC(parameters),
     _pressure(coupledValue(NS::pressure)),
     _rhou_udotn(getParam<Real>("rhou_udotn"))
 {
@@ -28,9 +36,7 @@ NSMomentumInviscidSpecifiedNormalFlowBC::NSMomentumInviscidSpecifiedNormalFlowBC
 Real
 NSMomentumInviscidSpecifiedNormalFlowBC::computeQpResidual()
 {
-  return
-    pressureQpResidualHelper(_pressure[_qp]) +
-    convectiveQpResidualHelper(_rhou_udotn);
+  return pressureQpResidualHelper(_pressure[_qp]) + convectiveQpResidualHelper(_rhou_udotn);
 }
 
 Real
@@ -42,7 +48,11 @@ NSMomentumInviscidSpecifiedNormalFlowBC::computeQpJacobian()
   return pressureQpJacobianHelper(_component + 1);
 }
 
-Real NSMomentumInviscidSpecifiedNormalFlowBC::computeQpOffDiagJacobian(unsigned jvar)
+Real
+NSMomentumInviscidSpecifiedNormalFlowBC::computeQpOffDiagJacobian(unsigned jvar)
 {
-  return pressureQpJacobianHelper(mapVarNumber(jvar));
+  if (isNSVariable(jvar))
+    return pressureQpJacobianHelper(mapVarNumber(jvar));
+  else
+    return 0.0;
 }

@@ -1,26 +1,24 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef TRANSIENTMULTIAPP_H
 #define TRANSIENTMULTIAPP_H
 
 #include "MultiApp.h"
 
+#include "libmesh/numeric_vector.h"
+
 // Forward declarations
 class TransientMultiApp;
 class Transient;
 
-template<>
+template <>
 InputParameters validParams<TransientMultiApp>();
 
 /**
@@ -28,21 +26,23 @@ InputParameters validParams<TransientMultiApp>();
  * In particular, this is important because TransientMultiApps
  * will be taken into account in the time step selection process.
  */
-class TransientMultiApp :
-  public MultiApp
+class TransientMultiApp : public MultiApp
 {
 public:
   TransientMultiApp(const InputParameters & parameters);
 
-  virtual ~TransientMultiApp();
-
-  virtual NumericVector<Number> & appTransferVector(unsigned int app, std::string var_name) override;
+  virtual NumericVector<Number> & appTransferVector(unsigned int app,
+                                                    std::string var_name) override;
 
   virtual void initialSetup() override;
 
-  virtual bool solveStep(Real dt, Real target_time, bool auto_advance=true) override;
+  virtual void restore() override;
 
-  virtual void advanceStep() override;
+  virtual bool solveStep(Real dt, Real target_time, bool auto_advance = true) override;
+
+  virtual void incrementTStep() override;
+
+  virtual void finishStep() override;
 
   virtual bool needsRestoration() override;
 
@@ -78,6 +78,8 @@ private:
   bool _catch_up;
   Real _max_catch_up_steps;
 
+  bool _keep_solution_during_restore;
+
   /// Is it our first time through the execution loop?
   bool & _first;
 
@@ -87,7 +89,7 @@ private:
   /// The DoFs associated with all of the currently transferred variables.
   std::set<dof_id_type> _transferred_dofs;
 
-  std::vector<std::map<std::string, unsigned int> > _output_file_numbers;
+  std::vector<std::map<std::string, unsigned int>> _output_file_numbers;
 
   bool _auto_advance;
 
@@ -95,6 +97,9 @@ private:
 
   /// Flag for toggling console output on sub cycles
   bool _print_sub_cycles;
+
+  /// The solution from the end of the previous solve, this is cloned from the Nonlinear solution during restore
+  std::vector<std::unique_ptr<NumericVector<Real>>> _end_solutions;
 };
 
 /**
@@ -104,20 +109,11 @@ private:
 class MultiAppSolveFailure : public std::runtime_error
 {
 public:
-  MultiAppSolveFailure(const std::string &error) throw() :
-      runtime_error(error)
-  {
-  }
+  MultiAppSolveFailure(const std::string & error) throw() : runtime_error(error) {}
 
-  MultiAppSolveFailure(const MultiAppSolveFailure & e) throw() :
-      runtime_error(e)
-  {
-  }
+  MultiAppSolveFailure(const MultiAppSolveFailure & e) throw() : runtime_error(e) {}
 
-  ~MultiAppSolveFailure() throw()
-  {
-  }
+  ~MultiAppSolveFailure() throw() {}
 };
-
 
 #endif // TRANSIENTMULTIAPP_H

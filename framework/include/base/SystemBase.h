@@ -1,28 +1,20 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef SYSTEMBASE_H
 #define SYSTEMBASE_H
 
 #include <vector>
 
-#include "VariableWarehouse.h"
-#include "ParallelUniqueId.h"
-#include "SubProblem.h"
-#include "MooseVariableScalar.h"
-#include "MooseVariable.h"
 #include "DataIO.h"
+#include "MooseTypes.h"
+#include "VariableWarehouse.h"
 
 // libMesh
 #include "libmesh/exodusII_io.h"
@@ -34,8 +26,13 @@
 // Forward declarations
 class Factory;
 class MooseApp;
-class MooseVariable;
+class MooseVariableFE;
+template <typename>
+class MooseVariableField;
+typedef MooseVariableField<Real> MooseVariable;
+typedef MooseVariableField<VectorValue<Real>> VectorMooseVariable;
 class MooseMesh;
+class SubProblem;
 class SystemBase;
 
 // libMesh forward declarations
@@ -60,27 +57,26 @@ void extraSparsity(SparsityPattern::Graph & sparsity,
 /**
  * IO Methods for restart, backup and restore.
  */
-template<>
-void
-dataStore(std::ostream & stream, SystemBase & system_base, void * context);
+template <>
+void dataStore(std::ostream & stream, SystemBase & system_base, void * context);
 
 /**
  * IO Methods for restart, backup and restore.
  */
-template<>
-void
-dataLoad(std::istream & stream, SystemBase & system_base, void * context);
+template <>
+void dataLoad(std::istream & stream, SystemBase & system_base, void * context);
 
 /**
  * Information about variables that will be copied
  */
 struct VarCopyInfo
 {
-  VarCopyInfo(const std::string & dest_name, const std::string & source_name, const std::string & timestep) :
-    _dest_name(dest_name),
-    _source_name(source_name),
-    _timestep(timestep)
-  {}
+  VarCopyInfo(const std::string & dest_name,
+              const std::string & source_name,
+              const std::string & timestep)
+    : _dest_name(dest_name), _source_name(source_name), _timestep(timestep)
+  {
+  }
 
   std::string _dest_name;
   std::string _source_name;
@@ -101,7 +97,7 @@ public:
    * Gets the number of this system
    * @return The number of this system
    */
-  virtual unsigned int number();
+  virtual unsigned int number() const;
   virtual MooseMesh & mesh() { return _mesh; }
   virtual SubProblem & subproblem() { return _subproblem; }
 
@@ -114,16 +110,23 @@ public:
    * Get the reference to the libMesh system
    */
   virtual System & system() = 0;
+  virtual const System & system() const = 0;
 
   /**
    * Initialize the system
    */
-  virtual void init() {};
+  virtual void init(){};
 
   /**
    * Called only once, just before the solve begins so objects can do some precalculations
    */
-  virtual void initializeObjects() {};
+  virtual void initializeObjects(){};
+
+  /**
+   * Method called during initialSetup to add extra system vector if they are required by
+   * the simulation
+   */
+  virtual void addExtraVectors();
 
   /**
    * Update the system (doing libMesh magic)
@@ -142,15 +145,17 @@ public:
    * The solution vector that is currently being operated on.
    * This is typically a ghosted vector that comes in from the Nonlinear solver.
    */
-  virtual const NumericVector<Number> * & currentSolution() = 0;
+  virtual const NumericVector<Number> *& currentSolution() = 0;
 
   virtual NumericVector<Number> & solution() = 0;
   virtual NumericVector<Number> & solutionOld() = 0;
   virtual NumericVector<Number> & solutionOlder() = 0;
+  virtual NumericVector<Number> * solutionPreviousNewton() = 0;
 
   virtual Number & duDotDu() { return _du_dot_du; }
   virtual NumericVector<Number> & solutionUDot() { return *_dummy_vec; }
   virtual NumericVector<Number> & residualVector(Moose::KernelType /*type*/) { return *_dummy_vec; }
+  virtual bool hasResidualVector(Moose::KernelType) const { return false; };
 
   virtual void saveOldSolutions();
   virtual void restoreOldSolutions();
@@ -158,7 +163,7 @@ public:
   /**
    * Check if the named vector exists in the system.
    */
-  virtual bool hasVector(const std::string & name);
+  virtual bool hasVector(const std::string & name) const;
 
   /**
    * Get a raw NumericVector
@@ -170,8 +175,14 @@ public:
    */
   virtual NumericVector<Number> & serializedSolution() = 0;
 
-  virtual NumericVector<Number> & residualCopy() { mooseError("This system does not support getting a copy of the residual"); }
-  virtual NumericVector<Number> & residualGhosted() { mooseError("This system does not support getting a ghosted copy of the residual"); }
+  virtual NumericVector<Number> & residualCopy()
+  {
+    mooseError("This system does not support getting a copy of the residual");
+  }
+  virtual NumericVector<Number> & residualGhosted()
+  {
+    mooseError("This system does not support getting a ghosted copy of the residual");
+  }
 
   /**
    * Will modify the send_list to add all of the extra ghosted dofs for this system
@@ -193,18 +204,23 @@ public:
    * @param scale_factor the scaling factor for the variable
    * @param active_subdomains a list of subdomain ids this variable is active on
    */
-  virtual void addVariable(const std::string & var_name, const FEType & type, Real scale_factor, const std::set<SubdomainID> * const active_subdomains = NULL);
+  virtual void addVariable(const std::string & var_name,
+                           const FEType & type,
+                           Real scale_factor,
+                           const std::set<SubdomainID> * const active_subdomains = NULL);
 
+  ///@{
   /**
    * Query a system for a variable
    *
    * @param var_name name of the variable
    * @return true if the variable exists
    */
-  virtual bool hasVariable(const std::string & var_name);
-  virtual bool hasScalarVariable(const std::string & var_name);
+  virtual bool hasVariable(const std::string & var_name) const;
+  virtual bool hasScalarVariable(const std::string & var_name) const;
+  ///@}
 
-  virtual bool isScalarVariable(unsigned int var_name);
+  virtual bool isScalarVariable(unsigned int var_name) const;
 
   /**
    * Gets a reference to a variable of with specified name
@@ -213,7 +229,7 @@ public:
    * @param var_name variable name
    * @return reference the variable (class)
    */
-  virtual MooseVariable & getVariable(THREAD_ID tid, const std::string & var_name);
+  MooseVariableFE & getVariable(THREAD_ID tid, const std::string & var_name);
 
   /**
    * Gets a reference to a variable with specified number
@@ -222,7 +238,27 @@ public:
    * @param var_number libMesh variable number
    * @return reference the variable (class)
    */
-  virtual MooseVariable & getVariable(THREAD_ID tid, unsigned int var_number);
+  MooseVariableFE & getVariable(THREAD_ID tid, unsigned int var_number);
+
+  /**
+   * Gets a reference to a variable of with specified name
+   *
+   * @param tid Thread id
+   * @param var_name variable name
+   * @return reference the variable (class)
+   */
+  template <typename T>
+  MooseVariableField<T> & getFieldVariable(THREAD_ID tid, const std::string & var_name);
+
+  /**
+   * Gets a reference to a variable with specified number
+   *
+   * @param tid Thread id
+   * @param var_number libMesh variable number
+   * @return reference the variable (class)
+   */
+  template <typename T>
+  MooseVariableField<T> & getFieldVariable(THREAD_ID tid, unsigned int var_number);
 
   /**
    * Gets a reference to a scalar variable with specified number
@@ -254,7 +290,7 @@ public:
    * Get the number of variables in this system
    * @return the number of variables
    */
-  virtual unsigned int nVariables();
+  virtual unsigned int nVariables() const;
 
   /**
    * Adds this variable to the list of variables to be zeroed during each residual evaluation.
@@ -271,7 +307,8 @@ public:
   /**
    * Zero out the solution for the list of variables passed in.
    *
-   * @ param vars_to_be_zeroed The variable names in this vector will have their solutions set to zero after this call
+   * @ param vars_to_be_zeroed The variable names in this vector will have their solutions set to
+   * zero after this call
    */
   virtual void zeroVariables(std::vector<std::string> & vars_to_be_zeroed);
 
@@ -305,7 +342,8 @@ public:
    * This will try to reuse the preparation done on the element.
    *
    * @param tid ID of the thread
-   * @param resize_data Pass True if this system needs to resize residual and jacobian datastructures based on preparing this face
+   * @param resize_data Pass True if this system needs to resize residual and jacobian
+   * datastructures based on preparing this face
    */
   virtual void prepareFace(THREAD_ID tid, bool resize_data);
 
@@ -329,12 +367,14 @@ public:
    * @param bnd_id Boundary id on that side
    * @param tid Thread ID
    */
-  virtual void reinitElemFace(const Elem * elem, unsigned int side, BoundaryID bnd_id, THREAD_ID tid);
+  virtual void
+  reinitElemFace(const Elem * elem, unsigned int side, BoundaryID bnd_id, THREAD_ID tid);
 
   /**
    * Compute the values of the variables at all the current points.
    */
-  virtual void reinitNeighborFace(const Elem * elem, unsigned int side, BoundaryID bnd_id, THREAD_ID tid);
+  virtual void
+  reinitNeighborFace(const Elem * elem, unsigned int side, BoundaryID bnd_id, THREAD_ID tid);
 
   /**
    * Compute the values of the variables at all the current points.
@@ -386,16 +426,30 @@ public:
   /**
    * Add info about variable that will be copied
    *
-   * @param dest_name Name of the nodal variable being used for copying into (name is from the exodusII file)
-   * @param source_name Name of the nodal variable being used for copying from (name is from the exodusII file)
+   * @param dest_name Name of the nodal variable being used for copying into (name is from the
+   * exodusII file)
+   * @param source_name Name of the nodal variable being used for copying from (name is from the
+   * exodusII file)
    * @param timestep Timestep in the file being used
    */
-  virtual void addVariableToCopy(const std::string & dest_name, const std::string & source_name, const std::string & timestep);
+  virtual void addVariableToCopy(const std::string & dest_name,
+                                 const std::string & source_name,
+                                 const std::string & timestep);
 
-  const std::vector<MooseVariable *> & getVariables(THREAD_ID tid) { return _vars[tid].variables(); }
-  const std::vector<MooseVariableScalar *> & getScalarVariables(THREAD_ID tid) { return _vars[tid].scalars(); }
+  const std::vector<MooseVariableFE *> & getVariables(THREAD_ID tid)
+  {
+    return _vars[tid].fieldVariables();
+  }
 
-  const std::set<SubdomainID> & getSubdomainsForVar(unsigned int var_number) const { return _var_map.at(var_number); }
+  const std::vector<MooseVariableScalar *> & getScalarVariables(THREAD_ID tid)
+  {
+    return _vars[tid].scalars();
+  }
+
+  const std::set<SubdomainID> & getSubdomainsForVar(unsigned int var_number) const
+  {
+    return _var_map.at(var_number);
+  }
 
   /**
    * Remove a vector from the system with the given name.
@@ -407,14 +461,18 @@ public:
    *
    * @param vector_name The name of the vector.
    * @param project Whether or not to project this vector when doing mesh refinement.
-   *                If the vector is just going to be recomputed then there is no need to project it.
+   *                If the vector is just going to be recomputed then there is no need to project
+   * it.
    * @param type What type of parallel vector.  This is usually either PARALLEL or GHOSTED.
-   *                                            GHOSTED is needed if you are going to be accessing off-processor entries.
-   *                                            The ghosting pattern is the same as the solution vector.
+   *                                            GHOSTED is needed if you are going to be accessing
+   * off-processor entries.
+   *                                            The ghosting pattern is the same as the solution
+   * vector.
    */
-  virtual NumericVector<Number> & addVector(const std::string & vector_name, const bool project, const ParallelType type);
+  virtual NumericVector<Number> &
+  addVector(const std::string & vector_name, const bool project, const ParallelType type);
 
-  virtual const std::string & name() { return system().name(); }
+  virtual const std::string & name() const { return system().name(); }
 
   /**
    * Adds a scalar variable
@@ -422,11 +480,14 @@ public:
    * @param order The order of the variable
    * @param scale_factor The scaling factor to be used with this scalar variable
    */
-  virtual void addScalarVariable(const std::string & var_name, Order order, Real scale_factor, const std::set<SubdomainID> * const active_subdomains = NULL);
+  virtual void addScalarVariable(const std::string & var_name,
+                                 Order order,
+                                 Real scale_factor,
+                                 const std::set<SubdomainID> * const active_subdomains = NULL);
 
   const std::vector<VariableName> & getVariableNames() const { return _vars[0].names(); };
 
-  virtual void computeVariables(const NumericVector<Number> & /*soln*/) { };
+  virtual void computeVariables(const NumericVector<Number> & /*soln*/){};
 
   void copyVars(ExodusII_IO & io);
 
@@ -448,14 +509,14 @@ protected:
   /// Variable warehouses (one for each thread)
   std::vector<VariableWarehouse> _vars;
   /// Map of variables (variable id -> array of subdomains where it lives)
-  std::map<unsigned int, std::set<SubdomainID> > _var_map;
+  std::map<unsigned int, std::set<SubdomainID>> _var_map;
 
   std::vector<std::string> _vars_to_be_zeroed_on_residual;
   std::vector<std::string> _vars_to_be_zeroed_on_jacobian;
 
   Real _du_dot_du;
 
-  NumericVector<Number> * _dummy_vec;                     // to satisfy the interface
+  NumericVector<Number> * _dummy_vec; // to satisfy the interface
 
   // Used for saving old solutions so that they wont be accidentally changed
   NumericVector<Real> * _saved_old;
@@ -470,6 +531,5 @@ protected:
 #define PARALLEL_TRY
 
 #define PARALLEL_CATCH _fe_problem.checkExceptionAndStopSolve();
-
 
 #endif /* SYSTEMBASE_H */

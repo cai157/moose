@@ -1,32 +1,31 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "MatDiffusion.h"
 
-template<>
-InputParameters validParams<MatDiffusion>()
+registerMooseObject("MooseTestApp", MatDiffusion);
+
+template <>
+InputParameters
+validParams<MatDiffusion>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addRequiredParam<MaterialPropertyName>("prop_name", "the name of the material property we are going to use");
+  params.addRequiredParam<MaterialPropertyName>(
+      "prop_name", "the name of the material property we are going to use");
 
   MooseEnum prop_state("current old older", "current");
-  params.addParam<MooseEnum>("prop_state", prop_state, "Declares which property state we should retrieve");
+  params.addParam<MooseEnum>(
+      "prop_state", prop_state, "Declares which property state we should retrieve");
   return params;
 }
 
-
-MatDiffusion::MatDiffusion(const InputParameters & parameters) :
-    Kernel(parameters)
+MatDiffusion::MatDiffusion(const InputParameters & parameters) : Kernel(parameters)
 {
   MooseEnum prop_state = getParam<MooseEnum>("prop_state");
 

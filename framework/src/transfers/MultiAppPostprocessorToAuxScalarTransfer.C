@@ -1,40 +1,44 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "MultiAppPostprocessorToAuxScalarTransfer.h"
 
 // MOOSE includes
-#include "MooseTypes.h"
 #include "FEProblem.h"
+#include "MooseTypes.h"
+#include "MooseVariableScalar.h"
 #include "MultiApp.h"
+#include "SystemBase.h"
 
-// libMesh includes
 #include "libmesh/meshfree_interpolation.h"
 #include "libmesh/system.h"
 
 // Define the input parameters
-template<>
-InputParameters validParams<MultiAppPostprocessorToAuxScalarTransfer>()
+registerMooseObject("MooseApp", MultiAppPostprocessorToAuxScalarTransfer);
+
+template <>
+InputParameters
+validParams<MultiAppPostprocessorToAuxScalarTransfer>()
 {
   InputParameters params = validParams<MultiAppTransfer>();
-  params.addRequiredParam<PostprocessorName>("from_postprocessor", "The name of the Postprocessor in the Master to transfer the value from.");
-  params.addRequiredParam<VariableName>("to_aux_scalar", "The name of the scalar Aux variable in the MultiApp to transfer the value to.");
+  params.addRequiredParam<PostprocessorName>(
+      "from_postprocessor",
+      "The name of the Postprocessor in the Master to transfer the value from.");
+  params.addRequiredParam<VariableName>(
+      "to_aux_scalar",
+      "The name of the scalar Aux variable in the MultiApp to transfer the value to.");
   return params;
 }
 
-MultiAppPostprocessorToAuxScalarTransfer::MultiAppPostprocessorToAuxScalarTransfer(const InputParameters & parameters) :
-    MultiAppTransfer(parameters),
+MultiAppPostprocessorToAuxScalarTransfer::MultiAppPostprocessorToAuxScalarTransfer(
+    const InputParameters & parameters)
+  : MultiAppTransfer(parameters),
     _from_pp_name(getParam<PostprocessorName>("from_postprocessor")),
     _to_aux_name(getParam<VariableName>("to_aux_scalar"))
 {
@@ -56,11 +60,12 @@ MultiAppPostprocessorToAuxScalarTransfer::execute()
       Real pp_value = from_problem.getPostprocessorValue(_from_pp_name);
 
       // Loop through each of the sub apps
-      for (unsigned int i=0; i<_multi_app->numGlobalApps(); i++)
+      for (unsigned int i = 0; i < _multi_app->numGlobalApps(); i++)
         if (_multi_app->hasLocalApp(i))
         {
           // Get reference to the AuxVariable where the postprocessor will be passed
-          MooseVariableScalar & scalar =  _multi_app->appProblemBase(i).getScalarVariable(_tid, _to_aux_name);
+          MooseVariableScalar & scalar =
+              _multi_app->appProblemBase(i).getScalarVariable(_tid, _to_aux_name);
 
           scalar.reinit();
 
@@ -81,7 +86,8 @@ MultiAppPostprocessorToAuxScalarTransfer::execute()
       unsigned int num_apps = _multi_app->numGlobalApps();
 
       // The AuxVariable for storing the postprocessor values from the sub app
-      MooseVariableScalar & scalar =  _multi_app->problemBase().getScalarVariable(_tid, _to_aux_name);
+      MooseVariableScalar & scalar =
+          _multi_app->problemBase().getScalarVariable(_tid, _to_aux_name);
 
       // Ensure that the variable is up to date
       scalar.reinit();
@@ -91,13 +97,19 @@ MultiAppPostprocessorToAuxScalarTransfer::execute()
 
       // Error if there is a size mismatch between the scalar AuxVariable and the number of sub apps
       if (num_apps != scalar.sln().size())
-        mooseError("The number of sub apps (" << num_apps << ") must be equal to the order of the scalar AuxVariable (" << scalar.order() << ")");
+        mooseError("The number of sub apps (",
+                   num_apps,
+                   ") must be equal to the order of the scalar AuxVariable (",
+                   scalar.order(),
+                   ")");
 
       // Loop over each sub-app and populate the AuxVariable values from the postprocessors
-      for (unsigned int i=0; i<_multi_app->numGlobalApps(); i++)
+      for (unsigned int i = 0; i < _multi_app->numGlobalApps(); i++)
         if (_multi_app->hasLocalApp(i) && _multi_app->isRootProcessor())
-          // Note: This can't be done using MooseScalarVariable::insert() because different processors will be setting dofs separately.
-          scalar.sys().solution().set(dof[i], _multi_app->appProblemBase(i).getPostprocessorValue(_from_pp_name));
+          // Note: This can't be done using MooseScalarVariable::insert() because different
+          // processors will be setting dofs separately.
+          scalar.sys().solution().set(
+              dof[i], _multi_app->appProblemBase(i).getPostprocessorValue(_from_pp_name));
 
       scalar.sys().solution().close();
 

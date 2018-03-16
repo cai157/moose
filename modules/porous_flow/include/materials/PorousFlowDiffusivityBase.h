@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWDIFFUSIVITYBASE_H
 #define POROUSFLOWDIFFUSIVITYBASE_H
@@ -12,7 +14,7 @@
 
 class PorousFlowDiffusivityBase;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowDiffusivityBase>();
 
 /// Base class Material designed to provide the tortuosity and diffusion coefficents
@@ -25,19 +27,19 @@ protected:
   virtual void computeQpProperties() override;
 
   /// Tortuosity tau_0 * tau_{alpha} for fluid phase alpha
-  MaterialProperty<std::vector<Real> > & _tortuosity;
+  MaterialProperty<std::vector<Real>> & _tortuosity;
 
   /// Derivative of tortuosity wrt PorousFlow variables
-  MaterialProperty<std::vector<std::vector<Real> > > & _dtortuosity_dvar;
+  MaterialProperty<std::vector<std::vector<Real>>> & _dtortuosity_dvar;
 
   /// Diffusion coefficients of component k in fluid phase alpha
-  MaterialProperty<std::vector<std::vector<Real> > > & _diffusion_coeff;
+  MaterialProperty<std::vector<std::vector<Real>>> & _diffusion_coeff;
 
   /// Derivative of the diffusion coefficients wrt PorousFlow variables
-  MaterialProperty<std::vector<std::vector<std::vector<Real> > > > & _ddiffusion_coeff_dvar;
+  MaterialProperty<std::vector<std::vector<std::vector<Real>>>> & _ddiffusion_coeff_dvar;
 
   /// Input diffusion coefficients
   const std::vector<Real> _input_diffusion_coeff;
 };
 
-#endif //POROUSFLOWDIFFUSIVITYBASE_H
+#endif // POROUSFLOWDIFFUSIVITYBASE_H

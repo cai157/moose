@@ -1,37 +1,31 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "KernelGrad.h"
+
+// MOOSE includes
+#include "Assembly.h"
+#include "MooseVariableField.h"
 #include "SubProblem.h"
 #include "SystemBase.h"
-#include "Assembly.h"
 
-// libmesh includes
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<KernelGrad>()
+template <>
+InputParameters
+validParams<KernelGrad>()
 {
   InputParameters params = validParams<Kernel>();
   return params;
 }
 
-
-KernelGrad::KernelGrad(const InputParameters & parameters):
-    Kernel(parameters)
-{
-}
+KernelGrad::KernelGrad(const InputParameters & parameters) : Kernel(parameters) {}
 
 void
 KernelGrad::computeResidual()
@@ -44,7 +38,7 @@ KernelGrad::computeResidual()
   for (_qp = 0; _qp < _qrule->n_points(); _qp++)
   {
     RealGradient value = precomputeQpResidual() * _JxW[_qp] * _coord[_qp];
-    for (_i = 0; _i < n_test; _i++)  // target for auto vectorization
+    for (_i = 0; _i < n_test; _i++) // target for auto vectorization
       _local_re(_i) += value * _grad_test[_i][_qp];
   }
 
@@ -81,7 +75,7 @@ KernelGrad::computeJacobian()
     const unsigned int rows = ke.m();
     DenseVector<Number> diag(rows);
     for (unsigned int i = 0; i < rows; i++) // target for auto vectorization
-      diag(i) = _local_ke(i,i);
+      diag(i) = _local_ke(i, i);
 
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
     for (const auto & var : _diag_save_in)

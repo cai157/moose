@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef TENSORMECHANICSPLASTICDRUCKERPRAGER_H
 #define TENSORMECHANICSPLASTICDRUCKERPRAGER_H
 
@@ -12,7 +15,7 @@
 
 class TensorMechanicsPlasticDruckerPrager;
 
-template<>
+template <>
 InputParameters validParams<TensorMechanicsPlasticDruckerPrager>();
 
 /**
@@ -24,48 +27,10 @@ InputParameters validParams<TensorMechanicsPlasticDruckerPrager>();
  */
 class TensorMechanicsPlasticDruckerPrager : public TensorMechanicsPlasticModel
 {
- public:
+public:
   TensorMechanicsPlasticDruckerPrager(const InputParameters & parameters);
 
   virtual std::string modelName() const override;
-
- protected:
-  /// Hardening model for cohesion
-  const TensorMechanicsHardeningModel & _mc_cohesion;
-
-  /// Hardening model for tan(phi)
-  const TensorMechanicsHardeningModel & _mc_phi;
-
-  /// Hardening model for tan(psi)
-  const TensorMechanicsHardeningModel & _mc_psi;
-
-  virtual Real yieldFunction(const RankTwoTensor & stress, Real intnl) const override;
-
-  virtual RankTwoTensor dyieldFunction_dstress(const RankTwoTensor & stress, Real intnl) const override;
-
-  virtual Real dyieldFunction_dintnl(const RankTwoTensor & stress, Real intnl) const override;
-
-  virtual RankTwoTensor flowPotential(const RankTwoTensor & stress, Real intnl) const override;
-
-  virtual RankFourTensor dflowPotential_dstress(const RankTwoTensor & stress, Real intnl) const override;
-
-  virtual RankTwoTensor dflowPotential_dintnl(const RankTwoTensor & stress, Real intnl) const override;
-
-  /**
-   * The parameters aaa and bbb are chosen to closely match the Mohr-Coulomb
-   * yield surface.  Various matching schemes may be used and this parameter
-   * holds the user's choice.
-   */
-  const MooseEnum _mc_interpolation_scheme;
-
-  /// True if there is no hardening of cohesion
-  const bool _zero_cohesion_hardening;
-
-  /// True if there is no hardening of friction angle
-  const bool _zero_phi_hardening;
-
-  /// True if there is no hardening of dilation angle
-  const bool _zero_psi_hardening;
 
   /// Calculates aaa and bbb as a function of the internal parameter intnl
   void bothAB(Real intnl, Real & aaa, Real & bbb) const;
@@ -77,7 +42,11 @@ class TensorMechanicsPlasticDruckerPrager : public TensorMechanicsPlasticModel
    * bbb (friction) and bbb_flow (dilation) are computed using the same function,
    * onlyB, and this parameter tells that function whether to compute bbb or bbb_flow
    */
-  enum FrictionDilation { friction = 0, dilation = 1 };
+  enum FrictionDilation
+  {
+    friction = 0,
+    dilation = 1
+  };
 
   /**
    * Calculate bbb or bbb_flow
@@ -95,10 +64,51 @@ class TensorMechanicsPlasticDruckerPrager : public TensorMechanicsPlasticModel
    */
   void donlyB(Real intnl, int fd, Real & dbbb) const;
 
+protected:
+  /// Hardening model for cohesion
+  const TensorMechanicsHardeningModel & _mc_cohesion;
+
+  /// Hardening model for tan(phi)
+  const TensorMechanicsHardeningModel & _mc_phi;
+
+  /// Hardening model for tan(psi)
+  const TensorMechanicsHardeningModel & _mc_psi;
+
+  virtual Real yieldFunction(const RankTwoTensor & stress, Real intnl) const override;
+
+  virtual RankTwoTensor dyieldFunction_dstress(const RankTwoTensor & stress,
+                                               Real intnl) const override;
+
+  virtual Real dyieldFunction_dintnl(const RankTwoTensor & stress, Real intnl) const override;
+
+  virtual RankTwoTensor flowPotential(const RankTwoTensor & stress, Real intnl) const override;
+
+  virtual RankFourTensor dflowPotential_dstress(const RankTwoTensor & stress,
+                                                Real intnl) const override;
+
+  virtual RankTwoTensor dflowPotential_dintnl(const RankTwoTensor & stress,
+                                              Real intnl) const override;
+
+  /**
+   * The parameters aaa and bbb are chosen to closely match the Mohr-Coulomb
+   * yield surface.  Various matching schemes may be used and this parameter
+   * holds the user's choice.
+   */
+  const MooseEnum _mc_interpolation_scheme;
+
+  /// True if there is no hardening of cohesion
+  const bool _zero_cohesion_hardening;
+
+  /// True if there is no hardening of friction angle
+  const bool _zero_phi_hardening;
+
+  /// True if there is no hardening of dilation angle
+  const bool _zero_psi_hardening;
+
   /// Function that's used in dyieldFunction_dstress and flowPotential
   virtual RankTwoTensor df_dsig(const RankTwoTensor & stress, Real bbb) const;
 
- private:
+private:
   Real _aaa;
   Real _bbb;
   Real _bbb_flow;
@@ -128,7 +138,8 @@ class TensorMechanicsPlasticDruckerPrager : public TensorMechanicsPlasticModel
    * aaa = k
    * bbb = -alpha/3
    * @param intnl The internal parameter
-   * @param fd If fd == frction then the friction angle is used to set bbb, otherwise the dilation angle is used
+   * @param fd If fd == frction then the friction angle is used to set bbb, otherwise the dilation
+   * angle is used
    * @param[out] bbb The Drucker-Prager bbb quantity
    */
   void initializeB(Real intnl, int fd, Real & bbb) const;

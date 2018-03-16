@@ -1,13 +1,17 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "OrderParameterFunctionMaterial.h"
 
-template<>
-InputParameters validParams<OrderParameterFunctionMaterial>()
+template <>
+InputParameters
+validParams<OrderParameterFunctionMaterial>()
 {
   InputParameters params = validParams<Material>();
   params.addCoupledVar("eta", "Order parameter variable");
@@ -15,8 +19,8 @@ InputParameters validParams<OrderParameterFunctionMaterial>()
   return params;
 }
 
-OrderParameterFunctionMaterial::OrderParameterFunctionMaterial(const InputParameters & parameters) :
-    DerivativeMaterialInterface<Material>(parameters),
+OrderParameterFunctionMaterial::OrderParameterFunctionMaterial(const InputParameters & parameters)
+  : DerivativeMaterialInterface<Material>(parameters),
     _eta(coupledValue("eta")),
     _eta_var(coupled("eta")),
     _eta_name(getVar("eta", 0)->name()),
@@ -26,4 +30,3 @@ OrderParameterFunctionMaterial::OrderParameterFunctionMaterial(const InputParame
     _prop_d2f(declarePropertyDerivative<Real>(_function_name, _eta_name, _eta_name))
 {
 }
-

@@ -1,23 +1,17 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef ADDSIDESETSBASE_H
 #define ADDSIDESETSBASE_H
 
 #include "MeshModifier.h"
 
-// libMesh includes
 #include "libmesh/fe_base.h"
 
 // Forward declarations
@@ -26,10 +20,10 @@ class AddSideSetsBase;
 // libMesh forward declarations
 namespace libMesh
 {
-  class QGauss;
+class QGauss;
 }
 
-template<>
+template <>
 InputParameters validParams<AddSideSetsBase>();
 
 class AddSideSetsBase : public MeshModifier
@@ -56,7 +50,7 @@ protected:
    * This method implements a recursive flood routine to paint a sideset of
    * mesh to neighboring faces given a starting element and normal.
    */
-  void flood(const Elem *elem, Point normal, BoundaryID side_id);
+  void flood(const Elem * elem, Point normal, BoundaryID side_id);
 
   BoundaryID getNextBoundaryID() const;
 
@@ -65,7 +59,7 @@ protected:
 
   std::unique_ptr<FEBase> _fe_face;
   std::unique_ptr<QGauss> _qface;
-  std::map<BoundaryID, std::set<const Elem *> > _visited;
+  std::map<BoundaryID, std::set<const Elem *>> _visited;
 };
 
 #endif /* ADDSIDESETSBASE_H */

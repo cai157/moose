@@ -1,16 +1,12 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef DERIVATIVEMATERIALINTERFACETESTCLIENT_H
 #define DERIVATIVEMATERIALINTERFACETESTCLIENT_H
 
@@ -19,7 +15,7 @@
 
 class DerivativeMaterialInterfaceTestClient;
 
-template<>
+template <>
 InputParameters validParams<DerivativeMaterialInterfaceTestClient>();
 
 /**
@@ -36,8 +32,8 @@ public:
 protected:
   MaterialPropertyName _prop_name;
   bool _by_name;
-  const MaterialProperty<Real> & _prop0, & _prop1, & _prop2, & _prop3, & _prop4, & _prop5;
+  const MaterialProperty<Real> &_prop0, &_prop1, &_prop2, &_prop3, &_prop4, &_prop5;
   const MaterialProperty<dof_id_type> & _prop6;
 };
 
-#endif //DERIVATIVEMATERIALINTERFACETESTCLIENT_H
+#endif // DERIVATIVEMATERIALINTERFACETESTCLIENT_H

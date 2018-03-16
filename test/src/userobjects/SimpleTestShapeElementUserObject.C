@@ -1,32 +1,29 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SimpleTestShapeElementUserObject.h"
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<SimpleTestShapeElementUserObject>()
+registerMooseObject("MooseTestApp", SimpleTestShapeElementUserObject);
+
+template <>
+InputParameters
+validParams<SimpleTestShapeElementUserObject>()
 {
   InputParameters params = validParams<ShapeElementUserObject>();
   params.addRequiredCoupledVar("u", "intergral variable");
   return params;
 }
 
-SimpleTestShapeElementUserObject::SimpleTestShapeElementUserObject(const InputParameters & parameters) :
-    ShapeElementUserObject(parameters),
-    _u_value(coupledValue("u")),
-    _u_var(coupled("u"))
+SimpleTestShapeElementUserObject::SimpleTestShapeElementUserObject(
+    const InputParameters & parameters)
+  : ShapeElementUserObject(parameters), _u_value(coupledValue("u")), _u_var(coupled("u"))
 {
 }
 
@@ -79,13 +76,15 @@ SimpleTestShapeElementUserObject::finalize()
 void
 SimpleTestShapeElementUserObject::threadJoin(const UserObject & y)
 {
-  const SimpleTestShapeElementUserObject & shp_uo = dynamic_cast<const SimpleTestShapeElementUserObject &>(y);
+  const SimpleTestShapeElementUserObject & shp_uo =
+      dynamic_cast<const SimpleTestShapeElementUserObject &>(y);
 
   _integral += shp_uo._integral;
 
   if (_fe_problem.currentlyComputingJacobian())
   {
-    mooseAssert(_jacobian_storage.size() == shp_uo._jacobian_storage.size(), "Jacobian storage size is inconsistent across threads");
+    mooseAssert(_jacobian_storage.size() == shp_uo._jacobian_storage.size(),
+                "Jacobian storage size is inconsistent across threads");
     for (unsigned int i = 0; i < _jacobian_storage.size(); ++i)
       _jacobian_storage[i] += shp_uo._jacobian_storage[i];
   }

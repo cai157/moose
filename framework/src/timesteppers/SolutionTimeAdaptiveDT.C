@@ -1,66 +1,66 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SolutionTimeAdaptiveDT.h"
 #include "FEProblem.h"
 #include "Transient.h"
 
-template<>
-InputParameters validParams<SolutionTimeAdaptiveDT>()
+#include <chrono>
+
+registerMooseObject("MooseApp", SolutionTimeAdaptiveDT);
+
+template <>
+InputParameters
+validParams<SolutionTimeAdaptiveDT>()
 {
   InputParameters params = validParams<TimeStepper>();
-  params.addParam<Real>("percent_change", 0.1, "Percentage to change the timestep by.  Should be between 0 and 1");
-  params.addParam<int>("initial_direction", 1, "Direction for the first step.  1 for up... -1 for down. ");
-  params.addParam<bool>("adapt_log", false,    "Output adaptive time step log");
+  params.addParam<Real>(
+      "percent_change", 0.1, "Percentage to change the timestep by.  Should be between 0 and 1");
+  params.addParam<int>(
+      "initial_direction", 1, "Direction for the first step.  1 for up... -1 for down. ");
+  params.addParam<bool>("adapt_log", false, "Output adaptive time step log");
   params.addRequiredParam<Real>("dt", "The timestep size between solves");
 
   return params;
 }
 
-SolutionTimeAdaptiveDT::SolutionTimeAdaptiveDT(const InputParameters & parameters) :
-    TimeStepper(parameters),
+SolutionTimeAdaptiveDT::SolutionTimeAdaptiveDT(const InputParameters & parameters)
+  : TimeStepper(parameters),
     _direction(getParam<int>("initial_direction")),
     _percent_change(getParam<Real>("percent_change")),
     _older_sol_time_vs_dt(std::numeric_limits<Real>::max()),
     _old_sol_time_vs_dt(std::numeric_limits<Real>::max()),
     _sol_time_vs_dt(std::numeric_limits<Real>::max()),
     _adapt_log(getParam<bool>("adapt_log"))
+
 {
   if ((_adapt_log) && (processor_id() == 0))
   {
     _adaptive_log.open("adaptive_log");
-    _adaptive_log<<"Adaptive Times Step Log"<<std::endl;
+    _adaptive_log << "Adaptive Times Step Log" << std::endl;
   }
 }
 
-SolutionTimeAdaptiveDT::~SolutionTimeAdaptiveDT()
-{
-  _adaptive_log.close();
-}
+SolutionTimeAdaptiveDT::~SolutionTimeAdaptiveDT() { _adaptive_log.close(); }
 
 void
 SolutionTimeAdaptiveDT::step()
 {
-  gettimeofday(&_solve_start, NULL);
+  auto solve_start = std::chrono::system_clock::now();
 
   TimeStepper::step();
 
   if (converged())
   {
-    gettimeofday (&_solve_end, NULL);
-    double elapsed_time = (static_cast<double>(_solve_end.tv_sec  - _solve_start.tv_sec) +
-                           static_cast<double>(_solve_end.tv_usec - _solve_start.tv_usec)*1.e-6);
+    auto solve_end = std::chrono::system_clock::now();
+    auto elapsed_time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(solve_end - solve_start).count();
 
     _older_sol_time_vs_dt = _old_sol_time_vs_dt;
     _old_sol_time_vs_dt = _sol_time_vs_dt;
@@ -77,7 +77,7 @@ SolutionTimeAdaptiveDT::computeInitialDT()
 Real
 SolutionTimeAdaptiveDT::computeDT()
 {
-  //Ratio grew so switch direction
+  // Ratio grew so switch direction
   if (_sol_time_vs_dt > _old_sol_time_vs_dt && _sol_time_vs_dt > _older_sol_time_vs_dt)
   {
     _direction *= -1;
@@ -87,8 +87,7 @@ SolutionTimeAdaptiveDT::computeDT()
     _older_sol_time_vs_dt = std::numeric_limits<Real>::max();
   }
 
-//  if (_t_step > 1)
-  Real local_dt =  _dt + _dt * _percent_change*_direction;
+  Real local_dt = _dt + _dt * _percent_change * _direction;
 
   if ((_adapt_log) && (processor_id() == 0))
   {
@@ -96,11 +95,10 @@ SolutionTimeAdaptiveDT::computeDT()
     if (out_dt > _dt_max)
       out_dt = _dt_max;
 
-    _adaptive_log<<"***Time step: "<<_t_step<<", time = "<<_time+out_dt<<std::endl;
-    _adaptive_log<<"Cur DT: "<<out_dt<<std::endl;
-    _adaptive_log<<"Older Ratio: "<<_older_sol_time_vs_dt<<std::endl;
-    _adaptive_log<<"Old Ratio: "<<_old_sol_time_vs_dt<<std::endl;
-    _adaptive_log<<"New Ratio: "<<_sol_time_vs_dt<<std::endl;
+    _adaptive_log << "***Time step: " << _t_step << ", time = " << _time + out_dt
+                  << "\nCur DT: " << out_dt << "\nOlder Ratio: " << _older_sol_time_vs_dt
+                  << "\nOld Ratio: " << _old_sol_time_vs_dt << "\nNew Ratio: " << _sol_time_vs_dt
+                  << std::endl;
   }
 
   return local_dt;
@@ -115,4 +113,3 @@ SolutionTimeAdaptiveDT::rejectStep()
 
   TimeStepper::rejectStep();
 }
-

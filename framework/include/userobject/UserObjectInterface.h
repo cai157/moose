@@ -1,24 +1,18 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef USEROBJECTINTERFACE_H
 #define USEROBJECTINTERFACE_H
 
 // MOOSE includes
-#include "ParallelUniqueId.h"
-#include "FEProblem.h"
-#include "UserObject.h"
+#include "FEProblemBase.h"
+#include "MooseTypes.h"
 
 // Forward declarations
 class InputParameters;
@@ -42,7 +36,7 @@ public:
    * @param name The name of the parameter key of the user object to retrieve
    * @return The user object with name associated with the parameter 'name'
    */
-  template<class T>
+  template <class T>
   const T & getUserObject(const std::string & name);
 
   /**
@@ -50,7 +44,7 @@ public:
    * @param name The name of the user object to retrieve
    * @return The user object with the name
    */
-  template<class T>
+  template <class T>
   const T & getUserObjectByName(const std::string & name);
 
   /**
@@ -81,8 +75,7 @@ private:
   bool isDiscreteUserObject(const UserObject & uo) const;
 };
 
-
-template<class T>
+template <class T>
 const T &
 UserObjectInterface::getUserObject(const std::string & name)
 {
@@ -90,7 +83,7 @@ UserObjectInterface::getUserObject(const std::string & name)
   return _uoi_feproblem.getUserObject<T>(_uoi_params.get<UserObjectName>(name), tid);
 }
 
-template<class T>
+template <class T>
 const T &
 UserObjectInterface::getUserObjectByName(const std::string & name)
 {
@@ -98,4 +91,4 @@ UserObjectInterface::getUserObjectByName(const std::string & name)
   return _uoi_feproblem.getUserObject<T>(name, tid);
 }
 
-#endif //USEROBJECTINTERFACE_H
+#endif // USEROBJECTINTERFACE_H

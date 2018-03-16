@@ -1,22 +1,26 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef TOTALFREEENERGYBASE_H
 #define TOTALFREEENERGYBASE_H
 
 #include "AuxKernel.h"
 
-//Forward Declarations
+// Forward Declarations
 class TotalFreeEnergyBase;
 
-template<>
+template <>
 InputParameters validParams<TotalFreeEnergyBase>();
 
 /**
- * Total free energy (both the bulk and gradient parts), where the bulk free energy has been defined in a material and called f_name
+ * Total free energy (both the bulk and gradient parts), where the bulk free energy has been defined
+ * in a material and called f_name
  */
 class TotalFreeEnergyBase : public AuxKernel
 {
@@ -39,4 +43,4 @@ protected:
   const VariableValue & _additional_free_energy;
 };
 
-#endif //TOTALFREEENERGYBASE_H
+#endif // TOTALFREEENERGYBASE_H

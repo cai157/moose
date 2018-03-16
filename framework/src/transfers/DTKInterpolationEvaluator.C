@@ -1,16 +1,12 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "libmesh/libmesh_config.h"
 
 #ifdef LIBMESH_TRILINOS_HAVE_DTK
@@ -19,7 +15,6 @@
 #include "DTKInterpolationEvaluator.h"
 #include "DTKInterpolationHelper.h"
 
-// libMesh includes
 #include "libmesh/dof_map.h"
 #include "libmesh/fe_interface.h"
 #include "libmesh/fe_compute_data.h"
@@ -31,8 +26,10 @@
 namespace libMesh
 {
 
-DTKInterpolationEvaluator::DTKInterpolationEvaluator(System & in_sys, std::string var_name, const Point & offset):
-    sys(in_sys),
+DTKInterpolationEvaluator::DTKInterpolationEvaluator(System & in_sys,
+                                                     std::string var_name,
+                                                     const Point & offset)
+  : sys(in_sys),
     _offset(offset),
     current_local_solution(*sys.current_local_solution),
     es(in_sys.get_equation_systems()),
@@ -41,36 +38,38 @@ DTKInterpolationEvaluator::DTKInterpolationEvaluator(System & in_sys, std::strin
     dof_map(sys.get_dof_map()),
     var_num(sys.variable_number(var_name)),
     fe_type(dof_map.variable_type(var_num))
-{}
+{
+}
 
 DTKInterpolationEvaluator::FieldContainerType
-DTKInterpolationEvaluator::evaluate(const Teuchos::ArrayRCP<GlobalOrdinal>& elements, const Teuchos::ArrayRCP<double>& coords)
+DTKInterpolationEvaluator::evaluate(const Teuchos::ArrayRCP<GlobalOrdinal> & elements,
+                                    const Teuchos::ArrayRCP<double> & coords)
 {
   GlobalOrdinal num_values = elements.size();
 
   Teuchos::ArrayRCP<Number> values(num_values);
   DataTransferKit::FieldContainer<Number> evaluations(values, 1);
 
-  for (GlobalOrdinal i=0; i<num_values; i++)
+  for (GlobalOrdinal i = 0; i < num_values; i++)
   {
     Elem * elem = mesh.elem(elements[i]);
 
     Point p;
 
-    for (unsigned int j=0; j<dim; j++)
-      p(j) = coords[(j*num_values)+i] - _offset(j);
+    for (unsigned int j = 0; j < dim; j++)
+      p(j) = coords[(j * num_values) + i] - _offset(j);
 
     const Point mapped_point(FEInterface::inverse_map(dim, dof_map.variable_type(0), elem, p));
 
-    FEComputeData data (es, mapped_point);
-    FEInterface::compute_data (dim, fe_type, elem, data);
+    FEComputeData data(es, mapped_point);
+    FEInterface::compute_data(dim, fe_type, elem, data);
 
     std::vector<dof_id_type> dof_indices;
     dof_map.dof_indices(elem, dof_indices, var_num);
 
     Number value = 0;
 
-    for (unsigned int j=0; j<dof_indices.size(); j++)
+    for (unsigned int j = 0; j < dof_indices.size(); j++)
       value += current_local_solution(dof_indices[j]) * data.shape[j];
 
     values[i] = value;

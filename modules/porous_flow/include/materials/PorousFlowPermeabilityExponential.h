@@ -1,19 +1,21 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWPERMEABILITYEXPONENTIAL_H
 #define POROUSFLOWPERMEABILITYEXPONENTIAL_H
 
 #include "PorousFlowPermeabilityBase.h"
 
-//Forward Declarations
+// Forward Declarations
 class PorousFlowPermeabilityExponential;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowPermeabilityExponential>();
 
 /**
@@ -50,13 +52,13 @@ protected:
   const MaterialProperty<Real> & _porosity_qp;
 
   /// d(quadpoint porosity)/d(PorousFlow variable)
-  const MaterialProperty<std::vector<Real> > & _dporosity_qp_dvar;
+  const MaterialProperty<std::vector<Real>> & _dporosity_qp_dvar;
 
   /// d(quadpoint porosity)/d(grad(PorousFlow variable))
-  const MaterialProperty<std::vector<RealGradient> > & _dporosity_qp_dgradvar;
+  const MaterialProperty<std::vector<RealGradient>> & _dporosity_qp_dgradvar;
 
   /// Name of porosity-permeability relationship
-  const MooseEnum _poroperm_function;
+  const enum class PoropermFunction { log_k, ln_k, exp_k } _poroperm_function;
 
   /// Empirical constant AA in k = k_ijk * BB * exp(AA * phi)
   Real _AA;
@@ -65,4 +67,4 @@ protected:
   Real _BB;
 };
 
-#endif //POROUSFLOWPERMEABILITYEXPONENTIAL_H
+#endif // POROUSFLOWPERMEABILITYEXPONENTIAL_H

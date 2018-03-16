@@ -1,37 +1,40 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "NewtonMaterial.h"
 #include "Material.h"
 
+registerMooseObject("MooseTestApp", NewtonMaterial);
 
-template<>
-InputParameters validParams<NewtonMaterial>()
+template <>
+InputParameters
+validParams<NewtonMaterial>()
 {
   InputParameters params = validParams<Material>();
-  params.addRequiredParam<std::string>("f_name", "The name of the property that holds the value of the function for which the root is being computed");
-  params.addRequiredParam<std::string>("f_prime_name", "The name of the property that holds the value to of the derivative of the function");
-  params.addRequiredParam<std::string>("p_name", "The name of the independent variable for the function");
+  params.addRequiredParam<std::string>("f_name",
+                                       "The name of the property that holds the value of "
+                                       "the function for which the root is being "
+                                       "computed");
+  params.addRequiredParam<std::string>(
+      "f_prime_name",
+      "The name of the property that holds the value to of the derivative of the function");
+  params.addRequiredParam<std::string>("p_name",
+                                       "The name of the independent variable for the function");
   params.addParam<Real>("tol", 1e-12, "Newton solution tolerance.");
   params.addParam<unsigned int>("max_iterations", 42, "The maximum number of Newton iterations.");
   params.addRequiredParam<MaterialName>("material", "The material object to recompute.");
   return params;
 }
 
-NewtonMaterial::NewtonMaterial(const InputParameters & parameters) :
-    Material(parameters),
+NewtonMaterial::NewtonMaterial(const InputParameters & parameters)
+  : Material(parameters),
     _tol(getParam<Real>("tol")),
     _f(getMaterialProperty<Real>(getParam<std::string>("f_name"))),
     _f_prime(getMaterialProperty<Real>(getParam<std::string>("f_prime_name"))),

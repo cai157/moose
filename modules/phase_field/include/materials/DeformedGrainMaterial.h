@@ -1,19 +1,22 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef DEFORMEDGRAINMATERIAL_H
 #define DEFORMEDGRAINMATERIAL_H
 
 #include "Material.h"
 
-//Forward Declarations
+// Forward Declarations
 class DeformedGrainMaterial;
 class GrainTrackerInterface;
 
-template<>
+template <>
 InputParameters validParams<DeformedGrainMaterial>();
 
 /**
@@ -28,30 +31,34 @@ public:
 protected:
   virtual void computeQpProperties();
 
+  /// total number of grains
+  const unsigned int _op_num;
+
+  /// order parameter values
   std::vector<const VariableValue *> _vals;
-  Real _length_scale;
-  Real _int_width;
-  Real _time_scale;
-  Real _GBMobility;
+
+  const Real _length_scale;
+  const Real _int_width;
+  const Real _time_scale;
+  const Real _GBMobility;
 
   /// the GB Energy
-  Real _GBE;
+  const Real _GBE;
 
   /// the average dislocation density
-  Real _Disloc_Den;
+  const Real _Disloc_Den;
 
   /// the elastic modulus
-  Real _Elas_Mod;
+  const Real _Elas_Mod;
 
   /// the Length of Burger's Vector
-  Real _Burg_vec;
+  const Real _Burg_vec;
 
   /// the same parameters that appear in the original grain growth model
   MaterialProperty<Real> & _kappa;
   MaterialProperty<Real> & _gamma;
   MaterialProperty<Real> & _L;
   MaterialProperty<Real> & _mu;
-  MaterialProperty<Real> & _tgrad_corr_mult;
 
   /// the prefactor needed to calculate the deformation energy from dislocation density
   MaterialProperty<Real> & _beta;
@@ -68,10 +75,7 @@ protected:
   // Constants
 
   /// number of deformed grains
-  unsigned int _deformed_grain_num;
-
-  /// total number of grains
-  unsigned int _op_num;
+  const unsigned int _deformed_grain_num;
 
   /// Grain tracker object
   const GrainTrackerInterface & _grain_tracker;
@@ -79,4 +83,4 @@ protected:
   const Real _JtoeV;
 };
 
-#endif //DEFORMEDGRAINMATERIAL_H
+#endif // DEFORMEDGRAINMATERIAL_H

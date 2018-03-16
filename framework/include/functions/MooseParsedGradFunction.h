@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOOSEPARSEDGRADFUNCTION_H
 #define MOOSEPARSEDGRADFUNCTION_H
@@ -21,9 +16,8 @@
 
 // Forward declerations
 class MooseParsedGradFunction;
-class MooseParsedFunctionWrapper;
 
-template<>
+template <>
 InputParameters validParams<MooseParsedGradFunction>();
 
 /**
@@ -33,9 +27,7 @@ InputParameters validParams<MooseParsedGradFunction>();
  * Documentation for the Function Parser can be found at:
  * http://warp.povusers.org/FunctionParser/fparser.html
  */
-class MooseParsedGradFunction :
-  public Function,
-  public MooseParsedFunctionBase
+class MooseParsedGradFunction : public Function, public MooseParsedFunctionBase
 {
 public:
   /**
@@ -45,7 +37,7 @@ public:
   MooseParsedGradFunction(const InputParameters & parameters);
 
   /**
-   * Class destructor
+   * Destructor necessary for std::unique_ptr usage
    */
   virtual ~MooseParsedGradFunction();
 
@@ -77,18 +69,14 @@ public:
   virtual void initialSetup() override;
 
 protected:
-
   /// String for the scalar function string
   std::string _value;
 
   /// String for the gradient, vector function string
   std::string _grad_value;
 
-  /// Pointer to the Parsed function wrapper object for the scalar
-  MooseParsedFunctionWrapper * _function_ptr;
-
   /// Pointer to the Parsed function wrapper object for the gradient
-  MooseParsedFunctionWrapper * _grad_function_ptr;
+  std::unique_ptr<MooseParsedFunctionWrapper> _grad_function_ptr;
 };
 
 #endif // MOOSEPARSEDGRADFUNCTION_H

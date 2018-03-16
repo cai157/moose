@@ -1,23 +1,32 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "EqualGradientLagrangeInterface.h"
 
-template<>
-InputParameters validParams<EqualGradientLagrangeInterface>()
+// MOOSE includes
+#include "MooseVariable.h"
+
+template <>
+InputParameters
+validParams<EqualGradientLagrangeInterface>()
 {
   InputParameters params = validParams<InterfaceKernel>();
-  params.addClassDescription("Enforce componentwise gradient continuity between two different variables across a subdomain boundary using a Lagrange multiplier");
+  params.addClassDescription("Enforce componentwise gradient continuity between two different "
+                             "variables across a subdomain boundary using a Lagrange multiplier");
   params.addRequiredParam<unsigned int>("component", "Gradient component to constrain");
-  params.addCoupledVar("lambda", "The gradient constrained variable on this side of the interface.");
+  params.addCoupledVar("lambda",
+                       "The gradient constrained variable on this side of the interface.");
   return params;
 }
 
-EqualGradientLagrangeInterface::EqualGradientLagrangeInterface(const InputParameters & parameters) :
-    InterfaceKernel(parameters),
+EqualGradientLagrangeInterface::EqualGradientLagrangeInterface(const InputParameters & parameters)
+  : InterfaceKernel(parameters),
     _component(getParam<unsigned int>("component")),
     _lambda(getVar("lambda", 0)->sln()),
     _lambda_jvar(getVar("lambda", 0)->number())
@@ -39,14 +48,14 @@ EqualGradientLagrangeInterface::computeQpResidual(Moose::DGResidualType type)
   mooseError("Internal error.");
 }
 
-Real
-EqualGradientLagrangeInterface::computeQpJacobian(Moose::DGJacobianType /*type*/)
+Real EqualGradientLagrangeInterface::computeQpJacobian(Moose::DGJacobianType /*type*/)
 {
   return 0.0;
 }
 
 Real
-EqualGradientLagrangeInterface::computeQpOffDiagJacobian(Moose::DGJacobianType type, unsigned int jvar)
+EqualGradientLagrangeInterface::computeQpOffDiagJacobian(Moose::DGJacobianType type,
+                                                         unsigned int jvar)
 {
   if (jvar != _lambda_jvar)
     return 0.0;

@@ -1,14 +1,16 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef SYMMANISOTROPICELASTICITYTENSOR_H
 #define SYMMANISOTROPICELASTICITYTENSOR_H
 
 #include "SymmElasticityTensor.h"
-
 
 class SymmAnisotropicElasticityTensor : public SymmElasticityTensor
 {
@@ -84,14 +86,13 @@ public:
   void show_r_matrix();
 
 protected:
-
-  DenseMatrix<Real> _dmat; // 9 x 9 Material Matrix
-  DenseMatrix<Real> _qdmat; // Rotated Material Matrix
-  DenseMatrix<Real> _dt; // 6 x 6 Material Matrix
-  DenseMatrix<Real> _qdt; // Rotated Material Matrix
-  DenseMatrix<Real> _r; // Rotational Matrix
-  DenseMatrix<Real> _q; // Q = R (dyadic) R
-  DenseMatrix<Real> _qt; // Q Transpose
+  DenseMatrix<Real> _dmat;        // 9 x 9 Material Matrix
+  DenseMatrix<Real> _qdmat;       // Rotated Material Matrix
+  DenseMatrix<Real> _dt;          // 6 x 6 Material Matrix
+  DenseMatrix<Real> _qdt;         // Rotated Material Matrix
+  DenseMatrix<Real> _r;           // Rotational Matrix
+  DenseMatrix<Real> _q;           // Q = R (dyadic) R
+  DenseMatrix<Real> _qt;          // Q Transpose
   std::vector<Real> _euler_angle; // Stores Euler angeles
 
   DenseMatrix<Real> _trans_d6_to_d9;
@@ -116,7 +117,6 @@ protected:
    */
 
   virtual void calculateEntries(unsigned int qp);
-
 };
 
-#endif //ANISOTROPICELASTICITYTENSOR_H
+#endif // ANISOTROPICELASTICITYTENSOR_H

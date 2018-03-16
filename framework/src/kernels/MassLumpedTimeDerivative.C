@@ -1,33 +1,36 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "MassLumpedTimeDerivative.h"
-#include "Assembly.h"
 
-// libmesh includes
+// MOOSE includes
+#include "Assembly.h"
+#include "MooseVariableField.h"
+
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<MassLumpedTimeDerivative>()
+registerMooseObject("MooseApp", MassLumpedTimeDerivative);
+
+template <>
+InputParameters
+validParams<MassLumpedTimeDerivative>()
 {
   InputParameters params = validParams<TimeKernel>();
+  params.addClassDescription(
+      "Lumped formulation of the time derivative $\\frac{\\partial u}{\\partial t}$. Its "
+      "corresponding weak form is $\\dot{u_i}(\\psi_i, 1)$ where $\\dot{u_i}$ denotes the time "
+      "derivative of the solution coefficient associated with node $i$.");
   return params;
 }
 
-MassLumpedTimeDerivative::MassLumpedTimeDerivative(const InputParameters & parameters) :
-    TimeKernel(parameters),
-    _u_dot_nodal(_var.nodalValueDot())
+MassLumpedTimeDerivative::MassLumpedTimeDerivative(const InputParameters & parameters)
+  : TimeKernel(parameters), _u_dot_nodal(_var.nodalValueDot())
 {
 }
 
@@ -52,4 +55,3 @@ MassLumpedTimeDerivative::computeJacobian()
     for (_qp = 0; _qp < _qrule->n_points(); _qp++)
       ke(_i, _i) += _JxW[_qp] * _coord[_qp] * computeQpJacobian();
 }
-

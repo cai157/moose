@@ -1,32 +1,35 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MATERIALTENSORCALCULATOR_H
 #define MATERIALTENSORCALCULATOR_H
 
-#include "libmesh/vector_value.h"
+// MOOSE includes
 #include "InputParameters.h"
+#include "MooseEnum.h"
 #include "SymmTensor.h"
+
+#include "libmesh/vector_value.h"
 
 class MaterialTensorCalculator;
 
-template<>
+template <>
 InputParameters validParams<MaterialTensorCalculator>();
 
 class MaterialTensorCalculator
 {
 public:
-
   enum QUANTITY_ENUM
   {
     COMPONENT,
     VONMISES,
-    PLASTICSTRAINMAG,
+    EFFECTIVESTRAIN,
     HYDROSTATIC,
     DIRECTION,
     HOOP,
@@ -58,7 +61,7 @@ protected:
 public:
   Real getTensorQuantity(const SymmTensor & tensor,
                          const Point & curr_point,
-                         RealVectorValue &direction);
+                         RealVectorValue & direction);
 };
 
-#endif //MATERIALTENSORCALCULATOR_H
+#endif // MATERIALTENSORCALCULATOR_H

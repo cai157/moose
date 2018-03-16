@@ -1,21 +1,21 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "TestShapeElementUserObject.h"
 
-template<>
-InputParameters validParams<TestShapeElementUserObject>()
+#include "NonlinearSystemBase.h"
+
+registerMooseObject("MooseTestApp", TestShapeElementUserObject);
+
+template <>
+InputParameters
+validParams<TestShapeElementUserObject>()
 {
   InputParameters params = validParams<ShapeElementUserObject>();
   params.addCoupledVar("u", "first coupled variable");
@@ -25,8 +25,8 @@ InputParameters validParams<TestShapeElementUserObject>()
   return params;
 }
 
-TestShapeElementUserObject::TestShapeElementUserObject(const InputParameters & parameters) :
-    ShapeElementUserObject(parameters),
+TestShapeElementUserObject::TestShapeElementUserObject(const InputParameters & parameters)
+  : ShapeElementUserObject(parameters),
     _u_var(coupled("u")),
     _u_dofs(getParam<unsigned int>("u_dofs")),
     _v_var(coupled("v")),
@@ -53,7 +53,10 @@ TestShapeElementUserObject::executeJacobian(unsigned int jvar)
   {
     // internal testing to make sure the _phis are initialized, set flag on call
     if (_phi.size() != _u_dofs)
-      mooseError("Shape functions for u are initialized incorrectly. Expected " << _u_dofs << " DOFs, found " << _phi.size());
+      mooseError("Shape functions for u are initialized incorrectly. Expected ",
+                 _u_dofs,
+                 " DOFs, found ",
+                 _phi.size());
     _execute_mask |= 1;
   }
 
@@ -70,12 +73,19 @@ TestShapeElementUserObject::executeJacobian(unsigned int jvar)
 void
 TestShapeElementUserObject::finalize()
 {
-  // check in all MPI processes if executeJacobian was called for each variable
+  // Using this semi-encapsulated member feels like cheating but hey,
+  // it's a test object.
+  const FEProblemBase & prob = _ti_feproblem;
+
+  const dof_id_type n_local_dfs = prob.getNonlinearSystemBase().system().n_local_dofs();
+
+  // check if executeJacobian was called for each variable on each MPI
+  // process that owns any degrees of freedom.
   if (_fe_problem.currentlyComputingJacobian())
   {
-    if ((_execute_mask & 1) == 0)
+    if ((_execute_mask & 1) == 0 && n_local_dfs)
       mooseError("Never called executeJacobian for variable u.");
-    if ((_execute_mask & 2) == 0)
+    if ((_execute_mask & 2) == 0 && n_local_dfs)
       mooseError("Never called executeJacobian for variable v.");
   }
 }

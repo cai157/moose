@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef EBSDREADER_H
 #define EBSDREADER_H
 
@@ -12,7 +15,7 @@
 
 class EBSDReader;
 
-template<>
+template <>
 InputParameters validParams<EBSDReader>();
 
 /**
@@ -27,7 +30,8 @@ InputParameters validParams<EBSDReader>();
  *                 unique when combined with phase number)
  *                 This is also called "(local) grain ID"
  *
- * Phases are referred to using the numbers in the EBSD data file. In case the phase number in the data file
+ * Phases are referred to using the numbers in the EBSD data file. In case the phase number in the
+ * data file
  * starts at 1 the phase 0 will simply contain no grains.
  */
 class EBSDReader : public EulerAngleProvider, public EBSDAccessFunctors
@@ -78,31 +82,42 @@ public:
   unsigned int getGrainNum(unsigned int phase) const;
 
   /// Return the EBSD feature id for a given phase and phase (local) grain number
-  unsigned int getFeatureID(unsigned int phase, unsigned int local_id) const { return _avg_data[_global_id[phase][local_id]]._feature_id; }
+  unsigned int getFeatureID(unsigned int phase, unsigned int local_id) const
+  {
+    return _avg_data[_global_id[phase][local_id]]._feature_id;
+  }
   /// Return the EBSD feature id for a given (global) grain number
-  unsigned int getFeatureID(unsigned int global_id) const { return _avg_data[global_id]._feature_id; }
+  unsigned int getFeatureID(unsigned int global_id) const
+  {
+    return _avg_data[global_id]._feature_id;
+  }
 
   /// Return the (global) grain id for a given phase and (local) grain number
-  unsigned int getGlobalID(unsigned int phase, unsigned int local_id) const { return _global_id[phase][local_id]; }
+  unsigned int getGlobalID(unsigned int phase, unsigned int local_id) const
+  {
+    return _global_id[phase][local_id];
+  }
   /// Return the (global) grain id for a given phase and (local) grain number
   unsigned int getGlobalID(unsigned int feature_id) const;
 
   /// Factory function to return a point functor specified by name
-  MooseSharedPointer<EBSDPointDataFunctor> getPointDataAccessFunctor(const MooseEnum & field_name) const;
+  MooseSharedPointer<EBSDPointDataFunctor>
+  getPointDataAccessFunctor(const MooseEnum & field_name) const;
   /// Factory function to return a average functor specified by name
-  MooseSharedPointer<EBSDAvgDataFunctor> getAvgDataAccessFunctor(const MooseEnum & field_name) const;
+  MooseSharedPointer<EBSDAvgDataFunctor>
+  getAvgDataAccessFunctor(const MooseEnum & field_name) const;
 
   /**
    * Returns a map consisting of the node index followd by
    * a vector of all grain weights for that node. Needed by ReconVarIC
    */
-  const std::map<dof_id_type, std::vector<Real> > & getNodeToGrainWeightMap() const;
+  const std::map<dof_id_type, std::vector<Real>> & getNodeToGrainWeightMap() const;
 
   /**
    * Returns a map consisting of the node index followd by
    * a vector of all phase weights for that node. Needed by ReconPhaseVarIC
    */
-  const std::map<dof_id_type, std::vector<Real> > & getNodeToPhaseWeightMap() const;
+  const std::map<dof_id_type, std::vector<Real>> & getNodeToPhaseWeightMap() const;
 
   /// Maps need to be updated when the mesh changes
   void meshChanged();
@@ -136,13 +151,13 @@ protected:
   std::map<unsigned int, unsigned int> _global_id_map;
 
   /// global ID for given phases and grains
-  std::vector<std::vector<unsigned int> > _global_id;
+  std::vector<std::vector<unsigned int>> _global_id;
 
   /// Map of grain weights per node
-  std::map<dof_id_type, std::vector<Real> > _node_to_grain_weight_map;
+  std::map<dof_id_type, std::vector<Real>> _node_to_grain_weight_map;
 
   /// Map of phase weights per node
-  std::map<dof_id_type, std::vector<Real> > _node_to_phase_weight_map;
+  std::map<dof_id_type, std::vector<Real>> _node_to_phase_weight_map;
 
   /// current timestep. Maps are only rebuild on mesh change during time step zero
   const int & _time_step;

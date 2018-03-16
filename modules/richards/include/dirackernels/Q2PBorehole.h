@@ -1,10 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef Q2PBOREHOLE_H
 #define Q2PBOREHOLE_H
@@ -14,10 +15,9 @@
 #include "RichardsDensity.h"
 #include "RichardsRelPerm.h"
 
-
 class Q2PBorehole;
 
-template<>
+template <>
 InputParameters validParams<Q2PBorehole>();
 
 /**
@@ -27,7 +27,6 @@ InputParameters validParams<Q2PBorehole>();
 class Q2PBorehole : public PeacemanBorehole
 {
 public:
-
   /**
    * Creates a new Q2PBorehole
    * This sets all the variables, but also
@@ -69,7 +68,6 @@ public:
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
 protected:
-
   /// fluid density
   const RichardsDensity & _density;
 
@@ -117,7 +115,6 @@ protected:
    * @param jvar differentiate the residual wrt this variable
    */
   Real jac(unsigned int jvar);
-
 };
 
-#endif //Q2PBOREHOLE_H
+#endif // Q2PBOREHOLE_H

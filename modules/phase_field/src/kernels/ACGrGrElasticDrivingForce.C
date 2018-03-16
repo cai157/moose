@@ -1,20 +1,31 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "ACGrGrElasticDrivingForce.h"
 
 #include "Material.h"
 #include "RankFourTensor.h"
 #include "RankTwoTensor.h"
 
-template<>
-InputParameters validParams<ACGrGrElasticDrivingForce>()
+template <>
+InputParameters
+validParams<ACGrGrElasticDrivingForce>()
 {
   InputParameters params = ACBulk<Real>::validParams();
   params.addClassDescription("Adds elastic energy contribution to the Allen-Cahn equation");
-  params.addRequiredParam<MaterialPropertyName>("D_tensor_name","The elastic tensor derivative for the specific order parameter");
+  params.addRequiredParam<MaterialPropertyName>(
+      "D_tensor_name", "The elastic tensor derivative for the specific order parameter");
   return params;
 }
 
-ACGrGrElasticDrivingForce::ACGrGrElasticDrivingForce(const InputParameters & parameters) :
-    ACBulk<Real>(parameters),
+ACGrGrElasticDrivingForce::ACGrGrElasticDrivingForce(const InputParameters & parameters)
+  : ACBulk<Real>(parameters),
     _D_elastic_tensor(getMaterialProperty<RankFourTensor>("D_tensor_name")),
     _elastic_strain(getMaterialPropertyByName<RankTwoTensor>("elastic_strain"))
 {
@@ -32,7 +43,8 @@ ACGrGrElasticDrivingForce::computeDFDOP(PFFunctionType type)
   switch (type)
   {
     case Residual:
-      return 0.5 * D_stress.doubleContraction(strain); // Compute the deformation energy driving force
+      return 0.5 *
+             D_stress.doubleContraction(strain); // Compute the deformation energy driving force
 
     case Jacobian:
       return 0.0;
@@ -40,4 +52,3 @@ ACGrGrElasticDrivingForce::computeDFDOP(PFFunctionType type)
 
   mooseError("Invalid type passed in");
 }
-

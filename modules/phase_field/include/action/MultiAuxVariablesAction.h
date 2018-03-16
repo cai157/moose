@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef MULTIAUXVARIABLESACTION_H
 #define MULTIAUXVARIABLESACTION_H
 
@@ -13,7 +16,7 @@
  * Automatically generates all auxvariables given vectors telling it the names
  * and how many to create
  */
-class MultiAuxVariablesAction: public AddAuxVariableAction
+class MultiAuxVariablesAction : public AddAuxVariableAction
 {
 public:
   MultiAuxVariablesAction(InputParameters params);
@@ -22,18 +25,22 @@ public:
 
 protected:
   /// number of grains to create
-  unsigned int _grain_num;
+  const unsigned int _grain_num;
+
   /// base name for the auxvariables
   const std::vector<std::string> & _var_name_base;
+
   /// number of auxvariables
-  unsigned int _num_var;
+  const unsigned int _num_var;
+
   /// list of material properties to be used
   const MultiMooseEnum & _data_type;
+
   /// number of properties
-  unsigned int _data_size;
+  const unsigned int _data_size;
 };
 
-template<>
+template <>
 InputParameters validParams<MultiAuxVariablesAction>();
 
-#endif //MULTIAUXVARIABLESACTION_H
+#endif // MULTIAUXVARIABLESACTION_H

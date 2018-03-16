@@ -1,17 +1,21 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "XFEMPressure.h"
 #include "Function.h"
 #include "GeometricSearchData.h"
 #include "ElementPairLocator.h"
 #include "FEProblem.h"
 
-template<>
-InputParameters validParams<XFEMPressure>()
+template <>
+InputParameters
+validParams<XFEMPressure>()
 {
   InputParameters params = validParams<DiracKernel>();
   params.addRequiredParam<unsigned int>("component", "The component for the pressure");
@@ -20,11 +24,11 @@ InputParameters validParams<XFEMPressure>()
   return params;
 }
 
-XFEMPressure::XFEMPressure(const InputParameters & parameters) :
-  DiracKernel(parameters),
-  _component(getParam<unsigned int>("component")),
-  _factor(getParam<Real>("factor")),
-  _function(isParamValid("function") ? &getFunction("function") : NULL)
+XFEMPressure::XFEMPressure(const InputParameters & parameters)
+  : DiracKernel(parameters),
+    _component(getParam<unsigned int>("component")),
+    _factor(getParam<Real>("factor")),
+    _function(isParamValid("function") ? &getFunction("function") : NULL)
 {
   GeometricSearchData & geo_search_data = _subproblem.geomSearchData();
   _element_pair_locators = &geo_search_data._element_pair_locators;
@@ -36,15 +40,19 @@ XFEMPressure::addPoints()
   _elem_qp_normal.clear();
   _elem_qp_JxW.clear();
 
-  for (std::map<unsigned int, MooseSharedPointer<ElementPairLocator> >::iterator it_epl = _element_pair_locators->begin();
+  for (std::map<unsigned int, std::shared_ptr<ElementPairLocator>>::iterator it_epl =
+           _element_pair_locators->begin();
        it_epl != _element_pair_locators->end();
        ++it_epl)
   {
     ElementPairLocator & elem_pair_loc = *it_epl->second;
     // go over pair elements
-    const std::list<std::pair<const Elem*, const Elem*> > & elem_pairs = elem_pair_loc.getElemPairs();
-    for (std::list<std::pair<const Elem *, const Elem*> >::const_iterator it_ep = elem_pairs.begin();
-         it_ep != elem_pairs.end(); ++it_ep)
+    const std::list<std::pair<const Elem *, const Elem *>> & elem_pairs =
+        elem_pair_loc.getElemPairs();
+    for (std::list<std::pair<const Elem *, const Elem *>>::const_iterator it_ep =
+             elem_pairs.begin();
+         it_ep != elem_pairs.end();
+         ++it_ep)
     {
       const Elem * elem1 = it_ep->first;
       const Elem * elem2 = it_ep->second;

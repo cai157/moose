@@ -1,24 +1,30 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // Navier-Stokes includes
-#include "NSEnergyThermalFlux.h"
 #include "NS.h"
+#include "NSEnergyThermalFlux.h"
 
-template<>
-InputParameters validParams<NSEnergyThermalFlux>()
+template <>
+InputParameters
+validParams<NSEnergyThermalFlux>()
 {
   InputParameters params = validParams<NSKernel>();
+  params.addClassDescription("This class is responsible for computing residuals and Jacobian terms "
+                             "for the k * grad(T) * grad(phi) term in the Navier-Stokes energy "
+                             "equation.");
   params.addRequiredCoupledVar(NS::temperature, "temperature");
   return params;
 }
 
-NSEnergyThermalFlux::NSEnergyThermalFlux(const InputParameters & parameters) :
-    NSKernel(parameters),
+NSEnergyThermalFlux::NSEnergyThermalFlux(const InputParameters & parameters)
+  : NSKernel(parameters),
     _grad_temp(coupledGradient(NS::temperature)),
     _thermal_conductivity(getMaterialProperty<Real>("thermal_conductivity")),
     // Temperature derivative computing object
@@ -51,10 +57,10 @@ NSEnergyThermalFlux::computeQpJacobian()
 Real
 NSEnergyThermalFlux::computeQpOffDiagJacobian(unsigned int jvar)
 {
-  // Map jvar into the numbering expected by this->compute_jacobain_value()
-  unsigned var_number = mapVarNumber(jvar);
-
-  return computeJacobianHelper_value(var_number);
+  if (isNSVariable(jvar))
+    return computeJacobianHelper_value(mapVarNumber(jvar));
+  else
+    return 0.0;
 }
 
 Real
@@ -74,8 +80,10 @@ NSEnergyThermalFlux::computeJacobianHelper_value(unsigned var_number)
     Real hess_term = 0.0;
     for (unsigned n = 0; n < 5; ++n)
     {
-      // hess_term += get_hess(m,n) * gradU[n](ell); // ideally... but you can't have a vector<VariableGradient&> :-(
-      hess_term += _temp_derivs.get_hess(var_number,n) * (*_gradU[n])[_qp](ell); // dereference pointer to get value
+      // hess_term += get_hess(m,n) * gradU[n](ell); // ideally... but you can't have a
+      // vector<VariableGradient&> :-(
+      hess_term += _temp_derivs.get_hess(var_number, n) *
+                   (*_gradU[n])[_qp](ell); // dereference pointer to get value
     }
 
     // Accumulate the second dot product term

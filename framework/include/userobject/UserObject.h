@@ -1,30 +1,25 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef USEROBJECT_H
 #define USEROBJECT_H
 
 // MOOSE includes
-#include "MooseObject.h"
-#include "SetupInterface.h"
+#include "DistributionInterface.h"
 #include "FunctionInterface.h"
-#include "Restartable.h"
 #include "MeshChangedInterface.h"
-#include "ParallelUniqueId.h"
+#include "MooseObject.h"
+#include "MooseTypes.h"
+#include "Restartable.h"
 #include "ScalarCoupleable.h"
+#include "SetupInterface.h"
 
-// libMesh includes
 #include "libmesh/parallel.h"
 
 // Forward declarations
@@ -33,19 +28,19 @@ class FEProblemBase;
 class SubProblem;
 class Assembly;
 
-template<>
+template <>
 InputParameters validParams<UserObject>();
 
 /**
  * Base class for user-specific data
  */
-class UserObject :
-  public MooseObject,
-  public SetupInterface,
-  public FunctionInterface,
-  public Restartable,
-  public MeshChangedInterface,
-  public ScalarCoupleable
+class UserObject : public MooseObject,
+                   public SetupInterface,
+                   public FunctionInterface,
+                   public DistributionInterface,
+                   public Restartable,
+                   public MeshChangedInterface,
+                   public ScalarCoupleable
 {
 public:
   UserObject(const InputParameters & params);
@@ -62,7 +57,8 @@ public:
   virtual void initialize() = 0;
 
   /**
-   * Finalize.  This is called _after_ execute() and _after_ threadJoin()!  This is probably where you want to do MPI communication!
+   * Finalize.  This is called _after_ execute() and _after_ threadJoin()!  This is probably where
+   * you want to do MPI communication!
    */
   virtual void finalize() = 0;
 
@@ -85,21 +81,32 @@ public:
   SubProblem & getSubProblem() const { return _subproblem; }
 
   /**
+   * Returns whether or not this user object should be executed twice during the initial condition
+   * when depended upon by an IC.
+   */
+  bool shouldDuplicateInitialExecution() const { return _duplicate_initial_execution; }
+
+  /**
    * Optional interface function for "evaluating" a UserObject at a spatial position.
    * If a UserObject overrides this function that UserObject can then be used in a
    * Transfer to transfer information from one domain to another.
    */
-  virtual Real spatialValue(const Point & /*p*/) const { mooseError(name() << " does not satisfy the Spatial UserObject interface!"); }
+  virtual Real spatialValue(const Point & /*p*/) const
+  {
+    mooseError(name(), " does not satisfy the Spatial UserObject interface!");
+  }
 
   /**
    * Must override.
    *
-   * @param uo The UserObject to be joined into _this_ object.  Take the data from the uo object and "add" it into the data for this object.
+   * @param uo The UserObject to be joined into _this_ object.  Take the data from the uo object and
+   * "add" it into the data for this object.
    */
   virtual void threadJoin(const UserObject & uo) = 0;
 
   /**
-   * Gather the parallel sum of the variable passed in. It takes care of values across all threads and CPUs (we DO hybrid parallelism!)
+   * Gather the parallel sum of the variable passed in. It takes care of values across all threads
+   * and CPUs (we DO hybrid parallelism!)
    *
    * After calling this, the variable that was passed in will hold the gathered value.
    */
@@ -142,7 +149,8 @@ protected:
 
   /// Coordinate system
   const Moose::CoordinateSystemType & _coord_sys;
-};
 
+  const bool _duplicate_initial_execution;
+};
 
 #endif /* USEROBJECT_H */

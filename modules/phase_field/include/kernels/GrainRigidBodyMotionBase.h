@@ -1,24 +1,26 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef GRAINRIGIDBODYMOTIONBASE_H
 #define GRAINRIGIDBODYMOTIONBASE_H
 
 #include "NonlocalKernel.h"
 #include "GrainForceAndTorqueInterface.h"
 
-//Forward Declarations
+// Forward Declarations
 class GrainRigidBodyMotionBase;
 class GrainTrackerInterface;
 
-template<>
+template <>
 InputParameters validParams<GrainRigidBodyMotionBase>();
 
-class GrainRigidBodyMotionBase :
-    public NonlocalKernel
+class GrainRigidBodyMotionBase : public NonlocalKernel
 
 {
 public:
@@ -27,7 +29,7 @@ public:
   virtual void timestepSetup();
 
 protected:
-  virtual bool globalDoFEnabled(MooseVariable & /*var*/, dof_id_type /*dof_index*/);
+  virtual bool globalDoFEnabled(MooseVariableFE & /*var*/, dof_id_type /*dof_index*/);
 
   virtual void precalculateResidual();
   virtual void precalculateJacobian();
@@ -48,7 +50,7 @@ protected:
   const std::vector<dof_id_type> & _c_dofs;
 
   /// no. of order parameters
-  unsigned int _op_num;
+  const unsigned int _op_num;
   /// Variable value for the order parameters
   std::vector<const VariableValue *> _vals;
   std::vector<unsigned int> _vals_var;
@@ -62,7 +64,7 @@ protected:
   const std::vector<RealGradient> & _grain_forces;
   const std::vector<RealGradient> & _grain_torques;
   const std::vector<Real> & _grain_force_c_jacobians;
-  const std::vector<std::vector<Real> > & _grain_force_eta_jacobians;
+  const std::vector<std::vector<Real>> & _grain_force_eta_jacobians;
 
   /// constant value corresponding to grain translation
   const Real _mt;
@@ -85,4 +87,4 @@ protected:
   std::vector<unsigned int> _grain_ids;
 };
 
-#endif //GRAINRIGIDBODYMOTIONBASE_H
+#endif // GRAINRIGIDBODYMOTIONBASE_H

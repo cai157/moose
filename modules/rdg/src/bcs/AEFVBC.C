@@ -1,17 +1,21 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "AEFVBC.h"
 
-template<>
-InputParameters validParams<AEFVBC>()
+template <>
+InputParameters
+validParams<AEFVBC>()
 {
   InputParameters params = validParams<IntegratedBC>();
-  params.addClassDescription("A boundary condition kernel for the advection equation using a cell-centered finite volume method.");
+  params.addClassDescription("A boundary condition kernel for the advection equation using a "
+                             "cell-centered finite volume method.");
   MooseEnum component("concentration");
   params.addParam<MooseEnum>("component", component, "Choose one of the equations");
   params.addRequiredCoupledVar("u", "Name of the variable to use");
@@ -19,8 +23,8 @@ InputParameters validParams<AEFVBC>()
   return params;
 }
 
-AEFVBC::AEFVBC(const InputParameters & parameters) :
-    IntegratedBC(parameters),
+AEFVBC::AEFVBC(const InputParameters & parameters)
+  : IntegratedBC(parameters),
     _component(getParam<MooseEnum>("component")),
     _uc1(coupledValue("u")),
     _u1(getMaterialProperty<Real>("u")),

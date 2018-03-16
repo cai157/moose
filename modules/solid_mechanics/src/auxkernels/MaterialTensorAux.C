@@ -1,26 +1,30 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "MaterialTensorAux.h"
 #include "SymmTensor.h"
 
-template<>
-InputParameters validParams<MaterialTensorAux>()
+template <>
+InputParameters
+validParams<MaterialTensorAux>()
 {
   InputParameters params = validParams<AuxKernel>();
   params += validParams<MaterialTensorCalculator>();
   params.addRequiredParam<MaterialPropertyName>("tensor", "The material tensor name.");
   params.addParam<unsigned int>("qp_select", "The quad point you want evaluated");
+  params.addClassDescription(
+      "Outputs quantities related to second-order tensors used as material properties");
   return params;
 }
 
-MaterialTensorAux::MaterialTensorAux( const InputParameters & parameters) :
-    AuxKernel(parameters),
+MaterialTensorAux::MaterialTensorAux(const InputParameters & parameters)
+  : AuxKernel(parameters),
     _material_tensor_calculator(parameters),
     _tensor(getMaterialProperty<SymmTensor>("tensor")),
     _has_qp_select(isParamValid("qp_select")),
@@ -49,8 +53,7 @@ MaterialTensorAux::computeValue()
   else
     qp_call = _qp;
 
-  Real value = _material_tensor_calculator.getTensorQuantity(_tensor[qp_call],
-                                                             _q_point[qp_call],
-                                                             direction);
+  Real value =
+      _material_tensor_calculator.getTensorQuantity(_tensor[qp_call], _q_point[qp_call], direction);
   return value;
 }

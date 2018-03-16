@@ -1,21 +1,19 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "DeprecatedBlockAction.h"
 
-template<>
-InputParameters validParams<DeprecatedBlockAction>()
+registerMooseAction("MooseApp", DeprecatedBlockAction, "deprecated_block");
+
+template <>
+InputParameters
+validParams<DeprecatedBlockAction>()
 {
   InputParameters params = validParams<Action>();
 
@@ -23,13 +21,10 @@ InputParameters validParams<DeprecatedBlockAction>()
   return params;
 }
 
-DeprecatedBlockAction::DeprecatedBlockAction(InputParameters parameters) :
-    Action(parameters)
-{
-}
+DeprecatedBlockAction::DeprecatedBlockAction(InputParameters parameters) : Action(parameters) {}
 
 void
 DeprecatedBlockAction::act()
 {
-  mooseError("Input file block '" + name()  + "' has been deprecated.");
+  mooseError("Input file block '" + name() + "' has been deprecated.");
 }

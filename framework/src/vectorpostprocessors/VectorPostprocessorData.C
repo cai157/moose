@@ -1,22 +1,17 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "VectorPostprocessorData.h"
 #include "FEProblem.h"
 
-VectorPostprocessorData::VectorPostprocessorData(FEProblemBase & fe_problem) :
-    Restartable("values", "VectorPostprocessorData", fe_problem, 0)
+VectorPostprocessorData::VectorPostprocessorData(FEProblemBase & fe_problem)
+  : Restartable(fe_problem.getMooseApp(), "values", "VectorPostprocessorData", 0)
 {
 }
 
@@ -27,7 +22,8 @@ VectorPostprocessorData::hasVectorPostprocessor(const std::string & name)
 }
 
 VectorPostprocessorValue &
-VectorPostprocessorData::getVectorPostprocessorValue(const VectorPostprocessorName & vpp_name, const std::string & vector_name)
+VectorPostprocessorData::getVectorPostprocessorValue(const VectorPostprocessorName & vpp_name,
+                                                     const std::string & vector_name)
 {
   _requested_items.emplace(vpp_name + "::" + vector_name);
 
@@ -35,16 +31,17 @@ VectorPostprocessorData::getVectorPostprocessorValue(const VectorPostprocessorNa
 }
 
 VectorPostprocessorValue &
-VectorPostprocessorData::getVectorPostprocessorValueOld(const VectorPostprocessorName & vpp_name, const std::string & vector_name)
+VectorPostprocessorData::getVectorPostprocessorValueOld(const VectorPostprocessorName & vpp_name,
+                                                        const std::string & vector_name)
 {
   _requested_items.emplace(vpp_name + "::" + vector_name);
 
   return getVectorPostprocessorHelper(vpp_name, vector_name, false);
 }
 
-
 VectorPostprocessorValue &
-VectorPostprocessorData::declareVector(const std::string & vpp_name, const std::string & vector_name)
+VectorPostprocessorData::declareVector(const std::string & vpp_name,
+                                       const std::string & vector_name)
 {
   _supplied_items.emplace(vpp_name + "::" + vector_name);
 
@@ -52,16 +49,35 @@ VectorPostprocessorData::declareVector(const std::string & vpp_name, const std::
 }
 
 VectorPostprocessorValue &
-VectorPostprocessorData::getVectorPostprocessorHelper(const VectorPostprocessorName & vpp_name, const std::string & vector_name, bool get_current)
+VectorPostprocessorData::getVectorPostprocessorHelper(const VectorPostprocessorName & vpp_name,
+                                                      const std::string & vector_name,
+                                                      bool get_current)
 {
-  // Intentional use of RHS brackets on a std::map to do a multilevel retrieve or insert
-  auto & vec_struct = _values[vpp_name][vector_name];
+  // Intentional use of RHS brackets on a std::map to do a retrieve or insert
+  auto & vec_storage = _values[vpp_name];
 
+  // lambda for doing compairison on name (i.e., first item in pair)
+  auto comp = [&vector_name](std::pair<std::string, VectorPostprocessorState> & pair) {
+    return pair.first == vector_name;
+  };
+
+  // Search for the vector, if it is not located create the entry in the storage
+  auto iter = std::find_if(vec_storage.rbegin(), vec_storage.rend(), comp);
+  if (iter == vec_storage.rend())
+  {
+    vec_storage.emplace_back(
+        std::pair<std::string, VectorPostprocessorState>(vector_name, VectorPostprocessorState()));
+    iter = vec_storage.rbegin();
+  }
+
+  auto & vec_struct = iter->second;
   if (!vec_struct.current)
   {
     mooseAssert(!vec_struct.old, "Uninitialized pointers in VectorPostprocessor Data");
-    vec_struct.current = &declareRestartableDataWithObjectName<VectorPostprocessorValue>(vpp_name + "_" + vector_name, "values");
-    vec_struct.old = &declareRestartableDataWithObjectName<VectorPostprocessorValue>(vpp_name + "_" + vector_name, "values_old");
+    vec_struct.current = &declareRestartableDataWithObjectName<VectorPostprocessorValue>(
+        vpp_name + "_" + vector_name, "values");
+    vec_struct.old = &declareRestartableDataWithObjectName<VectorPostprocessorValue>(
+        vpp_name + "_" + vector_name, "values_old");
   }
 
   return get_current ? *vec_struct.current : *vec_struct.old;
@@ -73,7 +89,7 @@ VectorPostprocessorData::hasVectors(const std::string & vpp_name) const
   return _values.find(vpp_name) != _values.end();
 }
 
-const std::map<std::string, VectorPostprocessorData::VectorPostprocessorState> &
+const std::vector<std::pair<std::string, VectorPostprocessorData::VectorPostprocessorState>> &
 VectorPostprocessorData::vectors(const std::string & vpp_name) const
 {
   auto vec_pair = _values.find(vpp_name);

@@ -18,26 +18,42 @@ include $(FRAMEWORK_DIR)/build.mk
 include $(FRAMEWORK_DIR)/moose.mk
 
 ################################## MODULES ####################################
-HEAT_CONDUCTION   := yes
-NAVIER_STOKES     := yes
-MISC              := yes
+ALL_MODULES               := no
+
+CHEMICAL_REACTIONS        := no
+CONTACT                   := no
+FLUID_PROPERTIES          := no
+# heat_conduction is required by Steps 5+
+HEAT_CONDUCTION           := yes
+LINEAR_ELASTICITY         := no
+MISC                      := no
+NAVIER_STOKES             := no
+# phase_field is required by Step 10.
+PHASE_FIELD               := yes
+POROUS_FLOW               := no
+RICHARDS                  := no
+SOLID_MECHANICS           := no
+# tensor_mechanics is required by Steps 9-10.
+TENSOR_MECHANICS          := yes
+WATER_STEAM_EOS           := no
+XFEM                      := no
 include           $(MOOSE_DIR)/modules/modules.mk
 ###############################################################################
 
-# Extra stuff for CPPUNIT
-CPPUNIT_DIR 		?= $(PACKAGES_DIR)/cppunit
-ADDITIONAL_INCLUDES 	:= -I$(CPPUNIT_DIR)/include
-ADDITIONAL_LIBS 	:= -L$(CPPUNIT_DIR)/lib -lcppunit
+# Extra stuff for GTEST
+ADDITIONAL_INCLUDES	:= -I$(FRAMEWORK_DIR)/contrib/gtest
+ADDITIONAL_LIBS 	:= $(FRAMEWORK_DIR)/contrib/gtest/libgtest.la
 
 # dep apps
 APPLICATION_DIR    := $(CURRENT_DIR)/..
 APPLICATION_NAME   := darcy_thermo_mech
+GEN_REVISION       := no
 include            $(FRAMEWORK_DIR)/app.mk
 
 APPLICATION_DIR    := $(CURRENT_DIR)
 APPLICATION_NAME   := darcy_thermo_mech-unit
 BUILD_EXEC         := yes
-DEP_APPS    ?= $(shell $(FRAMEWORK_DIR)/scripts/find_dep_apps.py $(APPLICATION_NAME))
+GEN_REVISION       := no
 include $(FRAMEWORK_DIR)/app.mk
 
 # Find all the DARCY_THERMO_MECH unit test source files and include their dependencies.

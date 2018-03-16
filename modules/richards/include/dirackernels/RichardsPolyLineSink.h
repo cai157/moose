@@ -1,10 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef RICHARDSPOLYLINESINK_H
 #define RICHARDSPOLYLINESINK_H
@@ -14,10 +15,10 @@
 #include "RichardsSumQuantity.h"
 #include "RichardsVarNames.h"
 
-//Forward Declarations
+// Forward Declarations
 class RichardsPolyLineSink;
 
-template<>
+template <>
 InputParameters validParams<RichardsPolyLineSink>();
 
 /**
@@ -42,9 +43,7 @@ public:
    */
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
-
 protected:
-
   /**
    * This is used to hold the total fluid flowing into the sink
    * Hence, it is positive for sinks where fluid is flowing
@@ -65,10 +64,10 @@ protected:
   unsigned int _pvar;
 
   /// fluid porepressure (or porepressures in case of multiphase)
-  const MaterialProperty<std::vector<Real> > &_pp;
+  const MaterialProperty<std::vector<Real>> & _pp;
 
   /// d(porepressure_i)/d(variable_j)
-  const MaterialProperty<std::vector<std::vector<Real> > > &_dpp_dv;
+  const MaterialProperty<std::vector<std::vector<Real>>> & _dpp_dv;
 
   /// vector of Dirac Points' x positions
   std::vector<Real> _xs;
@@ -87,4 +86,4 @@ protected:
   bool parseNextLineReals(std::ifstream & ifs, std::vector<Real> & myvec);
 };
 
-#endif //RICHARDSPOLYLINESINK_H
+#endif // RICHARDSPOLYLINESINK_H

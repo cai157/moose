@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "RdgApp.h"
 #include "Moose.h"
@@ -20,39 +22,38 @@
 #include "AEFVKernel.h"
 
 // User objects
-#include "AEFVSlopeReconstructionOneD.h"
 #include "AEFVSlopeLimitingOneD.h"
 #include "AEFVUpwindInternalSideFlux.h"
 #include "AEFVFreeOutflowBoundaryFlux.h"
 
-template<>
-InputParameters validParams<RdgApp>()
+template <>
+InputParameters
+validParams<RdgApp>()
 {
   InputParameters params = validParams<MooseApp>();
-
-  params.set<bool>("use_legacy_uo_initialization") = false;
-  params.set<bool>("use_legacy_uo_aux_computation") = false;
-  params.set<bool>("use_legacy_output_syntax") = false;
-
   return params;
 }
 
-RdgApp::RdgApp(InputParameters parameters) :
-    MooseApp(parameters)
+RdgApp::RdgApp(InputParameters parameters) : MooseApp(parameters)
 {
   Moose::registerObjects(_factory);
   RdgApp::registerObjects(_factory);
 
   Moose::associateSyntax(_syntax, _action_factory);
   RdgApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  RdgApp::registerExecFlags(_factory);
 }
 
-RdgApp::~RdgApp()
-{
-}
+RdgApp::~RdgApp() {}
 
 // External entry point for dynamic application loading
-extern "C" void RdgApp__registerApps() { RdgApp::registerApps(); }
+extern "C" void
+RdgApp__registerApps()
+{
+  RdgApp::registerApps();
+}
 void
 RdgApp::registerApps()
 {
@@ -60,7 +61,11 @@ RdgApp::registerApps()
 }
 
 // External entry point for dynamic object registration
-extern "C" void RdgApp__registerObjects(Factory & factory) { RdgApp::registerObjects(factory); }
+extern "C" void
+RdgApp__registerObjects(Factory & factory)
+{
+  RdgApp::registerObjects(factory);
+}
 void
 RdgApp::registerObjects(Factory & factory)
 {
@@ -74,15 +79,29 @@ RdgApp::registerObjects(Factory & factory)
   registerMaterial(AEFVMaterial);
 
   // User objects
-  registerUserObject(AEFVSlopeReconstructionOneD);
   registerUserObject(AEFVSlopeLimitingOneD);
   registerUserObject(AEFVUpwindInternalSideFlux);
   registerUserObject(AEFVFreeOutflowBoundaryFlux);
 }
 
 // External entry point for dynamic syntax association
-extern "C" void RdgApp__associateSyntax(Syntax & syntax, ActionFactory & action_factory) { RdgApp::associateSyntax(syntax, action_factory); }
+extern "C" void
+RdgApp__associateSyntax(Syntax & syntax, ActionFactory & action_factory)
+{
+  RdgApp::associateSyntax(syntax, action_factory);
+}
 void
 RdgApp::associateSyntax(Syntax & /*syntax*/, ActionFactory & /*action_factory*/)
+{
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+RdgApp__registerExecFlags(Factory & factory)
+{
+  RdgApp::registerExecFlags(factory);
+}
+void
+RdgApp::registerExecFlags(Factory & /*factory*/)
 {
 }

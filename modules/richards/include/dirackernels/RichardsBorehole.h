@@ -1,10 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef RICHARDSBOREHOLE_H
 #define RICHARDSBOREHOLE_H
@@ -16,10 +17,9 @@
 #include "RichardsRelPerm.h"
 #include "RichardsSeff.h"
 
-
 class RichardsBorehole;
 
-template<>
+template <>
 InputParameters validParams<RichardsBorehole>();
 
 /**
@@ -28,7 +28,6 @@ InputParameters validParams<RichardsBorehole>();
 class RichardsBorehole : public PeacemanBorehole
 {
 public:
-
   /**
    * Creates a new RichardsBorehole
    * This sets all the variables, but also
@@ -73,7 +72,6 @@ public:
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
 protected:
-
   /// Whether to use full upwinding
   const bool _fully_upwind;
 
@@ -108,41 +106,42 @@ protected:
    * d(_mobility)/d(variable_ph)  (variable_ph is the variable for phase=ph)
    * These are used in the jacobian calculations if _fully_upwind = true
    */
-  std::vector<std::vector<Real> > _dmobility_dv;
+  std::vector<std::vector<Real>> _dmobility_dv;
 
   /// fluid porepressure (or porepressures in case of multiphase)
-  const MaterialProperty<std::vector<Real> > & _pp;
+  const MaterialProperty<std::vector<Real>> & _pp;
 
   /// d(porepressure_i)/d(variable_j)
-  const MaterialProperty<std::vector<std::vector<Real> > > & _dpp_dv;
+  const MaterialProperty<std::vector<std::vector<Real>>> & _dpp_dv;
 
   /// fluid viscosity
-  const MaterialProperty<std::vector<Real> > & _viscosity;
+  const MaterialProperty<std::vector<Real>> & _viscosity;
 
   /// material permeability
   const MaterialProperty<RealTensorValue> & _permeability;
 
   /// deriviatves of Seff wrt variables
-  const MaterialProperty<std::vector<std::vector<Real> > > & _dseff_dv;
+  const MaterialProperty<std::vector<std::vector<Real>>> & _dseff_dv;
 
   /// relative permeability
-  const MaterialProperty<std::vector<Real> > & _rel_perm;
+  const MaterialProperty<std::vector<Real>> & _rel_perm;
 
   /// d(relperm_i)/d(variable_j)
-  const MaterialProperty<std::vector<std::vector<Real> > > & _drel_perm_dv;
+  const MaterialProperty<std::vector<std::vector<Real>>> & _drel_perm_dv;
 
   /// fluid density
-  const MaterialProperty<std::vector<Real> > & _density;
+  const MaterialProperty<std::vector<Real>> & _density;
 
   /// d(density_i)/d(variable_j)
-  const MaterialProperty<std::vector<std::vector<Real> > > & _ddensity_dv;
+  const MaterialProperty<std::vector<std::vector<Real>>> & _ddensity_dv;
 
   /**
    * Holds the values of pressures at all the nodes of the element
    * Only used if _fully_upwind = true
    * Eg:
    * _ps_at_nodes[_pvar] is a pointer to this variable's nodal porepressure values
-   * So: (*_ps_at_nodes[_pvar])[i] = _var.nodalSln()[i] = porepressure of pressure-variable _pvar at node i
+   * So: (*_ps_at_nodes[_pvar])[i] = _var.nodalValue()[i] = porepressure of pressure-variable _pvar
+   * at node i
    */
   std::vector<const VariableValue *> _ps_at_nodes;
 
@@ -154,7 +153,6 @@ protected:
    * @param wrt_num differentiate the residual wrt this Richards variable
    */
   Real jac(unsigned int wrt_num);
-
 };
 
-#endif //RICHARDSBOREHOLE_H
+#endif // RICHARDSBOREHOLE_H

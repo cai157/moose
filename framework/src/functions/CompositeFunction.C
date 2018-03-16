@@ -1,45 +1,43 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "CompositeFunction.h"
 
-template<>
-InputParameters validParams<CompositeFunction>()
+registerMooseObject("MooseApp", CompositeFunction);
+
+template <>
+InputParameters
+validParams<CompositeFunction>()
 {
   InputParameters params = validParams<Function>();
-  params.addParam<std::vector<FunctionName> >("functions", "The functions to be multiplied together.");
+  params.addParam<std::vector<FunctionName>>("functions",
+                                             "The functions to be multiplied together.");
   params.addParam<Real>("scale_factor", 1.0, "Scale factor to be applied to the ordinate values");
+  params.addClassDescription("Multiplies an arbitrary set of functions together");
   return params;
 }
 
-CompositeFunction::CompositeFunction(const InputParameters & parameters) :
-  Function(parameters),
-  FunctionInterface(this),
-  _scale_factor( getParam<Real>("scale_factor") )
+CompositeFunction::CompositeFunction(const InputParameters & parameters)
+  : Function(parameters), FunctionInterface(this), _scale_factor(getParam<Real>("scale_factor"))
 {
 
-  const std::vector<FunctionName> & names = getParam<std::vector<FunctionName> >("functions");
+  const std::vector<FunctionName> & names = getParam<std::vector<FunctionName>>("functions");
   const unsigned int len = names.size();
   if (len == 0)
-    mooseError( "A composite function must reference at least one other function" );
+    mooseError("A composite function must reference at least one other function");
 
   _f.resize(len);
 
   for (unsigned i = 0; i < len; ++i)
   {
     if (name() == names[i])
-      mooseError( "A composite function must not reference itself" );
+      mooseError("A composite function must not reference itself");
 
     Function * const f = &getFunctionByName(names[i]);
     if (!f)
@@ -49,7 +47,7 @@ CompositeFunction::CompositeFunction(const InputParameters & parameters) :
       msg += ".  Function ";
       msg += names[i];
       msg += " referenced but not found.";
-      mooseError( msg );
+      mooseError(msg);
     }
     _f[i] = f;
   }

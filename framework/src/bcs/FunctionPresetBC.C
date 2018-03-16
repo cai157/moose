@@ -1,31 +1,30 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "FunctionPresetBC.h"
 #include "Function.h"
 
-template<>
-InputParameters validParams<FunctionPresetBC>()
+registerMooseObject("MooseApp", FunctionPresetBC);
+
+template <>
+InputParameters
+validParams<FunctionPresetBC>()
 {
   InputParameters params = validParams<PresetNodalBC>();
   params.addRequiredParam<FunctionName>("function", "The forcing function.");
+  params.addClassDescription(
+      "The same as FunctionDirichletBC except the value is applied before the solve begins");
   return params;
 }
 
-FunctionPresetBC::FunctionPresetBC(const InputParameters & parameters) :
-    PresetNodalBC(parameters),
-    _func(getFunction("function"))
+FunctionPresetBC::FunctionPresetBC(const InputParameters & parameters)
+  : PresetNodalBC(parameters), _func(getFunction("function"))
 {
 }
 
@@ -34,4 +33,3 @@ FunctionPresetBC::computeQpValue()
 {
   return _func.value(_t, *_current_node);
 }
-

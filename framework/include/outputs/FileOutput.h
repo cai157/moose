@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef FILEOUTPUT_H
 #define FILEOUTPUT_H
@@ -21,7 +16,7 @@
 // Forward declerations
 class FileOutput;
 
-template<>
+template <>
 InputParameters validParams<FileOutput>();
 
 /**
@@ -32,7 +27,6 @@ InputParameters validParams<FileOutput>();
 class FileOutput : public PetscOutput
 {
 public:
-
   /**
    * Class constructor
    */
@@ -72,11 +66,10 @@ public:
   static std::string getOutputFileBase(MooseApp & app, std::string suffix = "_out");
 
 protected:
-
   /**
    * Checks if the output method should be executed
    */
-  bool shouldOutput(const ExecFlagType & type);
+  virtual bool shouldOutput(const ExecFlagType & type) override;
 
   /**
    * Checks the filename for output
@@ -98,8 +91,8 @@ protected:
   std::vector<std::string> _output_if_base_contains;
 
 private:
-
-  // OutputWarehouse needs access to _file_num for MultiApp ninja wizardry (see OutputWarehouse::merge)
+  // OutputWarehouse needs access to _file_num for MultiApp ninja wizardry (see
+  // OutputWarehouse::merge)
   friend class OutputWarehouse;
 };
 

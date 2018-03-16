@@ -1,31 +1,30 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "NonlinearSource.h"
 
-template<>
-InputParameters validParams<NonlinearSource>()
+registerMooseObject("MooseTestApp", NonlinearSource);
+
+template <>
+InputParameters
+validParams<NonlinearSource>()
 {
   InputParameters params = validParams<DiracKernel>();
-  params.addRequiredCoupledVar("coupled_var", "The variable whose value is coupled into the source term.");
+  params.addRequiredCoupledVar("coupled_var",
+                               "The variable whose value is coupled into the source term.");
   params.addRequiredParam<Real>("scale_factor", "Strength of the source term");
   params.addRequiredParam<Point>("point", "The x,y,z coordinates of the point");
   return params;
 }
 
-NonlinearSource::NonlinearSource(const InputParameters & parameters) :
-    DiracKernel(parameters),
+NonlinearSource::NonlinearSource(const InputParameters & parameters)
+  : DiracKernel(parameters),
     _coupled_var(coupledValue("coupled_var")),
     _coupled_var_num(coupled("coupled_var")),
     _scale_factor(parameters.get<Real>("scale_factor")),

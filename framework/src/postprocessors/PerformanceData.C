@@ -1,42 +1,56 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "PerformanceData.h"
 
 #include "FEProblem.h"
 #include "SubProblem.h"
 
-template<>
-InputParameters validParams<PerformanceData>()
+registerMooseObject("MooseApp", PerformanceData);
+
+template <>
+InputParameters
+validParams<PerformanceData>()
 {
   InputParameters params = validParams<GeneralPostprocessor>();
 
-  MooseEnum column_options("n_calls total_time average_time total_time_with_sub average_time_with_sub percent_of_active_time percent_of_active_time_with_sub", "total_time_with_sub");
+  MooseEnum column_options("n_calls total_time average_time total_time_with_sub "
+                           "average_time_with_sub percent_of_active_time "
+                           "percent_of_active_time_with_sub",
+                           "total_time_with_sub");
+  params.addParam<MooseEnum>(
+      "column", column_options, "The column you want the value of (Default: total_time_with_sub).");
 
-  params.addParam<MooseEnum>("column", column_options, "The column you want the value of (Default: total_time_with_sub).");
-  params.addParam<std::string>("category", "Execution", "The category or \"Header\" for the event");
-  params.addRequiredParam<std::string>("event", "The name or \"label\" of the event (\"ALIVE\" and \"ACTIVE\" are also valid events, category and column are ignored for these cases).");
+  MooseEnum common_categories("Application Execution Output Setup Utility", "Execution", true);
+  params.addParam<MooseEnum>("category", common_categories, "The category for the event");
+
+  MooseEnum common_events("ACTIVE ALIVE solve() compute_residual() compute_jacobian()", "", true);
+  params.addRequiredParam<MooseEnum>(
+      "event",
+      common_events,
+      "The name or \"label\" of the event. Must match event name exactly "
+      "including parenthesis if applicable. (\"ALIVE\" and \"ACTIVE\" are "
+      "also valid events, category and column are ignored for these "
+      "cases).");
 
   return params;
 }
 
-PerformanceData::PerformanceData(const InputParameters & parameters) :
-    GeneralPostprocessor(parameters),
+PerformanceData::PerformanceData(const InputParameters & parameters)
+  : GeneralPostprocessor(parameters),
     _column(getParam<MooseEnum>("column").getEnum<PerfLogCols>()),
-    _category(getParam<std::string>("category")),
-    _event(getParam<std::string>("event"))
-{}
+    _category(getParam<MooseEnum>("category")),
+    _event(getParam<MooseEnum>("event"))
+{
+  // Notify the OutputWarehouse that logging has been requested
+  _app.getOutputWarehouse().setLoggingRequested();
+}
 
 Real
 PerformanceData::getValue()

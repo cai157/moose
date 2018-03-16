@@ -1,8 +1,8 @@
 [Mesh]
   file = square-2x2-nodeids.e
-  # This test uses a NodalVariableValue postprocessor, which
-  # only works with ReplicatedMesh
-  parallel_type = replicated
+  # This test can only be run with renumering disabled, so the
+  # NodalVariableValue postprocessor's node id is well-defined.
+  allow_renumbering = false
 []
 
 [Variables]
@@ -54,7 +54,7 @@
   [../]
 
   [./ffn_u]
-    type = UserForcingFunction
+    type = BodyForce
     variable = u
     function = force_fn
   [../]
@@ -118,7 +118,6 @@
 
   [./avg_v]
     type = AverageElementSize
-    variable = v
     outputs = none
   [../]
 []
@@ -126,7 +125,6 @@
 [Executioner]
   type = Transient
 
-  # Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 
   dt = 0.1

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef GLOBALPARAMSACTION_H
 #define GLOBALPARAMSACTION_H
@@ -19,11 +14,10 @@
 
 class GlobalParamsAction;
 
-template<>
+template <>
 InputParameters validParams<GlobalParamsAction>();
 
-
-class GlobalParamsAction: public Action
+class GlobalParamsAction : public Action
 {
 public:
   GlobalParamsAction(InputParameters params);
@@ -38,25 +32,21 @@ public:
   void remove(const std::string & name);
 
   template <typename T>
-  inline
-  T & setScalarParam(const std::string &name)
+  inline T & setScalarParam(const std::string & name)
   {
     return parameters().set<T>(name);
   }
 
   template <typename T>
-  inline
-  std::vector<T> & setVectorParam(const std::string &name)
+  inline std::vector<T> & setVectorParam(const std::string & name)
   {
-    return parameters().set<std::vector<T> >(name);
+    return parameters().set<std::vector<T>>(name);
   }
 
   template <typename T>
-  inline
-  std::vector<std::vector<T> > & setDoubleIndexParam(const std::string &name)
+  inline std::vector<std::vector<T>> & setDoubleIndexParam(const std::string & name)
   {
-    return parameters().set<std::vector<std::vector<T> > >(name);
+    return parameters().set<std::vector<std::vector<T>>>(name);
   }
-
 };
-#endif //GLOBALPARAMSACTION_H
+#endif // GLOBALPARAMSACTION_H

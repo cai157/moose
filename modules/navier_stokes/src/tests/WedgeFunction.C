@@ -1,29 +1,40 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "WedgeFunction.h"
 
-template<>
-InputParameters validParams<WedgeFunction>()
+template <>
+InputParameters
+validParams<WedgeFunction>()
 {
   InputParameters params = validParams<Function>();
-  params.addRequiredParam<Real>("alpha_degrees", "The wedge half-angle size (in degrees) used in computing 'f' below.");
+  params.addClassDescription("Function object for tests/ins/jeffery_hamel responsible for setting "
+                             "the exact value of the velocity and pressure variables.");
+  params.addRequiredParam<Real>(
+      "alpha_degrees", "The wedge half-angle size (in degrees) used in computing 'f' below.");
   params.addRequiredParam<Real>("Re", "The Reynolds number used in computing 'f' below.");
-  params.addRequiredRangeCheckedParam<unsigned int>("var_num", "var_num<3", "The variable (0==vel_x, 1==vel_y, 2==p) we are computing the exact solution for.");
+  params.addRequiredRangeCheckedParam<unsigned int>(
+      "var_num",
+      "var_num<3",
+      "The variable (0==vel_x, 1==vel_y, 2==p) we are computing the exact solution for.");
   params.addRequiredParam<Real>("mu", "dynamic viscosity");
   params.addRequiredParam<Real>("rho", "density");
   params.addRequiredParam<Real>("K", "Constant obtained by interating the Jeffery-Hamel ODE once.");
-  params.addRequiredParam<FunctionName>("f", "The pre-computed semi-analytic exact solution f(theta) as a PiecewiseLinear function.");
-  params.addClassDescription("Function which computes the exact solution for Jeffery-Hamel flow in a wedge.");
+  params.addRequiredParam<FunctionName>(
+      "f", "The pre-computed semi-analytic exact solution f(theta) as a PiecewiseLinear function.");
+  params.addClassDescription(
+      "Function which computes the exact solution for Jeffery-Hamel flow in a wedge.");
   return params;
 }
 
-WedgeFunction::WedgeFunction(const InputParameters & parameters) :
-    Function(parameters),
+WedgeFunction::WedgeFunction(const InputParameters & parameters)
+  : Function(parameters),
     FunctionInterface(this),
     _alpha_radians(libMesh::pi * (getParam<Real>("alpha_degrees") / 180.)),
     _Re(getParam<Real>("Re")),
@@ -55,7 +66,7 @@ WedgeFunction::value(Real /*t*/, const Point & p)
 
   // We pass "eta" to the PiecewiseLinear function in place of "time",
   // plus a dummy Point which is not used.
-  const Real f_value = _f.value(eta, Point(0., 0., 0.));
+  const Real f_value = _f.value(eta, _point_zero);
 
   // Vars 0 and 1 are the velocities.
   if (_var_num < 2)

@@ -1,15 +1,18 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef SPHERICALR_H
 #define SPHERICALR_H
 
 #include "Element.h"
 
-//Forward Declarations
+// Forward Declarations
 class SymmElasticityTensor;
 
 namespace SolidMechanics
@@ -18,20 +21,18 @@ namespace SolidMechanics
 class SphericalR : public Element
 {
 public:
-  SphericalR(SolidModel & solid_model, const std::string & name, const InputParameters & parameters);
+  SphericalR(SolidModel & solid_model,
+             const std::string & name,
+             const InputParameters & parameters);
   virtual ~SphericalR();
 
 protected:
+  virtual void computeStrain(const unsigned qp,
+                             const SymmTensor & total_strain_old,
+                             SymmTensor & total_strain_new,
+                             SymmTensor & strain_increment);
 
-  virtual void computeStrain( const unsigned qp,
-                              const SymmTensor & total_strain_old,
-                              SymmTensor & total_strain_new,
-                              SymmTensor & strain_increment );
-
-  virtual unsigned int getNumKnownCrackDirs() const
-  {
-    return 2;
-  }
+  virtual unsigned int getNumKnownCrackDirs() const { return 2; }
 
   const VariableValue & _disp_r;
 
@@ -39,7 +40,6 @@ protected:
 
   const VariableGradient & _grad_disp_r;
 };
-
 }
 
 #endif

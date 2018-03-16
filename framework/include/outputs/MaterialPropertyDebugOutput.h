@@ -1,29 +1,23 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MATERIALPROPERTYDEBUGOUTPUT_H
 #define MATERIALPROPERTYDEBUGOUTPUT_H
 
 // MOOSE includes
-#include "BasicOutput.h"
 #include "Output.h"
 
 // Forward declerations
 class MaterialPropertyDebugOutput;
 class Material;
 
-template<>
+template <>
 InputParameters validParams<MaterialPropertyDebugOutput>();
 
 /**
@@ -31,10 +25,9 @@ InputParameters validParams<MaterialPropertyDebugOutput>();
  *
  * This class may be used from inside the [Outputs] block or via the [Debug] block (preferred)
  */
-class MaterialPropertyDebugOutput : public BasicOutput<Output>
+class MaterialPropertyDebugOutput : public Output
 {
 public:
-
   /**
    * Class constructor
    * @param parameters Object input parameters
@@ -42,7 +35,6 @@ public:
   MaterialPropertyDebugOutput(const InputParameters & parameters);
 
 protected:
-
   /**
    * Perform the debugging output
    * For this object this is empty; the output is preformed in the constructor
@@ -59,8 +51,8 @@ protected:
    * @param output The output stream to populate
    * @param materials Vector of pointers to the Material objects of interest
    */
-  void printMaterialProperties(std::stringstream & output, const std::vector<MooseSharedPointer<Material> > & materials) const;
-
+  void printMaterialProperties(std::stringstream & output,
+                               const std::vector<std::shared_ptr<Material>> & materials) const;
 };
 
 #endif // MATERIALPROPERTYEBUGOUTPUT_H

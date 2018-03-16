@@ -1,13 +1,19 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "EulerAngleFileReader.h"
 
-template<>
-InputParameters validParams<EulerAngleFileReader>()
+#include <fstream>
+
+template <>
+InputParameters
+validParams<EulerAngleFileReader>()
 {
   InputParameters params = validParams<EulerAngleProvider>();
   params.addClassDescription("Read Euler angle data from a file and provide it to other objects.");
@@ -15,9 +21,8 @@ InputParameters validParams<EulerAngleFileReader>()
   return params;
 }
 
-EulerAngleFileReader::EulerAngleFileReader(const InputParameters & params) :
-    EulerAngleProvider(params),
-    _file_name(getParam<FileName>("file_name"))
+EulerAngleFileReader::EulerAngleFileReader(const InputParameters & params)
+  : EulerAngleProvider(params), _file_name(getParam<FileName>("file_name"))
 {
   readFile();
 }
@@ -41,7 +46,7 @@ EulerAngleFileReader::readFile()
   // Read in Euler angles from _file_name
   std::ifstream inFile(_file_name.c_str());
   if (!inFile)
-    mooseError("Can't open " << _file_name);
+    mooseError("Can't open ", _file_name);
 
   // Skip first 4 lines
   for (unsigned int i = 0; i < 4; ++i)

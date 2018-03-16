@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 /**
  * Creates a box of specified width, length and height,
@@ -23,27 +18,32 @@
 #include "OrientedBoxMarker.h"
 #include "OrientedBoxInterface.h"
 
-template<>
-InputParameters validParams<OrientedBoxMarker>()
+registerMooseObject("MooseApp", OrientedBoxMarker);
+
+template <>
+InputParameters
+validParams<OrientedBoxMarker>()
 {
   InputParameters params = validParams<Marker>();
   params += validParams<OrientedBoxInterface>();
 
   MooseEnum marker_states = Marker::markerStates();
 
-  params.addRequiredParam<MooseEnum>("inside", marker_states, "How to mark elements inside the box.");
-  params.addRequiredParam<MooseEnum>("outside", marker_states, "How to mark elements outside the box.");
+  params.addRequiredParam<MooseEnum>(
+      "inside", marker_states, "How to mark elements inside the box.");
+  params.addRequiredParam<MooseEnum>(
+      "outside", marker_states, "How to mark elements outside the box.");
 
-  params.addClassDescription("Marks inside and outside a box that can have arbitrary orientation and center point.");
+  params.addClassDescription(
+      "Marks inside and outside a box that can have arbitrary orientation and center point.");
   return params;
 }
 
-
-OrientedBoxMarker::OrientedBoxMarker(const InputParameters & parameters) :
-  Marker(parameters),
-  OrientedBoxInterface(parameters),
-  _inside((MarkerValue)(int)parameters.get<MooseEnum>("inside")),
-  _outside((MarkerValue)(int)parameters.get<MooseEnum>("outside"))
+OrientedBoxMarker::OrientedBoxMarker(const InputParameters & parameters)
+  : Marker(parameters),
+    OrientedBoxInterface(parameters),
+    _inside((MarkerValue)(int)parameters.get<MooseEnum>("inside")),
+    _outside((MarkerValue)(int)parameters.get<MooseEnum>("outside"))
 {
 }
 

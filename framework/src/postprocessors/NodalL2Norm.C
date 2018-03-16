@@ -1,31 +1,29 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "NodalL2Norm.h"
 
-template<>
-InputParameters validParams<NodalL2Norm>()
+registerMooseObject("MooseApp", NodalL2Norm);
+
+template <>
+InputParameters
+validParams<NodalL2Norm>()
 {
   InputParameters params = validParams<NodalVariablePostprocessor>();
   params.set<bool>("unique_node_execute") = true;
   return params;
 }
 
-NodalL2Norm::NodalL2Norm(const InputParameters & parameters) :
-  NodalVariablePostprocessor(parameters),
-  _sum_of_squares(0.0)
-{}
+NodalL2Norm::NodalL2Norm(const InputParameters & parameters)
+  : NodalVariablePostprocessor(parameters), _sum_of_squares(0.0)
+{
+}
 
 void
 NodalL2Norm::initialize()
@@ -37,7 +35,7 @@ void
 NodalL2Norm::execute()
 {
   Real val = _u[_qp];
-  _sum_of_squares += val*val;
+  _sum_of_squares += val * val;
 }
 
 Real

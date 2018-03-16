@@ -1,19 +1,22 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef POROUSFLOWPLASTICHEATENERGY_H
 #define POROUSFLOWPLASTICHEATENERGY_H
 
 #include "PlasticHeatEnergy.h"
 #include "PorousFlowDictator.h"
 
-//Forward Declarations
+// Forward Declarations
 class PorousFlowPlasticHeatEnergy;
 
-template<>
+template <>
 InputParameters validParams<PorousFlowPlasticHeatEnergy>();
 
 /**
@@ -43,10 +46,10 @@ protected:
   const MaterialProperty<Real> & _porosity;
 
   /// d(porosity)/d(porous-flow variable) - these derivatives will be wrt variables at the nodes
-  const MaterialProperty<std::vector<Real> > & _dporosity_dvar;
+  const MaterialProperty<std::vector<Real>> & _dporosity_dvar;
 
   /// d(porosity)/d(grad porous-flow variable) - remember these derivatives will be wrt grad(vars) at qps
-  const MaterialProperty<std::vector<RealGradient> > & _dporosity_dgradvar;
+  const MaterialProperty<std::vector<RealGradient>> & _dporosity_dgradvar;
 };
 
-#endif //POROUSFLOWPLASTICHEATENERGY_H
+#endif // POROUSFLOWPLASTICHEATENERGY_H

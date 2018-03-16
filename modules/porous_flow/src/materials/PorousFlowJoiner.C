@@ -1,26 +1,32 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "PorousFlowJoiner.h"
-
 #include "Conversion.h"
 
-template<>
-InputParameters validParams<PorousFlowJoiner>()
+template <>
+InputParameters
+validParams<PorousFlowJoiner>()
 {
   InputParameters params = validParams<PorousFlowMaterialVectorBase>();
-  params.addRequiredParam<std::string>("material_property", "The property that you want joined into a std::vector");
-  params.addParam<bool>("include_old", false, "Join old properties into vectors as well as the current properties");
-  params.addClassDescription("This Material forms a std::vector of properties, old properties (optionally), and derivatives, out of the individual phase properties");
+  params.addRequiredParam<std::string>("material_property",
+                                       "The property that you want joined into a std::vector");
+  params.addParam<bool>(
+      "include_old", false, "Join old properties into vectors as well as the current properties");
+  params.addClassDescription("This Material forms a std::vector of properties, old properties "
+                             "(optionally), and derivatives, out of the individual phase "
+                             "properties");
   return params;
 }
 
-PorousFlowJoiner::PorousFlowJoiner(const InputParameters & parameters) :
-    PorousFlowMaterialVectorBase(parameters),
+PorousFlowJoiner::PorousFlowJoiner(const InputParameters & parameters)
+  : PorousFlowMaterialVectorBase(parameters),
 
     _pressure_variable_name(_dictator.pressureVariableNameDummy()),
     _saturation_variable_name(_dictator.saturationVariableNameDummy()),
@@ -29,13 +35,21 @@ PorousFlowJoiner::PorousFlowJoiner(const InputParameters & parameters) :
     _pf_prop(getParam<std::string>("material_property")),
     _include_old(getParam<bool>("include_old")),
 
-    _dporepressure_dvar(!_nodal_material ? getMaterialProperty<std::vector<std::vector<Real> > >("dPorousFlow_porepressure_qp_dvar") : getMaterialProperty<std::vector<std::vector<Real> > >("dPorousFlow_porepressure_nodal_dvar")),
-    _dsaturation_dvar(!_nodal_material ? getMaterialProperty<std::vector<std::vector<Real> > >("dPorousFlow_saturation_qp_dvar") : getMaterialProperty<std::vector<std::vector<Real> > >("dPorousFlow_saturation_nodal_dvar")),
-    _dtemperature_dvar(!_nodal_material ? getMaterialProperty<std::vector<Real> >("dPorousFlow_temperature_qp_dvar") : getMaterialProperty<std::vector<Real> >("dPorousFlow_temperature_nodal_dvar")),
+    _dporepressure_dvar(!_nodal_material ? getMaterialProperty<std::vector<std::vector<Real>>>(
+                                               "dPorousFlow_porepressure_qp_dvar")
+                                         : getMaterialProperty<std::vector<std::vector<Real>>>(
+                                               "dPorousFlow_porepressure_nodal_dvar")),
+    _dsaturation_dvar(!_nodal_material ? getMaterialProperty<std::vector<std::vector<Real>>>(
+                                             "dPorousFlow_saturation_qp_dvar")
+                                       : getMaterialProperty<std::vector<std::vector<Real>>>(
+                                             "dPorousFlow_saturation_nodal_dvar")),
+    _dtemperature_dvar(
+        !_nodal_material
+            ? getMaterialProperty<std::vector<Real>>("dPorousFlow_temperature_qp_dvar")
+            : getMaterialProperty<std::vector<Real>>("dPorousFlow_temperature_nodal_dvar")),
 
-    _property(declareProperty<std::vector<Real> >(_pf_prop)),
-    _property_old(_include_old ? &declarePropertyOld<std::vector<Real> >(_pf_prop) : nullptr),
-    _dproperty_dvar(declareProperty<std::vector<std::vector<Real> > >("d" + _pf_prop + "_dvar"))
+    _property(declareProperty<std::vector<Real>>(_pf_prop)),
+    _dproperty_dvar(declareProperty<std::vector<std::vector<Real>>>("d" + _pf_prop + "_dvar"))
 {
   _phase_property.resize(_num_phases);
   _dphase_property_dp.resize(_num_phases);
@@ -44,10 +58,14 @@ PorousFlowJoiner::PorousFlowJoiner(const InputParameters & parameters) :
 
   for (unsigned int ph = 0; ph < _num_phases; ++ph)
   {
-    _phase_property[ph] = &getMaterialProperty<Real>(_pf_prop + Moose::stringify(ph));
-    _dphase_property_dp[ph] = &getMaterialPropertyDerivative<Real>(_pf_prop + Moose::stringify(ph), _pressure_variable_name);
-    _dphase_property_ds[ph] = &getMaterialPropertyDerivative<Real>(_pf_prop + Moose::stringify(ph), _saturation_variable_name);
-    _dphase_property_dt[ph] = &getMaterialPropertyDerivative<Real>(_pf_prop + Moose::stringify(ph), _temperature_variable_name);
+    std::string phase = Moose::stringify(ph);
+    _phase_property[ph] = &getMaterialProperty<Real>(_pf_prop + phase);
+    _dphase_property_dp[ph] =
+        &getMaterialPropertyDerivative<Real>(_pf_prop + phase, _pressure_variable_name);
+    _dphase_property_ds[ph] =
+        &getMaterialPropertyDerivative<Real>(_pf_prop + phase, _saturation_variable_name);
+    _dphase_property_dt[ph] =
+        &getMaterialPropertyDerivative<Real>(_pf_prop + phase, _temperature_variable_name);
   }
 }
 
@@ -78,9 +96,11 @@ PorousFlowJoiner::computeQpProperties()
       // nodes!
       _dproperty_dvar[_qp][ph][v] = 0.0;
       if ((*_dphase_property_dp[ph]).size() > _qp)
-        _dproperty_dvar[_qp][ph][v] += (*_dphase_property_dp[ph])[_qp] * _dporepressure_dvar[_qp][ph][v];
+        _dproperty_dvar[_qp][ph][v] +=
+            (*_dphase_property_dp[ph])[_qp] * _dporepressure_dvar[_qp][ph][v];
       if ((*_dphase_property_ds[ph]).size() > _qp)
-        _dproperty_dvar[_qp][ph][v] += (*_dphase_property_ds[ph])[_qp] * _dsaturation_dvar[_qp][ph][v];
+        _dproperty_dvar[_qp][ph][v] +=
+            (*_dphase_property_ds[ph])[_qp] * _dsaturation_dvar[_qp][ph][v];
       if ((*_dphase_property_dt[ph]).size() > _qp)
         _dproperty_dvar[_qp][ph][v] += (*_dphase_property_dt[ph])[_qp] * _dtemperature_dvar[_qp][v];
     }

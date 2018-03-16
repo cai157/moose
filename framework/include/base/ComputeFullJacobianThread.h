@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef COMPUTEFULLJACOBIANTHREAD_H
 #define COMPUTEFULLJACOBIANTHREAD_H
@@ -24,7 +19,9 @@ class NonlinearSystemBase;
 class ComputeFullJacobianThread : public ComputeJacobianThread
 {
 public:
-  ComputeFullJacobianThread(FEProblemBase & fe_problem, SparseMatrix<Number> & jacobian);
+  ComputeFullJacobianThread(FEProblemBase & fe_problem,
+                            SparseMatrix<Number> & jacobian,
+                            Moose::KernelType kernel_type = Moose::KT_ALL);
 
   // Splitting Constructor
   ComputeFullJacobianThread(ComputeFullJacobianThread & x, Threads::split split);
@@ -42,7 +39,7 @@ protected:
   NonlinearSystemBase & _nl;
 
   // Reference to BC storage structures
-  const MooseObjectWarehouse<IntegratedBC> & _integrated_bcs;
+  const MooseObjectWarehouse<IntegratedBCBase> & _integrated_bcs;
 
   // Reference to DGKernel storage
   const MooseObjectWarehouse<DGKernel> & _dg_kernels;
@@ -50,8 +47,9 @@ protected:
   // Reference to interface kernel storage
   const MooseObjectWarehouse<InterfaceKernel> & _interface_kernels;
 
-  // Reference to Kernel storage
-  const KernelWarehouse & _kernels;
+  Moose::KernelType _kernel_type;
+
+  const KernelWarehouse * _warehouse;
 };
 
-#endif //COMPUTEFULLJACOBIANTHREAD_H
+#endif // COMPUTEFULLJACOBIANTHREAD_H

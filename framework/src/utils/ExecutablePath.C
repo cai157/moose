@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "Moose.h"
 #include "ExecutablePath.h"
@@ -22,9 +17,11 @@
 
 #include <unistd.h>
 
-namespace Moose {
+namespace Moose
+{
 
-std::string getExecutablePath()
+std::string
+getExecutablePath()
 {
   std::string exec_path;
   char path[1024];
@@ -35,7 +32,7 @@ std::string getExecutablePath()
     exec_path = path;
   else
     mooseError("Unable to retrieve executable path");
-#else //Linux with Proc
+#else // Linux with Proc
   std::ostringstream oss;
   oss << "/proc/" << getpid() << "/exe";
   int ch = readlink(oss.str().c_str(), path, 1024);
@@ -54,4 +51,3 @@ std::string getExecutablePath()
 }
 
 } // Namespace MOOSE
-

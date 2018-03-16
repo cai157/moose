@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef TENSORMECHANICSPLASTICDRUCKERPRAGERHYPERBOLIC_H
 #define TENSORMECHANICSPLASTICDRUCKERPRAGERHYPERBOLIC_H
 
@@ -12,7 +15,7 @@
 
 class TensorMechanicsPlasticDruckerPragerHyperbolic;
 
-template<>
+template <>
 InputParameters validParams<TensorMechanicsPlasticDruckerPragerHyperbolic>();
 
 /**
@@ -23,7 +26,7 @@ InputParameters validParams<TensorMechanicsPlasticDruckerPragerHyperbolic>();
  */
 class TensorMechanicsPlasticDruckerPragerHyperbolic : public TensorMechanicsPlasticDruckerPrager
 {
- public:
+public:
   TensorMechanicsPlasticDruckerPragerHyperbolic(const InputParameters & parameters);
 
   virtual std::string modelName() const override;
@@ -32,7 +35,7 @@ class TensorMechanicsPlasticDruckerPragerHyperbolic : public TensorMechanicsPlas
 
   virtual bool useCustomCTO() const override;
 
- protected:
+protected:
   Real yieldFunction(const RankTwoTensor & stress, Real intnl) const override;
 
   RankFourTensor dflowPotential_dstress(const RankTwoTensor & stress, Real intnl) const override;
@@ -40,15 +43,26 @@ class TensorMechanicsPlasticDruckerPragerHyperbolic : public TensorMechanicsPlas
   /// Function that's used in dyieldFunction_dstress and flowPotential
   virtual RankTwoTensor df_dsig(const RankTwoTensor & stress, Real bbb) const override;
 
-  virtual bool returnMap(const RankTwoTensor & trial_stress, Real intnl_old, const RankFourTensor & E_ijkl,
-                         Real ep_plastic_tolerance, RankTwoTensor & returned_stress, Real & returned_intnl,
-                         std::vector<Real> & dpm, RankTwoTensor & delta_dp, std::vector<Real> & yf,
+  virtual bool returnMap(const RankTwoTensor & trial_stress,
+                         Real intnl_old,
+                         const RankFourTensor & E_ijkl,
+                         Real ep_plastic_tolerance,
+                         RankTwoTensor & returned_stress,
+                         Real & returned_intnl,
+                         std::vector<Real> & dpm,
+                         RankTwoTensor & delta_dp,
+                         std::vector<Real> & yf,
                          bool & trial_stress_inadmissible) const override;
 
-  virtual RankFourTensor consistentTangentOperator(const RankTwoTensor & trial_stress, Real intnl_old, const RankTwoTensor & stress, Real intnl,
-                                                   const RankFourTensor & E_ijkl, const std::vector<Real> & cumulative_pm) const override;
+  virtual RankFourTensor
+  consistentTangentOperator(const RankTwoTensor & trial_stress,
+                            Real intnl_old,
+                            const RankTwoTensor & stress,
+                            Real intnl,
+                            const RankFourTensor & E_ijkl,
+                            const std::vector<Real> & cumulative_pm) const override;
 
- private:
+private:
   /// smoothing parameter for the cone's tip
   const Real _smoother2;
 

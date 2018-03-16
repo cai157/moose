@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef NSENERGYTHERMALFLUX_H
 #define NSENERGYTHERMALFLUX_H
 
@@ -13,7 +16,7 @@
 // ForwardDeclarations
 class NSEnergyThermalFlux;
 
-template<>
+template <>
 InputParameters validParams<NSEnergyThermalFlux>();
 
 /**
@@ -35,7 +38,7 @@ protected:
   const VariableGradient & _grad_temp;
 
   // Material properties
-  const MaterialProperty<Real> &_thermal_conductivity;
+  const MaterialProperty<Real> & _thermal_conductivity;
 
   // A helper object for computing temperature gradient and Hessians.
   // Constructed via a reference to ourself so we can access all of our data.

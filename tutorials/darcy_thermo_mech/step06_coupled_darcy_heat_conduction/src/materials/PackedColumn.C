@@ -1,34 +1,33 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "PackedColumn.h"
 
-template<>
-InputParameters validParams<PackedColumn>()
+registerMooseObject("DarcyThermoMechApp", PackedColumn);
+
+template <>
+InputParameters
+validParams<PackedColumn>()
 {
   InputParameters params = validParams<Material>();
 
   // Add a parameter to get the radius of the spheres in the column
   // (used later to interpolate permeability).
   params.addParam<Real>("sphere_radius",
+                        1.0,
                         "The radius of the steel spheres that are packed in the column. "
                         "Used to interpolate _permeability.");
   return params;
 }
 
-
-PackedColumn::PackedColumn(const InputParameters & parameters) :
-    Material(parameters),
+PackedColumn::PackedColumn(const InputParameters & parameters)
+  : Material(parameters),
     // Get the one parameter from the input file
     _sphere_radius(getParam<Real>("sphere_radius")),
     // Declare two material properties.  This returns references that
@@ -70,16 +69,17 @@ PackedColumn::computeQpProperties()
   // We will compute "bulk" thermal conductivity, specific heat, and
   // density as linear combinations of the water and steel (all values
   // are from Wikipedia).
-  Real water_k = 0.6;  // (W/m*K)
-  Real water_cp = 4181.3; // (J/kg*K)
-  Real water_rho = 995.6502;  // (kg/m^3 @ 303K)
+  Real water_k = 0.6;        // (W/m*K)
+  Real water_cp = 4181.3;    // (J/kg*K)
+  Real water_rho = 995.6502; // (kg/m^3 @ 303K)
 
-  Real steel_k = 18;  // (W/m*K)
-  Real steel_cp = 466;  // (J/kg*K)
-  Real steel_rho = 8000;  // (kg/m^3)
+  Real steel_k = 18;     // (W/m*K)
+  Real steel_cp = 466;   // (J/kg*K)
+  Real steel_rho = 8000; // (kg/m^3)
 
   // Now actually set the value at the quadrature point
   _thermal_conductivity[_qp] = _porosity[_qp] * water_k + (1.0 - _porosity[_qp]) * steel_k;
   _density[_qp] = _porosity[_qp] * water_rho + (1.0 - _porosity[_qp]) * steel_rho;
-  _heat_capacity[_qp] = _porosity[_qp] * water_cp * water_rho + (1.0 - _porosity[_qp]) * steel_cp*steel_rho;
+  _heat_capacity[_qp] =
+      _porosity[_qp] * water_cp * water_rho + (1.0 - _porosity[_qp]) * steel_cp * steel_rho;
 }

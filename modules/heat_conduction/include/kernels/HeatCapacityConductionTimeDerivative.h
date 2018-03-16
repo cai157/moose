@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef HEATCAPACITYCONDUCTIONTIMEDERIVATIVE_H
 #define HEATCAPACITYCONDUCTIONTIMEDERIVATIVE_H
 
@@ -15,7 +18,7 @@
 // Forward Declarations
 class HeatCapacityConductionTimeDerivative;
 
-template<>
+template <>
 InputParameters validParams<HeatCapacityConductionTimeDerivative>();
 
 /**
@@ -25,7 +28,8 @@ InputParameters validParams<HeatCapacityConductionTimeDerivative>();
  *   \f$ C_p * \frac{\partial T}{\partial t}, \f$
  * where \f$ C_p \f$ is material property for the "heat_capacity".
  */
-class HeatCapacityConductionTimeDerivative : public DerivativeMaterialInterface<JvarMapKernelInterface<TimeDerivative>>
+class HeatCapacityConductionTimeDerivative
+    : public DerivativeMaterialInterface<JvarMapKernelInterface<TimeDerivative>>
 {
 public:
   HeatCapacityConductionTimeDerivative(const InputParameters & parameters);
@@ -42,4 +46,4 @@ protected:
   ///@}
 };
 
-#endif //HEATCAPACITYCONDUCTIONTIMEDERIVATIVE_H
+#endif // HEATCAPACITYCONDUCTIONTIMEDERIVATIVE_H

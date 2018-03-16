@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef ELEMENTL2DIFFERENCE_H
 #define ELEMENTL2DIFFERENCE_H
@@ -20,14 +15,13 @@
 // Forward Declarations
 class ElementL2Difference;
 
-template<>
+template <>
 InputParameters validParams<ElementL2Difference>();
 
 /**
  * Computes the L2-Norm difference between two solution fields.
  */
-class ElementL2Difference :
-  public ElementIntegralVariablePostprocessor
+class ElementL2Difference : public ElementIntegralVariablePostprocessor
 {
 public:
   ElementL2Difference(const InputParameters & parameters);
@@ -41,4 +35,4 @@ protected:
   const VariableValue & _other_var;
 };
 
-#endif //ELEMENTL2DIFFERENCE_H
+#endif // ELEMENTL2DIFFERENCE_H

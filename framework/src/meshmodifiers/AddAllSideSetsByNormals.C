@@ -1,38 +1,35 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "AddAllSideSetsByNormals.h"
 #include "Parser.h"
 #include "InputParameters.h"
 #include "MooseMesh.h"
 
-// libMesh includes
 #include "libmesh/mesh_generation.h"
 #include "libmesh/mesh.h"
 #include "libmesh/string_to_enum.h"
 #include "libmesh/quadrature_gauss.h"
 #include "libmesh/point_locator_base.h"
 
-template<>
-InputParameters validParams<AddAllSideSetsByNormals>()
+registerMooseObject("MooseApp", AddAllSideSetsByNormals);
+
+template <>
+InputParameters
+validParams<AddAllSideSetsByNormals>()
 {
   InputParameters params = validParams<AddSideSetsBase>();
   return params;
 }
 
-AddAllSideSetsByNormals::AddAllSideSetsByNormals(const InputParameters & parameters) :
-    AddSideSetsBase(parameters)
+AddAllSideSetsByNormals::AddAllSideSetsByNormals(const InputParameters & parameters)
+  : AddSideSetsBase(parameters)
 {
 }
 
@@ -51,21 +48,17 @@ AddAllSideSetsByNormals::modify()
   _mesh_boundary_ids = _mesh_ptr->meshBoundaryIds();
 
   // Create the map object that will be owned by MooseMesh
-  std::map<BoundaryID, RealVectorValue> * boundary_map = new std::map<BoundaryID, RealVectorValue>;
+  using map_type = std::map<BoundaryID, RealVectorValue>;
+  std::unique_ptr<map_type> boundary_map = libmesh_make_unique<map_type>();
 
   _visited.clear();
 
   // We'll need to loop over all of the elements to find ones that match this normal.
   // We can't rely on flood catching them all here...
-  MeshBase::const_element_iterator       el     = _mesh_ptr->getMesh().elements_begin();
-  const MeshBase::const_element_iterator end_el = _mesh_ptr->getMesh().elements_end();
-  for (; el != end_el ; ++el)
-  {
-    const Elem * elem = *el;
-
+  for (const auto & elem : _mesh_ptr->getMesh().element_ptr_range())
     for (unsigned int side = 0; side < elem->n_sides(); ++side)
     {
-      if (elem->neighbor(side))
+      if (elem->neighbor_ptr(side))
         continue;
 
       _fe_face->reinit(elem, side);
@@ -73,30 +66,29 @@ AddAllSideSetsByNormals::modify()
 
       {
         // See if we've seen this normal before (linear search)
-        std::map<BoundaryID, RealVectorValue>::iterator it = boundary_map->begin();
-        while (it != boundary_map->end())
-        {
-          if (std::abs(1.0 - it->second*normals[0]) < 1e-5)
+        const map_type::value_type * item = nullptr;
+        for (const auto & id_pair : *boundary_map)
+          if (std::abs(1.0 - id_pair.second * normals[0]) < 1e-5)
+          {
+            item = &id_pair;
             break;
-          ++it;
-        }
+          }
 
-        if (it != boundary_map->end())  // Found it!
-          flood(*el, normals[0], it->first);
+        if (item)
+          flood(elem, normals[0], item->first);
         else
         {
           BoundaryID id = getNextBoundaryID();
           (*boundary_map)[id] = normals[0];
-          flood(*el, normals[0], id);
+          flood(elem, normals[0], id);
         }
       }
     }
-  }
 
   finalize();
 
   // Transfer ownership of the boundary map and boundary ID set.
-  _mesh_ptr->setBoundaryToNormalMap(boundary_map);
+  _mesh_ptr->setBoundaryToNormalMap(std::move(boundary_map));
   _mesh_ptr->setMeshBoundaryIDs(_mesh_boundary_ids);
 }
 

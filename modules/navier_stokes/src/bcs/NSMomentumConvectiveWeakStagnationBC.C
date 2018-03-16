@@ -1,22 +1,30 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "NSMomentumConvectiveWeakStagnationBC.h"
 
-template<>
-InputParameters validParams<NSMomentumConvectiveWeakStagnationBC>()
+template <>
+InputParameters
+validParams<NSMomentumConvectiveWeakStagnationBC>()
 {
   InputParameters params = validParams<NSWeakStagnationBaseBC>();
-  params.addRequiredParam<unsigned>("component", "(0,1,2) = (x,y,z) for which momentum component this BC is applied to");
+  params.addClassDescription("The convective part (sans pressure term) of the momentum equation "
+                             "boundary integral evaluated at specified stagnation temperature, "
+                             "stagnation pressure, and flow direction values.");
+  params.addRequiredParam<unsigned>(
+      "component", "(0,1,2) = (x,y,z) for which momentum component this BC is applied to");
   return params;
 }
 
-NSMomentumConvectiveWeakStagnationBC::NSMomentumConvectiveWeakStagnationBC(const InputParameters & parameters) :
-    NSWeakStagnationBaseBC(parameters),
-    _component(getParam<unsigned>("component"))
+NSMomentumConvectiveWeakStagnationBC::NSMomentumConvectiveWeakStagnationBC(
+    const InputParameters & parameters)
+  : NSWeakStagnationBaseBC(parameters), _component(getParam<unsigned>("component"))
 {
 }
 

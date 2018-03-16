@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef NSPRESSURENEUMANNBC_H
 #define NSPRESSURENEUMANNBC_H
@@ -11,11 +13,10 @@
 #include "NSIntegratedBC.h"
 #include "NSPressureDerivs.h"
 
-
 // Forward Declarations
 class NSPressureNeumannBC;
 
-template<>
+template <>
 InputParameters validParams<NSPressureNeumannBC>();
 
 /**
@@ -32,13 +33,11 @@ InputParameters validParams<NSPressureNeumannBC>();
 class NSPressureNeumannBC : public NSIntegratedBC
 {
 public:
-
   NSPressureNeumannBC(const InputParameters & parameters);
 
-  virtual ~NSPressureNeumannBC(){}
+  virtual ~NSPressureNeumannBC() {}
 
 protected:
-
   virtual Real computeQpResidual();
   virtual Real computeQpJacobian();
   virtual Real computeQpOffDiagJacobian(unsigned jvar);
@@ -63,4 +62,4 @@ private:
   Real computeJacobianHelper(unsigned m);
 };
 
-#endif //PRESSURENEUMANNBC_H
+#endif // PRESSURENEUMANNBC_H

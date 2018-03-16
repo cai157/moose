@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "libmesh/libmesh_config.h"
 
@@ -23,19 +18,27 @@
 // Moose Includes
 #include "MooseTypes.h"
 #include "FEProblem.h"
+#include "MooseVariableField.h"
 
-template<>
-InputParameters validParams<MultiAppDTKUserObjectTransfer>()
+registerMooseObject("MooseApp", MultiAppDTKUserObjectTransfer);
+
+template <>
+InputParameters
+validParams<MultiAppDTKUserObjectTransfer>()
 {
   InputParameters params = validParams<MultiAppTransfer>();
-  params.addRequiredParam<AuxVariableName>("variable", "The auxiliary variable to store the transferred values in.");
-  params.addRequiredParam<UserObjectName>("user_object", "The UserObject you want to transfer values from.  Note: This might be a UserObject from your MultiApp's input file!");
+  params.addRequiredParam<AuxVariableName>(
+      "variable", "The auxiliary variable to store the transferred values in.");
+  params.addRequiredParam<UserObjectName>(
+      "user_object",
+      "The UserObject you want to transfer values from.  Note: This might be a "
+      "UserObject from your MultiApp's input file!");
   return params;
 }
 
-MultiAppDTKUserObjectTransfer::MultiAppDTKUserObjectTransfer(const InputParameters & parameters) :
-    MultiAppTransfer(parameters),
-    MooseVariableInterface(this, true),
+MultiAppDTKUserObjectTransfer::MultiAppDTKUserObjectTransfer(const InputParameters & parameters)
+  : MultiAppTransfer(parameters),
+    MooseVariableInterface<Real>(this, true),
     _user_object_name(getParam<UserObjectName>("user_object")),
     _setup(false)
 {
@@ -48,17 +51,24 @@ MultiAppDTKUserObjectTransfer::execute()
   {
     _setup = true;
 
-    _comm_default = Teuchos::rcp(new Teuchos::MpiComm<int>(Teuchos::rcp(new Teuchos::OpaqueWrapper<MPI_Comm>(_communicator.get()))));
+    _comm_default = Teuchos::rcp(new Teuchos::MpiComm<int>(
+        Teuchos::rcp(new Teuchos::OpaqueWrapper<MPI_Comm>(_communicator.get()))));
 
-    _multi_app_user_object_evaluator = Teuchos::rcp(new MultiAppDTKUserObjectEvaluator(*_multi_app, _user_object_name));
+    _multi_app_user_object_evaluator =
+        Teuchos::rcp(new MultiAppDTKUserObjectEvaluator(*_multi_app, _user_object_name));
 
     _field_evaluator = _multi_app_user_object_evaluator;
 
     _multi_app_geom = _multi_app_user_object_evaluator->createSourceGeometry(_comm_default);
 
-    _to_adapter = new DTKInterpolationAdapter(_comm_default, _multi_app->problemBase().es(), Point(), 3);
+    _to_adapter =
+        new DTKInterpolationAdapter(_comm_default, _multi_app->problemBase().es(), Point(), 3);
 
-    _src_to_tgt_map = new DataTransferKit::VolumeSourceMap<DataTransferKit::Box, GlobalOrdinal, DataTransferKit::MeshContainer<GlobalOrdinal> >(_comm_default, 3, true);
+    _src_to_tgt_map =
+        new DataTransferKit::VolumeSourceMap<DataTransferKit::Box,
+                                             GlobalOrdinal,
+                                             DataTransferKit::MeshContainer<GlobalOrdinal>>(
+            _comm_default, 3, true);
 
     _console << "--Setting Up Transfer--" << std::endl;
     if (_variable->isNodal())
@@ -69,7 +79,6 @@ MultiAppDTKUserObjectTransfer::execute()
     _console << "--Transfer Setup Complete--" << std::endl;
 
     _to_values = _to_adapter->get_values_to_fill(_variable->name());
-
   }
 
   _console << "--Mapping Values--" << std::endl;
@@ -80,4 +89,4 @@ MultiAppDTKUserObjectTransfer::execute()
   _multi_app->problemBase().es().update();
 }
 
-#endif //LIBMESH_TRILINOS_HAVE_DTK
+#endif // LIBMESH_TRILINOS_HAVE_DTK

@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef TEMPERATUREDEPENDENTHARDENINGSTRESSUPDATE_H
 #define TEMPERATUREDEPENDENTHARDENINGSTRESSUPDATE_H
 
@@ -12,21 +15,26 @@
 class PiecewiseLinear;
 class LinearInterpolation;
 
+class TemperatureDependentHardeningStressUpdate;
+
+template <>
+InputParameters validParams<TemperatureDependentHardeningStressUpdate>();
+
 /**
  * This class inherits from IsotropicPlasticityStressUpdate. It
  * calculates stress as a function of temperature and plastic strain by
  * interpolating hardening functions at different temperatures input by the user.
  */
-
 class TemperatureDependentHardeningStressUpdate : public IsotropicPlasticityStressUpdate
 {
 public:
   TemperatureDependentHardeningStressUpdate(const InputParameters & parameters);
 
 protected:
-  virtual void computeStressInitialize(Real effectiveTrialStress) override;
+  virtual void computeStressInitialize(const Real effectiveTrialStress,
+                                       const RankFourTensor & elasticity_tensor) override;
 
-  virtual void computeYieldStress() override;
+  virtual void computeYieldStress(const RankFourTensor & elasticity_tensor) override;
   virtual Real computeHardeningValue(Real scalar) override;
   virtual Real computeHardeningDerivative(Real scalar) override;
 
@@ -41,7 +49,7 @@ protected:
   Real _hf_fraction;
 };
 
-template<>
+template <>
 InputParameters validParams<TemperatureDependentHardeningStressUpdate>();
 
-#endif //TEMPERATUREDEPENDENTHARDENINGSTRESSUPDATE_H
+#endif // TEMPERATUREDEPENDENTHARDENINGSTRESSUPDATE_H

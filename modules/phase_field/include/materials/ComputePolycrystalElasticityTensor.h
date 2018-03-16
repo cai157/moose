@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef COMPUTEPOLYCRYSTALELASTICITYTENSOR_H
 #define COMPUTEPOLYCRYSTALELASTICITYTENSOR_H
@@ -11,9 +13,12 @@
 #include "ComputeElasticityTensorBase.h"
 #include "GrainDataTracker.h"
 
-//Forward Declarations
+// Forward Declarations
 class ComputePolycrystalElasticityTensor;
 class EulerAngleProvider;
+
+template <>
+InputParameters validParams<ComputePolycrystalElasticityTensor>();
 
 /**
  * Compute an evolving elasticity tensor coupled to a grain growth phase field model.
@@ -33,16 +38,16 @@ protected:
   const GrainDataTracker<RankFourTensor> & _grain_tracker;
 
   /// Number of order parameters
-  unsigned int _op_num;
+  const unsigned int _op_num;
 
   /// Order parameters
   std::vector<const VariableValue *> _vals;
 
   /// vector of elasticity tensor material properties
-  std::vector< MaterialProperty<RankFourTensor> *> _D_elastic_tensor;
+  std::vector<MaterialProperty<RankFourTensor> *> _D_elastic_tensor;
 
   /// Conversion factor from J to eV
   const Real _JtoeV;
 };
 
-#endif //COMPUTEPOLYCRYSTALELASTICITYTENSOR_H
+#endif // COMPUTEPOLYCRYSTALELASTICITYTENSOR_H

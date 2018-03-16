@@ -1,26 +1,21 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef EXAMPLESHAPEELEMENTUSEROBJECT_H
 #define EXAMPLESHAPEELEMENTUSEROBJECT_H
 
 #include "ShapeElementUserObject.h"
 
-//Forward Declarations
+// Forward Declarations
 class ExampleShapeElementUserObject;
 
-template<>
+template <>
 InputParameters validParams<ExampleShapeElementUserObject>();
 
 /**
@@ -31,8 +26,7 @@ InputParameters validParams<ExampleShapeElementUserObject>();
  * These Jacobian terms can be utilized by a Kernel that uses the integral in the
  * calculation of its residual.
  */
-class ExampleShapeElementUserObject :
-  public ShapeElementUserObject
+class ExampleShapeElementUserObject : public ShapeElementUserObject
 {
 public:
   ExampleShapeElementUserObject(const InputParameters & parameters);

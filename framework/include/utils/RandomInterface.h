@@ -1,30 +1,30 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef RANDOMINTERFACE_H
 #define RANDOMINTERFACE_H
 
-#include "InputParameters.h"
-#include "FEProblem.h"
-#include "ParallelUniqueId.h"
+#include "MooseTypes.h"
+#include "MooseEnumItem.h"
 
-class RandomInterface;
+// Forward declarations
 class Assembly;
-class RandomData;
+class FEProblemBase;
+class InputParameters;
 class MooseRandom;
+class RandomData;
+class RandomInterface;
 
-template<>
+template <typename T>
+InputParameters validParams();
+
+template <>
 InputParameters validParams<RandomInterface>();
 
 /**
@@ -34,7 +34,10 @@ InputParameters validParams<RandomInterface>();
 class RandomInterface
 {
 public:
-  RandomInterface(const InputParameters & parameters, FEProblemBase & problem, THREAD_ID tid, bool is_nodal);
+  RandomInterface(const InputParameters & parameters,
+                  FEProblemBase & problem,
+                  THREAD_ID tid,
+                  bool is_nodal);
 
   ~RandomInterface();
 
@@ -68,11 +71,11 @@ public:
   bool isNodal() const { return _is_nodal; }
   ExecFlagType getResetOnTime() const { return _reset_on; }
 
-  void setRandomDataPointer(RandomData *random_data);
+  void setRandomDataPointer(RandomData * random_data);
 
 private:
-  RandomData *_random_data;
-  mutable MooseRandom *_generator;
+  RandomData * _random_data;
+  mutable MooseRandom * _generator;
 
   FEProblemBase & _ri_problem;
   const std::string _ri_name;
@@ -81,10 +84,11 @@ private:
   bool _is_nodal;
   ExecFlagType _reset_on;
 
-  const Node * & _curr_node;
-  const Elem * & _curr_element;
+  const Node *& _curr_node;
+  const Elem *& _curr_element;
 
-//  friend void FEProblemBase::registerRandomInterface(RandomInterface *random_interface, const std::string & name, ExecFlagType exec_flag);
+  //  friend void FEProblemBase::registerRandomInterface(RandomInterface *random_interface, const
+  //  std::string & name, ExecFlagType exec_flag);
 };
 
 #endif /* RANDOMINTERFACE_H */

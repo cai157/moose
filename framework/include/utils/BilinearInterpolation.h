@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef BILINEARINTERPOLATION_H
 #define BILINEARINTERPOLATION_H
@@ -42,7 +37,6 @@
 class BilinearInterpolation
 {
 public:
-
   /**
    *  Constructor, Takes two vectors of points for which to apply the
    * fit.  One should be of the independent variable while the other
@@ -61,7 +55,7 @@ public:
    */
   Real sample(Real xcoord, Real ycoord);
 
-  void getNeighborIndices(const std::vector<Real> & inArr, Real x ,int& lowerX ,int& upperX );
+  void getNeighborIndices(const std::vector<Real> & inArr, Real x, int & lowerX, int & upperX);
 
 private:
   std::vector<Real> _xAxis;
@@ -70,4 +64,4 @@ private:
   static int _file_number;
 };
 
-#endif //BILINEARINTERPOLATION_H
+#endif // BILINEARINTERPOLATION_H

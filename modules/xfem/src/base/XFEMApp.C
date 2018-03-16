@@ -1,11 +1,14 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "XFEMApp.h"
+#include "XFEMAppTypes.h"
 #include "SolidMechanicsApp.h"
 #include "TensorMechanicsApp.h"
 #include "Moose.h"
@@ -15,81 +18,145 @@
 #include "XFEMVolFracAux.h"
 #include "XFEMCutPlaneAux.h"
 #include "XFEMMarkerAux.h"
-#include "XFEMMarkerUserObject.h"
 #include "XFEMMaterialTensorMarkerUserObject.h"
+#include "XFEMRankTwoTensorMarkerUserObject.h"
 #include "XFEMAction.h"
 #include "XFEMSingleVariableConstraint.h"
 #include "XFEMPressure.h"
+#include "CrackTipEnrichmentStressDivergenceTensors.h"
+#include "CrackTipEnrichmentCutOffBC.h"
+#include "ComputeCrackTipEnrichmentSmallStrain.h"
 
-template<>
-InputParameters validParams<XFEMApp>()
+#include "GeometricCutUserObject.h"
+#include "LineSegmentCutUserObject.h"
+#include "LineSegmentCutSetUserObject.h"
+#include "CircleCutUserObject.h"
+#include "EllipseCutUserObject.h"
+#include "RectangleCutUserObject.h"
+#include "MeshCut3DUserObject.h"
+
+template <>
+InputParameters
+validParams<XFEMApp>()
 {
   InputParameters params = validParams<MooseApp>();
-
-  params.set<bool>("use_legacy_uo_initialization") = false;
-  params.set<bool>("use_legacy_uo_aux_computation") = false;
   return params;
 }
-XFEMApp::XFEMApp(const InputParameters &parameters) :
-    MooseApp(parameters)
+XFEMApp::XFEMApp(const InputParameters & parameters) : MooseApp(parameters)
 {
   srand(processor_id());
 
   Moose::registerObjects(_factory);
-  SolidMechanicsApp::registerObjects(_factory);
-  TensorMechanicsApp::registerObjects(_factory);
+  XFEMApp::registerObjectDepends(_factory);
   XFEMApp::registerObjects(_factory);
 
   Moose::associateSyntax(_syntax, _action_factory);
-  SolidMechanicsApp::associateSyntax(_syntax, _action_factory);
-  TensorMechanicsApp::associateSyntax(_syntax, _action_factory);
+  XFEMApp::associateSyntaxDepends(_syntax, _action_factory);
   XFEMApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  XFEMApp::registerExecFlags(_factory);
 }
 
-XFEMApp::~XFEMApp()
-{
-}
+XFEMApp::~XFEMApp() {}
 
 // External entry point for dynamic application loading
-extern "C" void XFEMApp__registerApps() { XFEMApp::registerApps(); }
+extern "C" void
+XFEMApp__registerApps()
+{
+  XFEMApp::registerApps();
+}
 void
 XFEMApp::registerApps()
 {
   registerApp(XFEMApp);
 }
 
+void
+XFEMApp::registerObjectDepends(Factory & factory)
+{
+  SolidMechanicsApp::registerObjects(factory);
+  TensorMechanicsApp::registerObjects(factory);
+}
+
 // External entry point for dynamic object registration
-extern "C" void XFEMApp__registerObjects(Factory & factory) { XFEMApp::registerObjects(factory); }
+extern "C" void
+XFEMApp__registerObjects(Factory & factory)
+{
+  XFEMApp::registerObjects(factory);
+}
 void
 XFEMApp::registerObjects(Factory & factory)
 {
-  //AuxKernels
+  // AuxKernels
   registerAux(XFEMVolFracAux);
   registerAux(XFEMCutPlaneAux);
   registerAux(XFEMMarkerAux);
 
-  //Constraints
+  // Constraints
   registerConstraint(XFEMSingleVariableConstraint);
 
-  //UserObjects
-  registerUserObject(XFEMMarkerUserObject);
+  // UserObjects
   registerUserObject(XFEMMaterialTensorMarkerUserObject);
+  registerUserObject(XFEMRankTwoTensorMarkerUserObject);
 
-  //DiracKernels
+  // Geometric Cut User Objects
+  registerUserObject(LineSegmentCutUserObject);
+  registerUserObject(LineSegmentCutSetUserObject);
+  registerUserObject(CircleCutUserObject);
+  registerUserObject(EllipseCutUserObject);
+  registerUserObject(RectangleCutUserObject);
+  registerUserObject(MeshCut3DUserObject);
+
+  // DiracKernels
   registerDiracKernel(XFEMPressure);
+
+  // Kernels
+  registerKernel(CrackTipEnrichmentStressDivergenceTensors);
+
+  // Materials
+  registerMaterial(ComputeCrackTipEnrichmentSmallStrain);
+
+  // BC's
+  registerBoundaryCondition(CrackTipEnrichmentCutOffBC);
+}
+
+void
+XFEMApp::associateSyntaxDepends(Syntax & syntax, ActionFactory & action_factory)
+{
+  SolidMechanicsApp::associateSyntax(syntax, action_factory);
+  TensorMechanicsApp::associateSyntax(syntax, action_factory);
 }
 
 // External entry point for dynamic syntax association
-extern "C" void XFEMApp__associateSyntax(Syntax & syntax, ActionFactory & action_factory) { XFEMApp::associateSyntax(syntax, action_factory); }
+extern "C" void
+XFEMApp__associateSyntax(Syntax & syntax, ActionFactory & action_factory)
+{
+  XFEMApp::associateSyntax(syntax, action_factory);
+}
 void
 XFEMApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
 {
   registerTask("setup_xfem", false);
   registerAction(XFEMAction, "setup_xfem");
-  syntax.addDependency("setup_xfem","setup_adaptivity");
+  syntax.addDependency("setup_xfem", "setup_adaptivity");
   registerAction(XFEMAction, "add_aux_variable");
   registerAction(XFEMAction, "add_aux_kernel");
+  registerAction(XFEMAction, "add_variable");
+  registerAction(XFEMAction, "add_kernel");
+  registerAction(XFEMAction, "add_bc");
 
-  syntax.registerActionSyntax("XFEMAction", "XFEM");
+  registerSyntax("XFEMAction", "XFEM");
+}
 
+// External entry point for dynamic execute flag registration
+extern "C" void
+XFEMApp__registerExecFlags(Factory & factory)
+{
+  XFEMApp::registerExecFlags(factory);
+}
+void
+XFEMApp::registerExecFlags(Factory & factory)
+{
+  registerExecFlag(EXEC_XFEM_MARK);
 }

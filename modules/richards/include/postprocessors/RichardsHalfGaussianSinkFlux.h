@@ -1,10 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef RICHARDSHALFGAUSSIANSINKFLUX_H
 #define RICHARDSHALFGAUSSIANSINKFLUX_H
@@ -14,10 +15,10 @@
 
 class Function;
 
-//Forward Declarations
+// Forward Declarations
 class RichardsHalfGaussianSinkFlux;
 
-template<>
+template <>
 InputParameters validParams<RichardsHalfGaussianSinkFlux>();
 
 /**
@@ -27,7 +28,7 @@ InputParameters validParams<RichardsHalfGaussianSinkFlux>();
  * If a function, _m_func, is used then the flux is multiplied by _m_func.
  * The result is the flux integrated over the specified sideset.
  */
-class RichardsHalfGaussianSinkFlux: public SideIntegralVariablePostprocessor
+class RichardsHalfGaussianSinkFlux : public SideIntegralVariablePostprocessor
 {
 public:
   RichardsHalfGaussianSinkFlux(const InputParameters & parameters);
@@ -65,8 +66,7 @@ protected:
   Function & _m_func;
 
   /// porepressure (or porepressure vector for multiphase problems)
-  const MaterialProperty<std::vector<Real> > & _pp;
-
+  const MaterialProperty<std::vector<Real>> & _pp;
 };
 
 #endif

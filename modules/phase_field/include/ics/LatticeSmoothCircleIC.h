@@ -1,45 +1,38 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef LATTICESMOOTHCIRCLEIC_H
 #define LATTICESMOOTHCIRCLEIC_H
 
-#include "Kernel.h"
 #include "SmoothCircleBaseIC.h"
-
-// System includes
-#include <string>
 
 // Forward Declarations
 class LatticeSmoothCircleIC;
 
-template<>
+template <>
 InputParameters validParams<LatticeSmoothCircleIC>();
 
 /**
  * LatticeSmoothcircleIC creates a lattice of smoothcircles as an initial condition.
  * They are either directly on the lattice or randomly perturbed from the lattice.
- **/
+ */
 class LatticeSmoothCircleIC : public SmoothCircleBaseIC
 {
 public:
-  /**
-   * Constructor
-   *
-   * @param parameters The parameters object holding data for the class to use.
-   */
   LatticeSmoothCircleIC(const InputParameters & parameters);
 
   virtual void initialSetup();
 
+protected:
   virtual void computeCircleRadii();
-
   virtual void computeCircleCenters();
 
-protected:
   Real _lattice_variation;
   std::vector<unsigned int> _circles_per_side;
   unsigned int _numbub;
@@ -55,4 +48,4 @@ protected:
   Point _range;
 };
 
-#endif //LATTICESMOOTHCIRCLEIC_H
+#endif // LATTICESMOOTHCIRCLEIC_H

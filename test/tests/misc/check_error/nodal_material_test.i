@@ -77,12 +77,10 @@ active = 'mat'
 [Executioner]
   type = Steady
 
-  # Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 []
 
 [Outputs]
   file_base = out
-  elemental_as_nodal = true
   exodus = true
 []

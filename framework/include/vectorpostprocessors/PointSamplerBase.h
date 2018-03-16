@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POINTSAMPLERBASE_H
 #define POINTSAMPLERBASE_H
@@ -18,18 +13,19 @@
 // MOOSE includes
 #include "GeneralVectorPostprocessor.h"
 #include "CoupleableMooseVariableDependencyIntermediateInterface.h"
+#include "MooseVariableInterface.h"
 #include "SamplerBase.h"
 
 // Forward Declarations
 class PointSamplerBase;
 
-template<>
+template <>
 InputParameters validParams<PointSamplerBase>();
 
-class PointSamplerBase :
-  public GeneralVectorPostprocessor,
-  public CoupleableMooseVariableDependencyIntermediateInterface,
-  protected SamplerBase
+class PointSamplerBase : public GeneralVectorPostprocessor,
+                         public CoupleableMooseVariableDependencyIntermediateInterface,
+                         public MooseVariableInterface<Real>,
+                         protected SamplerBase
 {
 public:
   PointSamplerBase(const InputParameters & parameters);
@@ -42,10 +38,12 @@ public:
 
 protected:
   /**
-   * Find the local element that contains the point.  This will attempt to use a cached element to speed things up.
+   * Find the local element that contains the point.  This will attempt to use a cached element to
+   * speed things up.
    *
    * @param p The point in physical space
-   * @return The Elem containing the point or NULL if this processor doesn't contain an element that contains this point.
+   * @return The Elem containing the point or NULL if this processor doesn't contain an element that
+   * contains this point.
    */
   const Elem * getLocalElemContainingPoint(const Point & p);
 
@@ -59,7 +57,7 @@ protected:
   std::vector<Real> _ids;
 
   /// Vector of values per point
-  std::vector<std::vector<Real> > _point_values;
+  std::vector<std::vector<Real>> _point_values;
 
   /// Whether or not the Point was found on this processor (short because bool and char don't work with MPI wrappers)
   std::vector<short> _found_points;

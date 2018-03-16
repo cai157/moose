@@ -1,39 +1,27 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
-#include "Moose.h"
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
+// MOOSE Includes
 #include "ExampleApp.h"
 #include "AppFactory.h"
-#include "ActionFactory.h"  // <- Actions are special (they have their own factory)
-#include "Syntax.h"
+#include "ActionFactory.h" // <- Actions are special (they have their own factory)
 #include "MooseSyntax.h"
 
-// Example 15 Includes
-#include "ExampleConvection.h"
-#include "ConvectionDiffusionAction.h"
-
-template<>
-InputParameters validParams<ExampleApp>()
+template <>
+InputParameters
+validParams<ExampleApp>()
 {
   InputParameters params = validParams<MooseApp>();
-
-  params.set<bool>("use_legacy_uo_initialization") = false;
-  params.set<bool>("use_legacy_uo_aux_computation") = false;
   return params;
 }
 
-ExampleApp::ExampleApp(InputParameters parameters) :
-    MooseApp(parameters)
+ExampleApp::ExampleApp(InputParameters parameters) : MooseApp(parameters)
 {
   srand(processor_id());
 
@@ -44,10 +32,11 @@ ExampleApp::ExampleApp(InputParameters parameters) :
   ExampleApp::associateSyntax(_syntax, _action_factory);
 }
 
-ExampleApp::~ExampleApp()
+void
+ExampleApp::registerObjects(Factory & factory)
 {
+  Registry::registerObjectsTo(factory, {"ExampleApp"});
 }
-
 
 void
 ExampleApp::registerApps()
@@ -56,24 +45,18 @@ ExampleApp::registerApps()
 }
 
 void
-ExampleApp::registerObjects(Factory & factory)
-{
-  registerKernel(ExampleConvection);
-}
-
-void
 ExampleApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
 {
-  /**
-   * Registering an Action is a little different than registering the other MOOSE
-   * objects.  First, you need to register your Action in the associateSyntax method.
-   * Also, you register your Action class with an "action_name" that can be
-   * satisfied by executing the Action (running the "act" virtual method).
-   */
-  registerAction(ConvectionDiffusionAction, "add_kernel");
+  Registry::registerActionsTo(action_factory, {"ExampleApp"});
 
   /**
-   * We need to tell the parser what new section name to look for and what
+   * An Action is a little different than registering the other MOOSE
+   * objects.  First, you need to register your Action like normal in its file with
+   * the registerMooseAction macro. - e.g.:
+   *
+   *     registerAction("ExampleApp", ConvectionDiffusionAction, "add_kernel");
+   *
+   * Then we need to tell the parser what new section name to look for and what
    * Action object to build when it finds it.  This is done directly on the syntax
    * with the registerActionSyntax method.
    *
@@ -81,5 +64,5 @@ ExampleApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
    * contain a leading slash.  Wildcard characters can be used to replace a piece of the
    * path.
    */
-  syntax.registerActionSyntax("ConvectionDiffusionAction", "ConvectionDiffusion");
+  registerSyntax("ConvectionDiffusionAction", "ConvectionDiffusion");
 }

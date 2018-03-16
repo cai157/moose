@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "VectorPostprocessor.h"
@@ -20,8 +15,9 @@
 #include "VectorPostprocessorData.h"
 #include "FEProblem.h"
 
-template<>
-InputParameters validParams<VectorPostprocessor>()
+template <>
+InputParameters
+validParams<VectorPostprocessor>()
 {
   InputParameters params = validParams<UserObject>();
   params += validParams<OutputInterface>();
@@ -31,8 +27,8 @@ InputParameters validParams<VectorPostprocessor>()
   return params;
 }
 
-VectorPostprocessor::VectorPostprocessor(const InputParameters & parameters) :
-    OutputInterface(parameters),
+VectorPostprocessor::VectorPostprocessor(const InputParameters & parameters)
+  : OutputInterface(parameters),
     _vpp_name(MooseUtils::shortName(parameters.get<std::string>("_object_name"))),
     _vpp_fe_problem(parameters.getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")),
     _vpp_tid(parameters.isParamValid("_tid") ? parameters.get<THREAD_ID>("_tid") : 0)

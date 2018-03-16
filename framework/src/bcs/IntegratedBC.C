@@ -1,84 +1,57 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "IntegratedBC.h"
+
+// MOOSE includes
+#include "Assembly.h"
 #include "SubProblem.h"
 #include "SystemBase.h"
-#include "MooseVariable.h"
-#include "Assembly.h"
+#include "MooseVariableField.h"
+#include "MooseVariableScalar.h"
 
-// libMesh includes
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<IntegratedBC>()
+template <>
+InputParameters
+validParams<IntegratedBC>()
 {
-  InputParameters params = validParams<BoundaryCondition>();
-  params += validParams<RandomInterface>();
-  params += validParams<MaterialPropertyInterface>();
-
-  params.addParam<std::vector<AuxVariableName> >("save_in", "The name of auxiliary variables to save this BC's residual contributions to.  Everything about that variable must match everything about this variable (the type, what blocks it's on, etc.)");
-  params.addParam<std::vector<AuxVariableName> >("diag_save_in", "The name of auxiliary variables to save this BC's diagonal jacobian contributions to.  Everything about that variable must match everything about this variable (the type, what blocks it's on, etc.)");
-
-  params.addParamNamesToGroup("diag_save_in save_in", "Advanced");
-
-  // Integrated BCs always rely on Boundary MaterialData
-  params.set<Moose::MaterialDataType>("_material_data_type") = Moose::BOUNDARY_MATERIAL_DATA;
-
+  InputParameters params = validParams<IntegratedBCBase>();
   return params;
 }
 
-IntegratedBC::IntegratedBC(const InputParameters & parameters) :
-    BoundaryCondition(parameters, false), // False is because this is NOT nodal
-    RandomInterface(parameters, _fe_problem, _tid, false),
-    CoupleableMooseVariableDependencyIntermediateInterface(this, false),
-    MaterialPropertyInterface(this),
-    _current_elem(_assembly.elem()),
-    _current_elem_volume(_assembly.elemVolume()),
-    _current_side(_assembly.side()),
-    _current_side_elem(_assembly.sideElem()),
-    _current_side_volume(_assembly.sideElemVolume()),
-
+IntegratedBC::IntegratedBC(const InputParameters & parameters)
+  : IntegratedBCBase(parameters),
+    MooseVariableInterface<Real>(this, false),
+    _var(*mooseVariable()),
     _normals(_var.normals()),
-
-    _qrule(_assembly.qRuleFace()),
-    _q_point(_assembly.qPointsFace()),
-    _JxW(_assembly.JxWFace()),
-    _coord(_assembly.coordTransformation()),
-
-    _phi(_assembly.phiFace()),
-    _grad_phi(_assembly.gradPhiFace()),
-
+    _phi(_assembly.phiFace(_var)),
+    _grad_phi(_assembly.gradPhiFace(_var)),
     _test(_var.phiFace()),
     _grad_test(_var.gradPhiFace()),
-
     _u(_is_implicit ? _var.sln() : _var.slnOld()),
-    _grad_u(_is_implicit ? _var.gradSln() : _var.gradSlnOld()),
-
-    _save_in_strings(parameters.get<std::vector<AuxVariableName> >("save_in")),
-    _diag_save_in_strings(parameters.get<std::vector<AuxVariableName> >("diag_save_in"))
+    _grad_u(_is_implicit ? _var.gradSln() : _var.gradSlnOld())
 {
+  addMooseVariableDependency(mooseVariable());
+
   _save_in.resize(_save_in_strings.size());
   _diag_save_in.resize(_diag_save_in_strings.size());
 
-  for (unsigned int i=0; i<_save_in_strings.size(); i++)
+  for (unsigned int i = 0; i < _save_in_strings.size(); i++)
   {
-    MooseVariable * var = &_subproblem.getVariable(_tid, _save_in_strings[i]);
+    MooseVariable * var = &_subproblem.getStandardVariable(_tid, _save_in_strings[i]);
 
     if (var->feType() != _var.feType())
-      mooseError("Error in " + name() + ". When saving residual values in an Auxiliary variable the AuxVariable must be the same type as the nonlinear variable the object is acting on.");
-
+      paramError(
+          "save_in",
+          "saved-in auxiliary variable is incompatible with the object's nonlinear variable: ",
+          moose::internal::incompatVarMsg(*var, _var));
     _save_in[i] = var;
     var->sys().addVariableToZeroOnResidual(_save_in_strings[i]);
     addMooseVariableDependency(var);
@@ -86,12 +59,15 @@ IntegratedBC::IntegratedBC(const InputParameters & parameters) :
 
   _has_save_in = _save_in.size() > 0;
 
-  for (unsigned int i=0; i<_diag_save_in_strings.size(); i++)
+  for (unsigned int i = 0; i < _diag_save_in_strings.size(); i++)
   {
-    MooseVariable * var = &_subproblem.getVariable(_tid, _diag_save_in_strings[i]);
+    MooseVariable * var = &_subproblem.getStandardVariable(_tid, _diag_save_in_strings[i]);
 
     if (var->feType() != _var.feType())
-      mooseError("Error in " + name() + ". When saving diagonal Jacobian values in an Auxiliary variable the AuxVariable must be the same type as the nonlinear variable the object is acting on.");
+      paramError(
+          "diag_save_in",
+          "saved-in auxiliary variable is incompatible with the object's nonlinear variable: ",
+          moose::internal::incompatVarMsg(*var, _var));
 
     _diag_save_in[i] = var;
     var->sys().addVariableToZeroOnJacobian(_diag_save_in_strings[i]);
@@ -99,10 +75,6 @@ IntegratedBC::IntegratedBC(const InputParameters & parameters) :
   }
 
   _has_diag_save_in = _diag_save_in.size() > 0;
-}
-
-IntegratedBC::~IntegratedBC()
-{
 }
 
 void
@@ -114,14 +86,14 @@ IntegratedBC::computeResidual()
 
   for (_qp = 0; _qp < _qrule->n_points(); _qp++)
     for (_i = 0; _i < _test.size(); _i++)
-      _local_re(_i) += _JxW[_qp]*_coord[_qp]*computeQpResidual();
+      _local_re(_i) += _JxW[_qp] * _coord[_qp] * computeQpResidual();
 
   re += _local_re;
 
   if (_has_save_in)
   {
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (unsigned int i=0; i<_save_in.size(); i++)
+    for (unsigned int i = 0; i < _save_in.size(); i++)
       _save_in[i]->sys().solution().add_vector(_local_re, _save_in[i]->dofIndices());
   }
 }
@@ -136,7 +108,7 @@ IntegratedBC::computeJacobian()
   for (_qp = 0; _qp < _qrule->n_points(); _qp++)
     for (_i = 0; _i < _test.size(); _i++)
       for (_j = 0; _j < _phi.size(); _j++)
-        _local_ke(_i, _j) += _JxW[_qp]*_coord[_qp]*computeQpJacobian();
+        _local_ke(_i, _j) += _JxW[_qp] * _coord[_qp] * computeQpJacobian();
 
   ke += _local_ke;
 
@@ -144,11 +116,11 @@ IntegratedBC::computeJacobian()
   {
     unsigned int rows = ke.m();
     DenseVector<Number> diag(rows);
-    for (unsigned int i=0; i<rows; i++)
-      diag(i) = _local_ke(i,i);
+    for (unsigned int i = 0; i < rows; i++)
+      diag(i) = _local_ke(i, i);
 
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (unsigned int i=0; i<_diag_save_in.size(); i++)
+    for (unsigned int i = 0; i < _diag_save_in.size(); i++)
       _diag_save_in[i]->sys().solution().add_vector(diag, _diag_save_in[i]->dofIndices());
   }
 }
@@ -158,14 +130,14 @@ IntegratedBC::computeJacobianBlock(unsigned int jvar)
 {
   DenseMatrix<Number> & ke = _assembly.jacobianBlock(_var.number(), jvar);
 
-  for (_qp=0; _qp<_qrule->n_points(); _qp++)
-    for (_i=0; _i<_test.size(); _i++)
-      for (_j=0; _j<_phi.size(); _j++)
+  for (_qp = 0; _qp < _qrule->n_points(); _qp++)
+    for (_i = 0; _i < _test.size(); _i++)
+      for (_j = 0; _j < _phi.size(); _j++)
       {
         if (_var.number() == jvar)
-          ke(_i,_j) += _JxW[_qp]*_coord[_qp]*computeQpJacobian();
+          ke(_i, _j) += _JxW[_qp] * _coord[_qp] * computeQpJacobian();
         else
-          ke(_i,_j) += _JxW[_qp]*_coord[_qp]*computeQpOffDiagJacobian(jvar);
+          ke(_i, _j) += _JxW[_qp] * _coord[_qp] * computeQpOffDiagJacobian(jvar);
       }
 }
 
@@ -179,16 +151,4 @@ IntegratedBC::computeJacobianBlockScalar(unsigned int jvar)
     for (_i = 0; _i < _test.size(); _i++)
       for (_j = 0; _j < jv.order(); _j++)
         ke(_i, _j) += _JxW[_qp] * _coord[_qp] * computeQpOffDiagJacobian(jvar);
-}
-
-Real
-IntegratedBC::computeQpJacobian()
-{
-  return 0;
-}
-
-Real
-IntegratedBC::computeQpOffDiagJacobian(unsigned int /*jvar*/)
-{
-  return 0;
 }

@@ -1,13 +1,17 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "SmoothCircleIC.h"
 
-template<>
-InputParameters validParams<SmoothCircleIC>()
+template <>
+InputParameters
+validParams<SmoothCircleIC>()
 {
   InputParameters params = validParams<SmoothCircleBaseIC>();
   params.addClassDescription("Circle with a smooth interface");
@@ -18,8 +22,8 @@ InputParameters validParams<SmoothCircleIC>()
   return params;
 }
 
-SmoothCircleIC::SmoothCircleIC(const InputParameters & parameters) :
-    SmoothCircleBaseIC(parameters),
+SmoothCircleIC::SmoothCircleIC(const InputParameters & parameters)
+  : SmoothCircleBaseIC(parameters),
     _x1(parameters.get<Real>("x1")),
     _y1(parameters.get<Real>("y1")),
     _z1(parameters.get<Real>("z1")),
@@ -33,7 +37,6 @@ SmoothCircleIC::computeCircleRadii()
 {
   _radii = {_radius};
 }
-
 
 void
 SmoothCircleIC::computeCircleCenters()

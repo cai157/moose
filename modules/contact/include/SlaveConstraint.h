@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef SLAVECONSTRAINT_H
 #define SLAVECONSTRAINT_H
 
@@ -13,10 +16,10 @@
 #include "DiracKernel.h"
 #include "PenetrationLocator.h"
 
-//Forward Declarations
+// Forward Declarations
 class SlaveConstraint;
 
-template<>
+template <>
 InputParameters validParams<SlaveConstraint>();
 
 class SlaveConstraint : public DiracKernel
@@ -29,7 +32,6 @@ public:
   virtual Real computeQpJacobian();
 
 protected:
-
   Real nodalArea(PenetrationInfo & pinfo);
 
   const unsigned int _component;
@@ -45,11 +47,7 @@ protected:
 
   std::map<Point, PenetrationInfo *> _point_to_info;
 
-  const unsigned int _x_var;
-  const unsigned int _y_var;
-  const unsigned int _z_var;
-
-  const VectorValue<unsigned> _vars;
+  std::vector<unsigned int> _vars;
 
   const unsigned int _mesh_dimension;
 
@@ -58,4 +56,4 @@ protected:
   const NumericVector<Number> * _aux_solution;
 };
 
-#endif //SLAVECONSTRAINT_H
+#endif // SLAVECONSTRAINT_H

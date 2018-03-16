@@ -1,36 +1,30 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef TIMESTEPPER_H
 #define TIMESTEPPER_H
 
 #include "MooseObject.h"
 #include "Restartable.h"
+#include "ScalarCoupleable.h"
 
 class TimeStepper;
 class FEProblemBase;
 class Transient;
 
-template<>
+template <>
 InputParameters validParams<TimeStepper>();
 
 /**
  * Base class for time stepping
  */
-class TimeStepper :
-  public MooseObject,
-  public Restartable
+class TimeStepper : public MooseObject, public Restartable, public ScalarCoupleable
 {
 public:
   TimeStepper(const InputParameters & parameters);
@@ -62,7 +56,7 @@ public:
    * Called after computeStep() is called.
    * @return true if any type of sync point was hit, false otherwise
    */
-  virtual bool constrainStep(Real &dt);
+  virtual bool constrainStep(Real & dt);
 
   /**
    * Take a time step

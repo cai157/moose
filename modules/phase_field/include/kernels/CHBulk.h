@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef CHBULK_H
 #define CHBULK_H
 
@@ -15,12 +18,12 @@
  * This is the Cahn-Hilliard equation base class that implements the bulk or
  * local energy term of the equation. It is templated on the type of the mobility,
  * which can be either a number (Real) or a tensor (RealValueTensor).
- * See M.R. Tonks et al. / Computational Materials Science 51 (2012) 20–29 for more information.
+ * See M.R. Tonks et al. / Computational Materials Science 51 (2012) 20-29 for more information.
  * Note that the function computeGradDFDCons MUST be overridden in any kernel that inherits from
  * CHBulk. Use CHMath as an example of how this works.
  */
-template<typename T>
-class CHBulk : public DerivativeMaterialInterface<JvarMapKernelInterface<KernelGrad> >
+template <typename T>
+class CHBulk : public DerivativeMaterialInterface<JvarMapKernelInterface<KernelGrad>>
 {
 public:
   CHBulk(const InputParameters & parameters);
@@ -51,10 +54,9 @@ protected:
   std::vector<const MaterialProperty<T> *> _dMdarg;
 };
 
-
-template<typename T>
-CHBulk<T>::CHBulk(const InputParameters & parameters) :
-    DerivativeMaterialInterface<JvarMapKernelInterface<KernelGrad> >(parameters),
+template <typename T>
+CHBulk<T>::CHBulk(const InputParameters & parameters)
+  : DerivativeMaterialInterface<JvarMapKernelInterface<KernelGrad>>(parameters),
     _M(getMaterialProperty<T>("mob_name")),
     _dMdc(getMaterialPropertyDerivative<T>("mob_name", _var.name()))
 {
@@ -69,7 +71,7 @@ CHBulk<T>::CHBulk(const InputParameters & parameters) :
     _dMdarg[i] = &getMaterialPropertyDerivative<T>("mob_name", _coupled_moose_vars[i]->name());
 }
 
-template<typename T>
+template <typename T>
 InputParameters
 CHBulk<T>::validParams()
 {
@@ -80,31 +82,31 @@ CHBulk<T>::validParams()
   return params;
 }
 
-template<typename T>
+template <typename T>
 void
 CHBulk<T>::initialSetup()
 {
   validateNonlinearCoupling<Real>("mob_name");
 }
 
-template<typename T>
+template <typename T>
 RealGradient
 CHBulk<T>::precomputeQpResidual()
 {
   return _M[_qp] * computeGradDFDCons(Residual);
 }
 
-template<typename T>
+template <typename T>
 RealGradient
 CHBulk<T>::precomputeQpJacobian()
 {
-  RealGradient grad_value =   _M[_qp] * computeGradDFDCons(Jacobian)
-                            + _dMdc[_qp] * _phi[_j][_qp] * computeGradDFDCons(Residual);
+  RealGradient grad_value = _M[_qp] * computeGradDFDCons(Jacobian) +
+                            _dMdc[_qp] * _phi[_j][_qp] * computeGradDFDCons(Residual);
 
   return grad_value;
 }
 
-template<typename T>
+template <typename T>
 Real
 CHBulk<T>::computeQpOffDiagJacobian(unsigned int jvar)
 {
@@ -114,4 +116,4 @@ CHBulk<T>::computeQpOffDiagJacobian(unsigned int jvar)
   return (*_dMdarg[cvar])[_qp] * _phi[_j][_qp] * computeGradDFDCons(Residual) * _grad_test[_i][_qp];
 }
 
-#endif //CHBULK_H
+#endif // CHBULK_H

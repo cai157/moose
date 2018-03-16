@@ -1,27 +1,28 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef SMOOTHCIRCLEBASEIC_H
 #define SMOOTHCIRCLEBASEIC_H
 
-#include "Kernel.h"
 #include "InitialCondition.h"
 #include "MooseRandom.h"
-
-// System includes
-#include <string>
 
 // Forward Declarations
 class SmoothCircleBaseIC;
 
-template<>
+template <>
 InputParameters validParams<SmoothCircleBaseIC>();
 
 /**
- * SmoothcircleBaseIC is the base class for all initial conditions that create circles. The circles can have sharp interfaces or a finite interface width. Note that all children must resize _radii and _centers.
+ * SmoothcircleBaseIC is the base class for all initial conditions that create circles. The circles
+ * can have sharp interfaces or a finite interface width. Note that all children must resize _radii
+ * and _centers.
  */
 class SmoothCircleBaseIC : public InitialCondition
 {
@@ -35,7 +36,8 @@ public:
 
 protected:
   virtual Real computeCircleValue(const Point & p, const Point & center, const Real & radius);
-  virtual RealGradient computeCircleGradient(const Point & p, const Point & center, const Real & radius);
+  virtual RealGradient
+  computeCircleGradient(const Point & p, const Point & center, const Real & radius);
 
   virtual void computeCircleRadii() = 0;
   virtual void computeCircleCenters() = 0;
@@ -56,4 +58,4 @@ protected:
   MooseRandom _random;
 };
 
-#endif //SMOOTHCIRCLEBASEIC_H
+#endif // SMOOTHCIRCLEBASEIC_H

@@ -1,21 +1,26 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "InterfaceDiffusionBoundaryTerm.h"
 
-template<>
-InputParameters validParams<InterfaceDiffusionBoundaryTerm>()
+template <>
+InputParameters
+validParams<InterfaceDiffusionBoundaryTerm>()
 {
   InputParameters params = validParams<InterfaceDiffusionBase>();
-  params.addClassDescription("Add weak form surface terms of the Diffusion equation for two different variables across a subdomain boundary");
+  params.addClassDescription("Add weak form surface terms of the Diffusion equation for two "
+                             "different variables across a subdomain boundary");
   return params;
 }
 
-InterfaceDiffusionBoundaryTerm::InterfaceDiffusionBoundaryTerm(const InputParameters & parameters) :
-    InterfaceDiffusionBase(parameters)
+InterfaceDiffusionBoundaryTerm::InterfaceDiffusionBoundaryTerm(const InputParameters & parameters)
+  : InterfaceDiffusionBase(parameters)
 {
 }
 
@@ -41,7 +46,7 @@ InterfaceDiffusionBoundaryTerm::computeQpJacobian(Moose::DGJacobianType type)
   switch (type)
   {
     case Moose::ElementElement:
-      return -_D * _grad_phi[_j][_qp] * _normals[_qp]* _test[_i][_qp];
+      return -_D * _grad_phi[_j][_qp] * _normals[_qp] * _test[_i][_qp];
 
     case Moose::NeighborNeighbor:
       return -_D_neighbor * _grad_phi_neighbor[_j][_qp] * -_normals[_qp] * _test_neighbor[_i][_qp];

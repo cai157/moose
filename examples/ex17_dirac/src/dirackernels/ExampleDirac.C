@@ -1,21 +1,19 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ExampleDirac.h"
 
-template<>
-InputParameters validParams<ExampleDirac>()
+registerMooseObject("ExampleApp", ExampleDirac);
+
+template <>
+InputParameters
+validParams<ExampleDirac>()
 {
   InputParameters params = validParams<DiracKernel>();
   params.addRequiredParam<Real>("value", "The value of the point source");
@@ -23,10 +21,8 @@ InputParameters validParams<ExampleDirac>()
   return params;
 }
 
-ExampleDirac::ExampleDirac(const InputParameters & parameters) :
-    DiracKernel(parameters),
-    _value(getParam<Real>("value")),
-    _point(getParam<Point>("point"))
+ExampleDirac::ExampleDirac(const InputParameters & parameters)
+  : DiracKernel(parameters), _value(getParam<Real>("value")), _point(getParam<Point>("point"))
 {
 }
 
@@ -46,4 +42,3 @@ ExampleDirac::computeQpResidual()
   // This is negative because it's a forcing function that has been brought over to the left side
   return -_test[_i][_qp] * _value;
 }
-

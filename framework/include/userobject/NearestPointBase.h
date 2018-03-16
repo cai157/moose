@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef NEARESTPOINTBASE_H
 #define NEARESTPOINTBASE_H
@@ -30,19 +25,20 @@ class UserObject;
  * If you inherit from this class... then call this function
  * to start your parameters for the new class
  */
-template<typename UserObjectType>
-InputParameters nearestPointBaseValidParams()
+template <typename UserObjectType>
+InputParameters
+nearestPointBaseValidParams()
 {
   InputParameters params = validParams<ElementIntegralVariableUserObject>();
 
-  params.addRequiredParam<std::vector<Point> >("points", "Computations will be lumped into values at these points.");
+  params.addRequiredParam<std::vector<Point>>(
+      "points", "Computations will be lumped into values at these points.");
 
   // Add in the valid parameters
   params += validParams<UserObjectType>();
 
   return params;
 }
-
 
 /**
  * This UserObject computes averages of a variable storing partial
@@ -51,7 +47,7 @@ InputParameters nearestPointBaseValidParams()
  * Given a list of points this object computes the layered average
  * closest to each one of those points.
  */
-template<typename UserObjectType>
+template <typename UserObjectType>
 class NearestPointBase : public ElementIntegralVariableUserObject
 {
 public:
@@ -82,14 +78,12 @@ protected:
   std::shared_ptr<UserObjectType> nearestUserObject(const Point & p) const;
 
   std::vector<Point> _points;
-  std::vector<std::shared_ptr<UserObjectType> > _user_objects;
+  std::vector<std::shared_ptr<UserObjectType>> _user_objects;
 };
 
-
-template<typename UserObjectType>
-NearestPointBase<UserObjectType>::NearestPointBase(const InputParameters & parameters) :
-    ElementIntegralVariableUserObject(parameters),
-    _points(getParam<std::vector<Point> >("points"))
+template <typename UserObjectType>
+NearestPointBase<UserObjectType>::NearestPointBase(const InputParameters & parameters)
+  : ElementIntegralVariableUserObject(parameters), _points(getParam<std::vector<Point>>("points"))
 {
   _user_objects.reserve(_points.size());
 
@@ -98,12 +92,12 @@ NearestPointBase<UserObjectType>::NearestPointBase(const InputParameters & param
     _user_objects.push_back(std::make_shared<UserObjectType>(parameters));
 }
 
-template<typename UserObjectType>
+template <typename UserObjectType>
 NearestPointBase<UserObjectType>::~NearestPointBase()
 {
 }
 
-template<typename UserObjectType>
+template <typename UserObjectType>
 void
 NearestPointBase<UserObjectType>::initialize()
 {
@@ -111,14 +105,14 @@ NearestPointBase<UserObjectType>::initialize()
     user_object->initialize();
 }
 
-template<typename UserObjectType>
+template <typename UserObjectType>
 void
 NearestPointBase<UserObjectType>::execute()
 {
   nearestUserObject(_current_elem->centroid())->execute();
 }
 
-template<typename UserObjectType>
+template <typename UserObjectType>
 void
 NearestPointBase<UserObjectType>::finalize()
 {
@@ -126,7 +120,7 @@ NearestPointBase<UserObjectType>::finalize()
     user_object->finalize();
 }
 
-template<typename UserObjectType>
+template <typename UserObjectType>
 void
 NearestPointBase<UserObjectType>::threadJoin(const UserObject & y)
 {
@@ -136,14 +130,14 @@ NearestPointBase<UserObjectType>::threadJoin(const UserObject & y)
     _user_objects[i]->threadJoin(*npla._user_objects[i]);
 }
 
-template<typename UserObjectType>
+template <typename UserObjectType>
 Real
 NearestPointBase<UserObjectType>::spatialValue(const Point & p) const
 {
   return nearestUserObject(p)->spatialValue(p);
 }
 
-template<typename UserObjectType>
+template <typename UserObjectType>
 std::shared_ptr<UserObjectType>
 NearestPointBase<UserObjectType>::nearestUserObject(const Point & p) const
 {
@@ -165,6 +159,5 @@ NearestPointBase<UserObjectType>::nearestUserObject(const Point & p) const
 
   return _user_objects[closest];
 }
-
 
 #endif

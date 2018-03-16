@@ -1,15 +1,22 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWVOLUMETRICSTRAIN_H
 #define POROUSFLOWVOLUMETRICSTRAIN_H
 
 #include "PorousFlowMaterialVectorBase.h"
 #include "RankTwoTensor.h"
+
+class PorousFlowVolumetricStrain;
+
+template <>
+InputParameters validParams<PorousFlowVolumetricStrain>();
 
 /**
  * PorousFlowVolumetricStrain computes volumetric strains, and derivatives thereof
@@ -20,6 +27,7 @@ public:
   PorousFlowVolumetricStrain(const InputParameters & parameters);
 
 protected:
+  virtual void initQpStatefulProperties() override;
   virtual void computeQpProperties() override;
 
   /// If true then the strain rate will include terms that ensure mass is conserved when doing integrals over the displaced mesh
@@ -48,7 +56,7 @@ protected:
    * Since the volumetric strain rate depends on derivatives of the displacement variables,
    * this should be multiplied by _grad_phi in kernels
    */
-  MaterialProperty<std::vector<RealGradient> > & _dvol_strain_rate_qp_dvar;
+  MaterialProperty<std::vector<RealGradient>> & _dvol_strain_rate_qp_dvar;
 
   /// The total volumetric strain at the quadpoints
   MaterialProperty<Real> & _vol_total_strain_qp;
@@ -58,7 +66,7 @@ protected:
    * Since the total volumetric strain depends on derivatives of the displacement variables,
    * this should be multiplied by _grad_phi in kernels
    */
-  MaterialProperty<std::vector<RealGradient> > & _dvol_total_strain_qp_dvar;
+  MaterialProperty<std::vector<RealGradient>> & _dvol_total_strain_qp_dvar;
 };
 
-#endif //POROUSFLOWVOLUMETRICSTRAIN_H
+#endif // POROUSFLOWVOLUMETRICSTRAIN_H

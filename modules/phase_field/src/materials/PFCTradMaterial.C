@@ -1,22 +1,29 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "PFCTradMaterial.h"
 
-template<>
-InputParameters validParams<PFCTradMaterial>()
+template <>
+InputParameters
+validParams<PFCTradMaterial>()
 {
   InputParameters params = validParams<Material>();
+  params.addClassDescription(
+      "Polynomial coefficients for a phase field crystal correlation function");
   MooseEnum order("FOURTH=4 EIGHTH=8");
-  params.addRequiredParam<MooseEnum>("order", order, "This is the order of the polynomial used for correlation function");
+  params.addRequiredParam<MooseEnum>(
+      "order", order, "This is the order of the polynomial used for correlation function");
   return params;
 }
 
-PFCTradMaterial::PFCTradMaterial(const InputParameters & parameters) :
-    Material(parameters),
+PFCTradMaterial::PFCTradMaterial(const InputParameters & parameters)
+  : Material(parameters),
     _order(getParam<MooseEnum>("order")),
     _M(declareProperty<Real>("M")),
     _a(declareProperty<Real>("a")),
@@ -43,7 +50,7 @@ PFCTradMaterial::computeQpProperties()
   {
     case 4:
       _C0[_qp] = -10.9153;
-      _C2[_qp] = 2.6; // Angstrom^2
+      _C2[_qp] = 2.6;    // Angstrom^2
       _C4[_qp] = 0.1459; // Angstrom^4, would be negative but coefficient term is negative
       break;
 
@@ -51,9 +58,9 @@ PFCTradMaterial::computeQpProperties()
       _C0[_qp] = -49.0;
       // new parameter derived from Jaatinen's paper; using km = 2.985 A; updated 1/31/2015.
       _C2[_qp] = 20.00313; // Angstrom^2
-      _C4[_qp] = 3.11883; // Angstrom^4, would be negative but coefficient term is negative
-      _C6[_qp] = 0.22554; // Angstrom^6
-      _C8[_qp] = 0.00643; // Angstrom^8, would be negative but coefficient term is negative
+      _C4[_qp] = 3.11883;  // Angstrom^4, would be negative but coefficient term is negative
+      _C6[_qp] = 0.22554;  // Angstrom^6
+      _C8[_qp] = 0.00643;  // Angstrom^8, would be negative but coefficient term is negative
       break;
 
     default:

@@ -1,25 +1,39 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "PorousFlowHalfCubicSink.h"
 #include "libmesh/utility.h"
 
-template<>
-InputParameters validParams<PorousFlowHalfCubicSink>()
+template <>
+InputParameters
+validParams<PorousFlowHalfCubicSink>()
 {
   InputParameters params = validParams<PorousFlowSinkPTDefiner>();
-  params.addRequiredParam<Real>("max", "Maximum of the cubic flux multiplier.  Denote x = porepressure - center (or in the case of a heat flux with no fluid, x = temperature - center).  Then Flux out is multiplied by (max/cutoff^3)*(2x + cutoff)(x - cutoff)^2 for cutoff < x < 0.  Flux out is multiplied by max for x >= 0.  Flux out is multiplied by 0 for x <= cutoff.");
-  params.addRequiredParam<FunctionName>("cutoff", "Cutoff of the cubic (measured in Pa (or K for temperature BCs)).  This needs to be less than zero.");
-  params.addRequiredParam<Real>("center", "Center of the cubic flux multiplier (measured in Pa (or K for temperature BCs)).");
+  params.addRequiredParam<Real>(
+      "max",
+      "Maximum of the cubic flux multiplier.  Denote x = porepressure - center (or in the "
+      "case of a heat flux with no fluid, x = temperature - center).  Then Flux out is "
+      "multiplied by (max/cutoff^3)*(2x + cutoff)(x - cutoff)^2 for cutoff < x < 0.  Flux "
+      "out is multiplied by max for x >= 0.  Flux out is multiplied by 0 for x <= cutoff.");
+  params.addRequiredParam<FunctionName>("cutoff",
+                                        "Cutoff of the cubic (measured in Pa (or K for "
+                                        "temperature BCs)).  This needs to be less than "
+                                        "zero.");
+  params.addRequiredParam<Real>(
+      "center", "Center of the cubic flux multiplier (measured in Pa (or K for temperature BCs)).");
+  params.addClassDescription("Applies a flux sink to a boundary. The base flux defined by "
+                             "PorousFlowSink is multiplied by a cubic.");
   return params;
 }
 
-PorousFlowHalfCubicSink::PorousFlowHalfCubicSink(const InputParameters & parameters) :
-    PorousFlowSinkPTDefiner(parameters),
+PorousFlowHalfCubicSink::PorousFlowHalfCubicSink(const InputParameters & parameters)
+  : PorousFlowSinkPTDefiner(parameters),
     _maximum(getParam<Real>("max")),
     _cutoff(getFunction("cutoff")),
     _center(getParam<Real>("center"))
@@ -27,7 +41,7 @@ PorousFlowHalfCubicSink::PorousFlowHalfCubicSink(const InputParameters & paramet
 }
 
 Real
-PorousFlowHalfCubicSink::multiplier()
+PorousFlowHalfCubicSink::multiplier() const
 {
   const Real x = ptVar() - _center;
 
@@ -38,11 +52,12 @@ PorousFlowHalfCubicSink::multiplier()
   if (x <= cutoff)
     return 0.0;
 
-  return PorousFlowSink::multiplier() * _maximum * (2 * x + cutoff) * (x - cutoff) * (x - cutoff) / Utility::pow<3>(cutoff);
+  return PorousFlowSink::multiplier() * _maximum * (2 * x + cutoff) * (x - cutoff) * (x - cutoff) /
+         Utility::pow<3>(cutoff);
 }
 
 Real
-PorousFlowHalfCubicSink::dmultiplier_dvar(unsigned int pvar)
+PorousFlowHalfCubicSink::dmultiplier_dvar(unsigned int pvar) const
 {
   const Real x = ptVar() - _center;
 
@@ -53,7 +68,9 @@ PorousFlowHalfCubicSink::dmultiplier_dvar(unsigned int pvar)
   if (x <= cutoff)
     return 0.0;
 
-  const Real str = _maximum * (2 * x + cutoff) * (x - cutoff) * (x - cutoff) / Utility::pow<3>(cutoff);
+  const Real str =
+      _maximum * (2 * x + cutoff) * (x - cutoff) * (x - cutoff) / Utility::pow<3>(cutoff);
   const Real deriv = _maximum * 6 * x * (x - cutoff) / Utility::pow<3>(cutoff);
-  return PorousFlowSink::dmultiplier_dvar(pvar) * str + PorousFlowSink::multiplier() * deriv * dptVar(pvar);
+  return PorousFlowSink::dmultiplier_dvar(pvar) * str +
+         PorousFlowSink::multiplier() * deriv * dptVar(pvar);
 }

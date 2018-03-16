@@ -57,82 +57,43 @@ ifneq (,$(findstring mpi,$(cxx_compiler)))
 	cxx_compiler = $(shell $(libmesh_CXX) -show)
 endif
 
-# Check that we have Asio installed.
-ASIO_FILE := $(MOOSE_DIR)/framework/contrib/asio/include/asio.hpp
-ifneq ("$(wildcard $(ASIO_FILE))","")
-libmeshConfigHeader := $(LIBMESH_DIR)/include/libmesh/libmesh_config.h
-cxx11Enabled := $(shell grep 'define LIBMESH_HAVE_CXX11 ' $(libmeshConfigHeader) | tail -c 2)
-# If it is installed, make sure this is a
-# build using C++11, if so, then turn on Asio Networking
-ifeq (1,$(strip $(cxx11Enabled)))
-	ADDITIONAL_CPPFLAGS += "-DASIO_STANDALONE"
-endif
-endif
-
-MOOSE_PRECOMPILED ?= false
-PCH_FLAGS=
-PCH_MODE=
-PCH_DEP=
-
-# Check if using precompiled headers is possible
-# cxx compiler could be used to define which compiler is being used
-# so that different compiler options are usable. Libmesh only
-# appears to check if GCC is used
-ifeq ($(MOOSE_PRECOMPILED), true)
-  ifneq (,$(filter $(cxx_compiler), g++))
-	  PRECOMPILED = true
-  endif
-endif
-
 all::
-ifdef PRECOMPILED
-#
-# Precompiled Header Rules
-#
 
-# [JWP] - Libtool does not seem to have support for PCH yet, so for
-# now just use the compiler directly, and depend on the user to
-# disable precompiled header support if it is not available on his
-# system.
-%.h.gch/$(METHOD).h.gch : %.h
-	@echo "MOOSE Pre-Compiling Header (in "$(METHOD)" mode) "$<"..."
-	@mkdir -p $(FRAMEWORK_DIR)/include/base/Precompiled.h.gch
-	@$(libmesh_CXX) $(libmesh_CPPFLAGS) $(ADDITIONAL_CPPFLAGS) $(libmesh_CXXFLAGS) -DPRECOMPILED $(libmesh_INCLUDE) -MMD -MF $@.d -c $< -o $@
+# Add all header symlinks as dependencies to this target
+header_symlinks::
 
-#
-# add dependency - all object files depend on the precompiled header file.
-#
-PCH_DEP=$(FRAMEWORK_DIR)/include/base/Precompiled.h.gch/$(METHOD).h.gch
-
-PCH_FLAGS=-DPRECOMPILED -include Precompiled.h
-PCH_MODE="with PCH "
-endif
+unity_files::
 
 #
 # C++ rules
 #
-pcre%.$(obj-suffix) : pcre%.cc $(PCH_DEP)
-	@echo "MOOSE Compiling C++ $(PCH_MODE)(in "$(METHOD)" mode) "$<"..."
+pcre%.$(obj-suffix) : pcre%.cc
+	@echo "Compiling C++ (in "$(METHOD)" mode) "$<"..."
 	@$(libmesh_LIBTOOL) --tag=CXX $(LIBTOOLFLAGS) --mode=compile --quiet \
-          $(libmesh_CXX) $(libmesh_CPPFLAGS) $(ADDITIONAL_CPPFLAGS) $(libmesh_CXXFLAGS) $(PCH_FLAGS) $(app_INCLUDES) $(libmesh_INCLUDE) -DHAVE_CONFIG_H -MMD -MP -MF $@.d -MT $@ -c $< -o $@
+          $(libmesh_CXX) $(libmesh_CPPFLAGS) $(ADDITIONAL_CPPFLAGS) $(libmesh_CXXFLAGS) $(app_INCLUDES) $(libmesh_INCLUDE) -w -DHAVE_CONFIG_H -MMD -MP -MF $@.d -MT $@ -c $< -o $@
+
+%.$(obj-suffix) : %.cc
+	@echo "Compiling C++ (in "$(METHOD)" mode) "$<"..."
+	@$(libmesh_LIBTOOL) --tag=CXX $(LIBTOOLFLAGS) --mode=compile --quiet \
+          $(libmesh_CXX) $(libmesh_CPPFLAGS) $(ADDITIONAL_CPPFLAGS) $(libmesh_CXXFLAGS) $(app_INCLUDES) $(libmesh_INCLUDE) -DHAVE_CONFIG_H -MMD -MP -MF $@.d -MT $@ -c $< -o $@
 
 define CXX_RULE_TEMPLATE
-%$(1).$(obj-suffix) : %.C $(PCH_DEP)
+%$(1).$(obj-suffix) : %.C
 ifeq ($(1),)
-	@echo "MOOSE Compiling C++ $$(PCH_MODE)(in "$$(METHOD)" mode) "$$<"..."
+	@echo "Compiling C++ (in "$$(METHOD)" mode) "$$<"..."
 else
-	@echo "MOOSE Compiling C++ with suffix $$(PCH_MODE)(in "$$(METHOD)" mode) "$$<"..."
+	@echo "Compiling C++ with suffix (in "$$(METHOD)" mode) "$$<"..."
 endif
 	@$$(libmesh_LIBTOOL) --tag=CXX $$(LIBTOOLFLAGS) --mode=compile --quiet \
-	  $$(libmesh_CXX) $$(libmesh_CPPFLAGS) $$(ADDITIONAL_CPPFLAGS) $$(libmesh_CXXFLAGS) $$(PCH_FLAGS) $$(app_INCLUDES) $$(libmesh_INCLUDE) -MMD -MP -MF $$@.d -MT $$@ -c $$< -o $$@
+	  $$(libmesh_CXX) $$(libmesh_CPPFLAGS) $$(ADDITIONAL_CPPFLAGS) $$(libmesh_CXXFLAGS) $$(app_INCLUDES) $$(libmesh_INCLUDE) -MMD -MP -MF $$@.d -MT $$@ -c $$< -o $$@
 endef
 # Instantiate Rules
 $(eval $(call CXX_RULE_TEMPLATE,))
 
-%.$(obj-suffix) : %.cpp $(PCH_DEP)
-	@echo "MOOSE Compiling C++ $(PCH_MODE)(in "$(METHOD)" mode) "$<"..."
+%.$(obj-suffix) : %.cpp
+	@echo "Compiling C++ (in "$(METHOD)" mode) "$<"..."
 	@$(libmesh_LIBTOOL) --tag=CXX $(LIBTOOLFLAGS) --mode=compile --quiet \
-	  $(libmesh_CXX) $(libmesh_CPPFLAGS) $(ADDITIONAL_CPPFLAGS) $(libmesh_CXXFLAGS) $(PCH_FLAGS) $(app_INCLUDES) $(libmesh_INCLUDE) -MMD -MP -MF $@.d -MT $@ -c $< -o $@
+	  $(libmesh_CXX) $(libmesh_CPPFLAGS) $(ADDITIONAL_CPPFLAGS) $(libmesh_CXXFLAGS) $(app_INCLUDES) $(libmesh_INCLUDE) -MMD -MP -MF $@.d -MT $@ -c $< -o $@
 
 #
 # Static Analysis
@@ -142,17 +103,21 @@ $(eval $(call CXX_RULE_TEMPLATE,))
 	@echo "Clang Static Analysis (in "$(METHOD)" mode) "$<"..."
 	@$(libmesh_CXX) $(libmesh_CXXFLAGS) $(app_INCLUDES) $(libmesh_INCLUDE) --analyze $< -o $@
 
+%.plist.$(obj-suffix) : %.cc
+	@echo "Clang Static Analysis (in "$(METHOD)" mode) "$<"..."
+	@$(libmesh_CXX) $(libmesh_CXXFLAGS) $(app_INCLUDES) $(libmesh_INCLUDE) --analyze $< -o $@
+
 #
 # C rules
 #
 
 pcre%.$(obj-suffix) : pcre%.c
-	@echo "MOOSE Compiling C (in "$(METHOD)" mode) "$<"..."
+	@echo "Compiling C (in "$(METHOD)" mode) "$<"..."
 	@$(libmesh_LIBTOOL) --tag=CC $(LIBTOOLFLAGS) --mode=compile --quiet \
-          $(libmesh_CC) $(libmesh_CPPFLAGS) $(ADDITIONAL_CPPFLAGS) $(libmesh_CFLAGS) $(app_INCLUDES) $(libmesh_INCLUDE) -DHAVE_CONFIG_H -MMD -MP -MF $@.d -MT $@ -c $< -o $@
+          $(libmesh_CC) $(libmesh_CPPFLAGS) $(ADDITIONAL_CPPFLAGS) $(libmesh_CFLAGS) $(app_INCLUDES) $(libmesh_INCLUDE) -w -DHAVE_CONFIG_H -MMD -MP -MF $@.d -MT $@ -c $< -o $@
 
 %.$(obj-suffix) : %.c
-	@echo "MOOSE Compiling C (in "$(METHOD)" mode) "$<"..."
+	@echo "Compiling C (in "$(METHOD)" mode) "$<"..."
 	@$(libmesh_LIBTOOL) --tag=CC $(LIBTOOLFLAGS) --mode=compile --quiet \
 	  $(libmesh_CC) $(libmesh_CPPFLAGS) $(ADDITIONAL_CPPFLAGS) $(libmesh_CFLAGS) $(app_INCLUDES) $(libmesh_INCLUDE) -MMD -MP -MF $@.d -MT $@ -c $< -o $@
 
@@ -163,7 +128,7 @@ pcre%.$(obj-suffix) : pcre%.c
 #
 
 %.$(obj-suffix) : %.f
-	@echo "MOOSE Compiling Fortan (in "$(METHOD)" mode) "$<"..."
+	@echo "Compiling Fortan (in "$(METHOD)" mode) "$<"..."
 	@$(libmesh_LIBTOOL) --tag=F77 $(LIBTOOLFLAGS) --mode=compile --quiet \
 	  $(libmesh_F77) $(libmesh_FFLAGS) $(app_INCLUDES) $(libmesh_INCLUDE) -c $< -o $@
 
@@ -174,7 +139,7 @@ pcre%.$(obj-suffix) : pcre%.c
 
 PreProcessed_FFLAGS := $(libmesh_FFLAGS)
 %.$(obj-suffix) : %.F
-	@echo "MOOSE Compiling Fortran (in "$(METHOD)" mode) "$<"..."
+	@echo "Compiling Fortran (in "$(METHOD)" mode) "$<"..."
 	@$(libmesh_LIBTOOL) --tag=F77 $(LIBTOOLFLAGS) --mode=compile --quiet \
 	  $(libmesh_F90) $(PreProcessed_FFLAGS) $(app_INCLUDES) $(libmesh_INCLUDE) -c $< $(module_dir_flag) -o $@
 
@@ -204,7 +169,7 @@ ifneq (,$(findstring gfortran,$(mpif90_command)))
 endif
 
 %.$(obj-suffix) : %.f90
-	@echo "MOOSE Compiling Fortran90 (in "$(METHOD)" mode) "$<"..."
+	@echo "Compiling Fortran90 (in "$(METHOD)" mode) "$<"..."
 	@$(libmesh_LIBTOOL) --tag=FC $(LIBTOOLFLAGS) --mode=compile --quiet \
 	  $(libmesh_F90) $(libmesh_FFLAGS) $(libmesh_INCLUDE) -c $< $(module_dir_flag) -o $@
 
@@ -289,16 +254,16 @@ endif
 # out to be more trouble than it was worth to get working.
 #
 %-$(METHOD).plugin : %.C
-	@echo "MOOSE Compiling C++ Plugin (in "$(METHOD)" mode) "$<"..."
+	@echo "Compiling C++ Plugin (in "$(METHOD)" mode) "$<"..."
 	@$(libmesh_CXX) $(libmesh_CPPFLAGS) $(ADDITIONAL_CPPFLAGS) $(libmesh_CXXFLAGS) -shared -fPIC $(app_INCLUDES) $(libmesh_INCLUDE) $< -o $@
 %-$(METHOD).plugin : %.c
-	@echo "MOOSE Compiling C Plugin (in "$(METHOD)" mode) "$<"..."
+	@echo "Compiling C Plugin (in "$(METHOD)" mode) "$<"..."
 	@$(libmesh_CC) $(libmesh_CPPFLAGS) $(ADDITIONAL_CPPFLAGS) $(libmesh_CFLAGS) -shared -fPIC $(app_INCLUDES) $(libmesh_INCLUDE) $< -o $@
 %-$(METHOD).plugin : %.f
-	@echo "MOOSE Compiling Fortan Plugin (in "$(METHOD)" mode) "$<"..."
+	@echo "Compiling Fortan Plugin (in "$(METHOD)" mode) "$<"..."
 	@$(libmesh_F77) $(libmesh_FFLAGS) -shared -fPIC $(app_INCLUDES) $(libmesh_INCLUDE) $< -o $@
 %-$(METHOD).plugin : %.f90
-	@echo "MOOSE Compiling Fortan Plugin (in "$(METHOD)" mode) "$<"..."
+	@echo "Compiling Fortan Plugin (in "$(METHOD)" mode) "$<"..."
 	@$(libmesh_F90) $(libmesh_FFLAGS) -shared -fPIC $(app_INCLUDES) $(libmesh_INCLUDE) $< -o $@
 
 # Define the "test" target, we'll use a variable name so that we can override it without warnings if needed

@@ -1,24 +1,30 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ComputePlasticHeatEnergy.h"
 
-template<>
-InputParameters validParams<ComputePlasticHeatEnergy>()
+template <>
+InputParameters
+validParams<ComputePlasticHeatEnergy>()
 {
   InputParameters params = validParams<Material>();
-  params.addParam<std::string>("base_name", "Optional parameter that allows the user to define multiple mechanics material systems on the same block, i.e. for multiple phases");
+  params.addParam<std::string>("base_name",
+                               "Optional parameter that allows the user to define "
+                               "multiple mechanics material systems on the same "
+                               "block, i.e. for multiple phases");
   params.addClassDescription("Plastic heat energy density = stress * plastic_strain_rate");
   return params;
 }
 
-ComputePlasticHeatEnergy::ComputePlasticHeatEnergy(const InputParameters & parameters) :
-    DerivativeMaterialInterface<Material>(parameters),
-    _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : "" ),
+ComputePlasticHeatEnergy::ComputePlasticHeatEnergy(const InputParameters & parameters)
+  : DerivativeMaterialInterface<Material>(parameters),
+    _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _plastic_strain(getMaterialProperty<RankTwoTensor>("plastic_strain")),
     _plastic_strain_old(getMaterialPropertyOld<RankTwoTensor>("plastic_strain")),
     _stress(getMaterialProperty<RankTwoTensor>(_base_name + "stress")),
@@ -32,7 +38,8 @@ ComputePlasticHeatEnergy::ComputePlasticHeatEnergy(const InputParameters & param
 void
 ComputePlasticHeatEnergy::computeQpProperties()
 {
-  _plastic_heat[_qp] = _stress[_qp].doubleContraction(_plastic_strain[_qp] - _plastic_strain_old[_qp]) / _dt;
+  _plastic_heat[_qp] =
+      _stress[_qp].doubleContraction(_plastic_strain[_qp] - _plastic_strain_old[_qp]) / _dt;
   if (_fe_problem.currentlyComputingJacobian())
   {
     if (_plastic_strain[_qp] == _plastic_strain_old[_qp])
@@ -40,9 +47,11 @@ ComputePlasticHeatEnergy::computeQpProperties()
       _dplastic_heat_dstrain[_qp] = RankTwoTensor();
     else
     {
-      _dplastic_heat_dstrain[_qp] = (_plastic_strain[_qp] - _plastic_strain_old[_qp]).initialContraction(_Jacobian_mult[_qp]);
+      _dplastic_heat_dstrain[_qp] =
+          (_plastic_strain[_qp] - _plastic_strain_old[_qp]).initialContraction(_Jacobian_mult[_qp]);
       _dplastic_heat_dstrain[_qp] += _stress[_qp];
-      _dplastic_heat_dstrain[_qp] -= _stress[_qp].initialContraction(_elasticity_tensor[_qp].invSymm() * _Jacobian_mult[_qp]);
+      _dplastic_heat_dstrain[_qp] -=
+          _stress[_qp].initialContraction(_elasticity_tensor[_qp].invSymm() * _Jacobian_mult[_qp]);
       _dplastic_heat_dstrain[_qp] /= _dt;
     }
   }

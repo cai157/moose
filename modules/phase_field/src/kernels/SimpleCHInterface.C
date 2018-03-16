@@ -1,23 +1,30 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "SimpleCHInterface.h"
 
-template<>
-InputParameters validParams<SimpleCHInterface>()
+template <>
+InputParameters
+validParams<SimpleCHInterface>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addClassDescription("Gradient energy for Cahn-Hilliard equation with constant Mobility and Interfacial parameter");
-  params.addRequiredParam<MaterialPropertyName>("kappa_name", "The kappa used with the kernel, should be constant value");
-  params.addRequiredParam<MaterialPropertyName>("mob_name", "The mobility used with the kernel, should be constant value");
+  params.addClassDescription("Gradient energy for Cahn-Hilliard equation with constant Mobility "
+                             "and Interfacial parameter");
+  params.addRequiredParam<MaterialPropertyName>(
+      "kappa_name", "The kappa used with the kernel, should be constant value");
+  params.addRequiredParam<MaterialPropertyName>(
+      "mob_name", "The mobility used with the kernel, should be constant value");
   return params;
 }
 
-SimpleCHInterface::SimpleCHInterface(const InputParameters & parameters) :
-    Kernel(parameters),
+SimpleCHInterface::SimpleCHInterface(const InputParameters & parameters)
+  : Kernel(parameters),
     _second_u(second()),
     _second_test(secondTest()),
     _second_phi(secondPhi()),

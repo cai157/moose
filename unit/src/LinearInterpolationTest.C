@@ -1,82 +1,44 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#include "LinearInterpolationTest.h"
+#include "gtest/gtest.h"
 
-//Moose includes
 #include "LinearInterpolation.h"
 
 #include <cmath>
 
-CPPUNIT_TEST_SUITE_REGISTRATION( LinearInterpolationTest );
-
-const double LinearInterpolationTest::_tol = 1e-5;
-
-void
-LinearInterpolationTest::setUp()
+TEST(LinearInterpolationTest, getSampleSize)
 {
-  _x = new std::vector<double>( 4 );
-  _y = new std::vector<double>( 4 );
-
-  std::vector<double> & x = *_x;
-  std::vector<double> & y = *_y;
-
-  x[0] = 1.; y[0] = 0.;
-  x[1] = 2.; y[1] = 5.;
-  x[2] = 3.; y[2] = 6.;
-  x[3] = 5.; y[3] = 8.;
+  std::vector<double> x = {1, 2, 3, 5};
+  std::vector<double> y = {0, 5, 6, 8};
+  LinearInterpolation interp(x, y);
+  ASSERT_EQ(interp.getSampleSize(), x.size());
 }
 
-void
-LinearInterpolationTest::tearDown()
+TEST(LinearInterpolationTest, sample)
 {
-  delete _x;
-  delete _y;
-}
+  std::vector<double> x = {1, 2, 3, 5};
+  std::vector<double> y = {0, 5, 6, 8};
+  LinearInterpolation interp(x, y);
 
-void
-LinearInterpolationTest::constructor()
-{
-  LinearInterpolation interp( *_x, *_y );
-  CPPUNIT_ASSERT( interp.getSampleSize() == _x->size() );
-}
+  EXPECT_DOUBLE_EQ(interp.sample(0.), 0.);
+  EXPECT_DOUBLE_EQ(interp.sample(1.), 0.);
+  EXPECT_DOUBLE_EQ(interp.sample(2.), 5.);
+  EXPECT_DOUBLE_EQ(interp.sample(3.), 6.);
+  EXPECT_DOUBLE_EQ(interp.sample(4.), 7.);
+  EXPECT_DOUBLE_EQ(interp.sample(5.), 8.);
+  EXPECT_DOUBLE_EQ(interp.sample(6.), 8.);
 
+  EXPECT_DOUBLE_EQ(interp.sample(1.5), 2.5);
 
-void
-LinearInterpolationTest::sample()
-{
-  LinearInterpolation interp( *_x, *_y );
-
-  CPPUNIT_ASSERT( std::abs(interp.sample( 0. ) - 0.) < _tol );
-  CPPUNIT_ASSERT( std::abs(interp.sample( 1. ) - 0.) < _tol );
-  CPPUNIT_ASSERT( std::abs(interp.sample( 2. ) - 5.) < _tol );
-  CPPUNIT_ASSERT( std::abs(interp.sample( 3. ) - 6.) < _tol );
-  CPPUNIT_ASSERT( std::abs(interp.sample( 4. ) - 7.) < _tol );
-  CPPUNIT_ASSERT( std::abs(interp.sample( 5. ) - 8.) < _tol );
-  CPPUNIT_ASSERT( std::abs(interp.sample( 6. ) - 8.) < _tol );
-
-  CPPUNIT_ASSERT( interp.sample( 1.5 ) == 2.5 );
-
-  CPPUNIT_ASSERT( std::abs(interp.sampleDerivative( 0. ) - 0.) < _tol );
-  CPPUNIT_ASSERT( std::abs(interp.sampleDerivative( 1.1 ) - 5.) < _tol );
-  CPPUNIT_ASSERT( std::abs(interp.sampleDerivative( 2. ) - 1.) < _tol );
-  CPPUNIT_ASSERT( std::abs(interp.sampleDerivative( 2.1 ) - 1.) < _tol );
-}
-
-void
-LinearInterpolationTest::getSampleSize()
-{
-  LinearInterpolation interp( *_x, *_y );
-  CPPUNIT_ASSERT( interp.getSampleSize() == _x->size() );
+  EXPECT_DOUBLE_EQ(interp.sampleDerivative(0.), 0.);
+  EXPECT_DOUBLE_EQ(interp.sampleDerivative(1.1), 5.);
+  EXPECT_DOUBLE_EQ(interp.sampleDerivative(2.), 1.);
+  EXPECT_DOUBLE_EQ(interp.sampleDerivative(2.1), 1.);
 }

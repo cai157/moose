@@ -141,8 +141,8 @@
     absent_out = 'Alive time'
     valgrind = NONE
     # Note the "--disable-perflog" cli option is for libMesh currently NOT MOOSE
-    cli_args = '--disable-perflog Outputs/print_perf_log=true Outputs/console/perf_log=false'
-    method = 'opt oprof' # debug prints some extra stuff at the end that messes up the regex
+    cli_args = '--disable-perflog Outputs/print_perf_log=true Outputs/console/perf_log=false --no-timing'
+    method = 'opt oprof devel' # debug prints some extra stuff at the end that messes up the regex
   [../]
   [./additional_output_on]
     # Test use of 'additional_output_on' parameter
@@ -156,5 +156,11 @@
     input = 'console_final.i'
     expect_out = 'Time\sStep\s11'
     group = 'requirements'
+  [../]
+  [./console_fit_width_error]
+    type = RunException
+    input = console.i
+    cli_args = Outputs/screen/fit_mode=foo
+    expect_err = "Failed to convert 'foo' to an int."
   [../]
 []

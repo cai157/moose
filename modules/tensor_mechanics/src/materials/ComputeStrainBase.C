@@ -1,31 +1,42 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ComputeStrainBase.h"
 #include "MooseMesh.h"
 #include "Assembly.h"
 
-template<>
-InputParameters validParams<ComputeStrainBase>()
+template <>
+InputParameters
+validParams<ComputeStrainBase>()
 {
   InputParameters params = validParams<Material>();
-  params.addRequiredCoupledVar("displacements", "The displacements appropriate for the simulation geometry and coordinate system");
-  params.addParam<std::string>("base_name", "Optional parameter that allows the user to define multiple mechanics material systems on the same block, i.e. for multiple phases");
-  params.addParam<bool>("volumetric_locking_correction", false, "Flag to correct volumetric locking");
-  params.addParam<std::vector<MaterialPropertyName>>("eigenstrain_names", "List of eigenstrains to be applied in this strain calculation");
+  params.addRequiredCoupledVar(
+      "displacements",
+      "The displacements appropriate for the simulation geometry and coordinate system");
+  params.addParam<std::string>("base_name",
+                               "Optional parameter that allows the user to define "
+                               "multiple mechanics material systems on the same "
+                               "block, i.e. for multiple phases");
+  params.addParam<bool>(
+      "volumetric_locking_correction", false, "Flag to correct volumetric locking");
+  params.addParam<std::vector<MaterialPropertyName>>(
+      "eigenstrain_names", "List of eigenstrains to be applied in this strain calculation");
+  params.suppressParameter<bool>("use_displaced_mesh");
   return params;
 }
 
-ComputeStrainBase::ComputeStrainBase(const InputParameters & parameters) :
-    DerivativeMaterialInterface<Material>(parameters),
+ComputeStrainBase::ComputeStrainBase(const InputParameters & parameters)
+  : DerivativeMaterialInterface<Material>(parameters),
     _ndisp(coupledComponents("displacements")),
     _disp(3),
     _grad_disp(3),
-    _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : "" ),
+    _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _mechanical_strain(declareProperty<RankTwoTensor>(_base_name + "mechanical_strain")),
     _total_strain(declareProperty<RankTwoTensor>(_base_name + "total_strain")),
     _eigenstrain_names(getParam<std::vector<MaterialPropertyName>>("eigenstrain_names")),
@@ -41,7 +52,8 @@ ComputeStrainBase::ComputeStrainBase(const InputParameters & parameters) :
 
   // Checking for consistency between mesh size and length of the provided displacements vector
   if (_ndisp != _mesh.dimension())
-    mooseError("The number of variables supplied in 'displacements' must match the mesh dimension.");
+    mooseError(
+        "The number of variables supplied in 'displacements' must match the mesh dimension.");
 
   // fetch coupled variables and gradients (as stateful properties if necessary)
   for (unsigned int i = 0; i < _ndisp; ++i)
@@ -59,6 +71,9 @@ ComputeStrainBase::ComputeStrainBase(const InputParameters & parameters) :
 
   if (_ndisp == 1 && _volumetric_locking_correction)
     mooseError("Volumetric locking correction have to be set to false for 1-D problems.");
+
+  if (getParam<bool>("use_displaced_mesh"))
+    mooseError("The strain calculator needs to run on the undisplaced mesh.");
 }
 
 void

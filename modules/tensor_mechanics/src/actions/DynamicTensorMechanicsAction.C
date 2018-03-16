@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "DynamicTensorMechanicsAction.h"
 #include "Factory.h"
 #include "FEProblem.h"
@@ -15,9 +18,18 @@ validParams<DynamicTensorMechanicsAction>()
 {
   InputParameters params = validParams<TensorMechanicsAction>();
   params.addClassDescription("Set up dynamic stress divergence kernels");
-  params.addParam<Real>("zeta", 0, "zeta parameter for the Rayleigh damping");
+  params.addParam<MaterialPropertyName>("zeta",
+                                        0.0,
+                                        "Name of material property or a constant real "
+                                        "number defining the zeta parameter for the "
+                                        "Rayleigh damping.");
   params.addParam<Real>("alpha", 0, "alpha parameter for HHT time integration");
-  params.addParam<bool>("static_initialization", false, "Set to true get the system to equillibrium under gravity by running a quasi-static analysis (by solving Ku = F) in the first time step.");
+  params.addParam<bool>("static_initialization",
+                        false,
+                        "Set to true get the system to "
+                        "equillibrium under gravity by running a "
+                        "quasi-static analysis (by solving Ku = F) "
+                        "in the first time step.");
   return params;
 }
 

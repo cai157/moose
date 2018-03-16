@@ -1,20 +1,25 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "ChemicalOutFlowBC.h"
 
-template<>
-InputParameters validParams<ChemicalOutFlowBC>()
+template <>
+InputParameters
+validParams<ChemicalOutFlowBC>()
 {
   InputParameters params = validParams<IntegratedBC>();
+  params.addClassDescription("Chemical flux boundary condition");
   return params;
 }
 
-ChemicalOutFlowBC::ChemicalOutFlowBC(const InputParameters & parameters) :
-    IntegratedBC(parameters),
+ChemicalOutFlowBC::ChemicalOutFlowBC(const InputParameters & parameters)
+  : IntegratedBC(parameters),
     _diff(getMaterialProperty<Real>("diffusivity")),
     _porosity(getMaterialProperty<Real>("porosity"))
 {
@@ -23,11 +28,11 @@ ChemicalOutFlowBC::ChemicalOutFlowBC(const InputParameters & parameters) :
 Real
 ChemicalOutFlowBC::computeQpResidual()
 {
-  return - _test[_i][_qp] * _porosity[_qp] * _diff[_qp] * _grad_u[_qp] * _normals[_qp];
+  return -_test[_i][_qp] * _porosity[_qp] * _diff[_qp] * _grad_u[_qp] * _normals[_qp];
 }
 
 Real
 ChemicalOutFlowBC::computeQpJacobian()
 {
-  return - _test[_i][_qp] * _porosity[_qp] * _diff[_qp] * _grad_phi[_j][_qp] * _normals[_qp];
+  return -_test[_i][_qp] * _porosity[_qp] * _diff[_qp] * _grad_phi[_j][_qp] * _normals[_qp];
 }

@@ -1,13 +1,17 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "PhaseNormalTensor.h"
 
-template<>
-InputParameters validParams<PhaseNormalTensor>()
+template <>
+InputParameters
+validParams<PhaseNormalTensor>()
 {
   InputParameters params = validParams<Material>();
   params.addClassDescription("Calculate normal tensor of a phase based on gradient");
@@ -16,10 +20,11 @@ InputParameters validParams<PhaseNormalTensor>()
   return params;
 }
 
-PhaseNormalTensor::PhaseNormalTensor(const InputParameters & parameters) :
-    DerivativeMaterialInterface<Material>(parameters),
+PhaseNormalTensor::PhaseNormalTensor(const InputParameters & parameters)
+  : DerivativeMaterialInterface<Material>(parameters),
     _grad_u(coupledGradient("phase")),
-    _normal_tensor(declareProperty<RankTwoTensor>(getParam<MaterialPropertyName>("normal_tensor_name")))
+    _normal_tensor(
+        declareProperty<RankTwoTensor>(getParam<MaterialPropertyName>("normal_tensor_name")))
 {
 }
 
@@ -36,7 +41,7 @@ PhaseNormalTensor::computeQpProperties()
 
   if (magnitude > 0.0)
   {
-    RealVectorValue vector = _grad_u[_qp]/magnitude;
+    RealVectorValue vector = _grad_u[_qp] / magnitude;
     _normal_tensor[_qp].vectorOuterProduct(vector, vector);
   }
   else

@@ -84,12 +84,12 @@
   [../]
 
   [./forceu]
-    type = UserForcingFunction
+    type = BodyForce
     variable = u
     function = forcing_fnu
   [../]
   [./forcev]
-    type = UserForcingFunction
+    type = BodyForce
     variable = v
     function = forcing_fnv
   [../]
@@ -151,7 +151,6 @@
 
   [./h]
     type = AverageElementSize
-    variable = u
   [../]
 
   [./L2u]

@@ -1,67 +1,93 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ComputeJacobianThread.h"
-#include "NonlinearSystem.h"
-#include "FEProblem.h"
-#include "TimeDerivative.h"
-#include "IntegratedBC.h"
+
 #include "DGKernel.h"
+#include "FEProblem.h"
+#include "IntegratedBCBase.h"
 #include "InterfaceKernel.h"
 #include "KernelWarehouse.h"
+#include "MooseVariableField.h"
+#include "NonlinearSystem.h"
+#include "NonlocalIntegratedBC.h"
 #include "NonlocalKernel.h"
 #include "SwapBackSentinel.h"
-#include "NonlocalIntegratedBC.h"
+#include "TimeDerivative.h"
 
-// libmesh includes
 #include "libmesh/threads.h"
 
-ComputeJacobianThread::ComputeJacobianThread(FEProblemBase & fe_problem, SparseMatrix<Number> & jacobian) :
-    ThreadedElementLoop<ConstElemRange>(fe_problem),
+ComputeJacobianThread::ComputeJacobianThread(FEProblemBase & fe_problem,
+                                             SparseMatrix<Number> & jacobian,
+                                             Moose::KernelType kernel_type)
+  : ThreadedElementLoop<ConstElemRange>(fe_problem),
     _jacobian(jacobian),
     _nl(fe_problem.getNonlinearSystemBase()),
     _num_cached(0),
     _integrated_bcs(_nl.getIntegratedBCWarehouse()),
     _dg_kernels(_nl.getDGKernelWarehouse()),
     _interface_kernels(_nl.getInterfaceKernelWarehouse()),
-    _kernels(_nl.getKernelWarehouse())
+    _kernels(_nl.getKernelWarehouse()),
+    _kernel_type(kernel_type)
 {
 }
 
 // Splitting Constructor
-ComputeJacobianThread::ComputeJacobianThread(ComputeJacobianThread & x, Threads::split split) :
-    ThreadedElementLoop<ConstElemRange>(x, split),
+ComputeJacobianThread::ComputeJacobianThread(ComputeJacobianThread & x, Threads::split split)
+  : ThreadedElementLoop<ConstElemRange>(x, split),
     _jacobian(x._jacobian),
     _nl(x._nl),
     _num_cached(x._num_cached),
     _integrated_bcs(x._integrated_bcs),
     _dg_kernels(x._dg_kernels),
     _interface_kernels(x._interface_kernels),
-    _kernels(x._kernels)
+    _kernels(x._kernels),
+    _kernel_type(x._kernel_type)
 {
 }
 
-ComputeJacobianThread::~ComputeJacobianThread()
-{
-}
+ComputeJacobianThread::~ComputeJacobianThread() {}
 
 void
 ComputeJacobianThread::computeJacobian()
 {
-  if (_kernels.hasActiveBlockObjects(_subdomain, _tid))
+  const MooseObjectWarehouse<KernelBase> * warehouse;
+  switch (_kernel_type)
   {
-    const std::vector<MooseSharedPointer<KernelBase> > & kernels = _kernels.getActiveBlockObjects(_subdomain, _tid);
+    case Moose::KT_ALL:
+      warehouse = &_nl.getKernelWarehouse();
+      break;
+
+    case Moose::KT_TIME:
+      warehouse = &_nl.getTimeKernelWarehouse();
+      break;
+
+    case Moose::KT_NONTIME:
+      warehouse = &_nl.getNonTimeKernelWarehouse();
+      break;
+
+    case Moose::KT_EIGEN:
+      warehouse = &_nl.getEigenKernelWarehouse();
+      break;
+
+    case Moose::KT_NONEIGEN:
+      warehouse = &_nl.getNonEigenKernelWarehouse();
+      break;
+
+    default:
+      mooseError("Unknown kernel type \n");
+  }
+
+  if (warehouse->hasActiveBlockObjects(_subdomain, _tid))
+  {
+    const std::vector<std::shared_ptr<KernelBase>> & kernels =
+        warehouse->getActiveBlockObjects(_subdomain, _tid);
     for (const auto & kernel : kernels)
       if (kernel->isImplicit())
       {
@@ -70,7 +96,8 @@ ComputeJacobianThread::computeJacobian()
         /// done only when nonlocal kernels exist in the system
         if (_fe_problem.checkNonlocalCouplingRequirement())
         {
-          MooseSharedPointer<NonlocalKernel> nonlocal_kernel = MooseSharedNamespace::dynamic_pointer_cast<NonlocalKernel>(kernel);
+          std::shared_ptr<NonlocalKernel> nonlocal_kernel =
+              std::dynamic_pointer_cast<NonlocalKernel>(kernel);
           if (nonlocal_kernel)
             kernel->computeNonlocalJacobian();
         }
@@ -81,7 +108,8 @@ ComputeJacobianThread::computeJacobian()
 void
 ComputeJacobianThread::computeFaceJacobian(BoundaryID bnd_id)
 {
-  const std::vector<MooseSharedPointer<IntegratedBC> > & bcs = _integrated_bcs.getActiveBoundaryObjects(bnd_id, _tid);
+  const std::vector<std::shared_ptr<IntegratedBCBase>> & bcs =
+      _integrated_bcs.getActiveBoundaryObjects(bnd_id, _tid);
   for (const auto & bc : bcs)
     if (bc->shouldApply() && bc->isImplicit())
     {
@@ -90,7 +118,8 @@ ComputeJacobianThread::computeFaceJacobian(BoundaryID bnd_id)
       /// done only when nonlocal integrated_bcs exist in the system
       if (_fe_problem.checkNonlocalCouplingRequirement())
       {
-        MooseSharedPointer<NonlocalIntegratedBC> nonlocal_integrated_bc = MooseSharedNamespace::dynamic_pointer_cast<NonlocalIntegratedBC>(bc);
+        std::shared_ptr<NonlocalIntegratedBC> nonlocal_integrated_bc =
+            std::dynamic_pointer_cast<NonlocalIntegratedBC>(bc);
         if (nonlocal_integrated_bc)
           bc->computeNonlocalJacobian();
       }
@@ -101,7 +130,8 @@ void
 ComputeJacobianThread::computeInternalFaceJacobian(const Elem * neighbor)
 {
   // No need to call hasActiveObjects, this is done in the calling method (see onInternalSide)
-  const std::vector<MooseSharedPointer<DGKernel> > & dgks = _dg_kernels.getActiveBlockObjects(_subdomain, _tid);
+  const std::vector<std::shared_ptr<DGKernel>> & dgks =
+      _dg_kernels.getActiveBlockObjects(_subdomain, _tid);
   for (const auto & dg : dgks)
     if (dg->isImplicit())
     {
@@ -116,7 +146,8 @@ void
 ComputeJacobianThread::computeInternalInterFaceJacobian(BoundaryID bnd_id)
 {
   // No need to call hasActiveObjects, this is done in the calling method (see onInterface)
-  const std::vector<MooseSharedPointer<InterfaceKernel> > & intks = _interface_kernels.getActiveBoundaryObjects(bnd_id, _tid);
+  const std::vector<std::shared_ptr<InterfaceKernel>> & intks =
+      _interface_kernels.getActiveBoundaryObjects(bnd_id, _tid);
   for (const auto & intk : intks)
     if (intk->isImplicit())
     {
@@ -132,18 +163,26 @@ ComputeJacobianThread::subdomainChanged()
   _fe_problem.subdomainSetup(_subdomain, _tid);
 
   // Update variable Dependencies
-  std::set<MooseVariable *> needed_moose_vars;
+  std::set<MooseVariableFE *> needed_moose_vars;
   _kernels.updateBlockVariableDependency(_subdomain, needed_moose_vars, _tid);
   _integrated_bcs.updateBoundaryVariableDependency(needed_moose_vars, _tid);
   _dg_kernels.updateBlockVariableDependency(_subdomain, needed_moose_vars, _tid);
   _interface_kernels.updateBoundaryVariableDependency(needed_moose_vars, _tid);
 
+  // Update material dependencies
+  std::set<unsigned int> needed_mat_props;
+  _kernels.updateBlockMatPropDependency(_subdomain, needed_mat_props, _tid);
+  _integrated_bcs.updateBoundaryMatPropDependency(needed_mat_props, _tid);
+  _dg_kernels.updateBlockMatPropDependency(_subdomain, needed_mat_props, _tid);
+  _interface_kernels.updateBoundaryMatPropDependency(needed_mat_props, _tid);
+
   _fe_problem.setActiveElementalMooseVariables(needed_moose_vars, _tid);
+  _fe_problem.setActiveMaterialProperties(needed_mat_props, _tid);
   _fe_problem.prepareMaterials(_subdomain, _tid);
 }
 
 void
-ComputeJacobianThread::onElement(const Elem *elem)
+ComputeJacobianThread::onElement(const Elem * elem)
 {
   _fe_problem.prepare(elem, _tid);
 
@@ -161,7 +200,7 @@ ComputeJacobianThread::onElement(const Elem *elem)
 }
 
 void
-ComputeJacobianThread::onBoundary(const Elem *elem, unsigned int side, BoundaryID bnd_id)
+ComputeJacobianThread::onBoundary(const Elem * elem, unsigned int side, BoundaryID bnd_id)
 {
   if (_integrated_bcs.hasActiveBoundaryObjects(bnd_id, _tid))
   {
@@ -174,30 +213,23 @@ ComputeJacobianThread::onBoundary(const Elem *elem, unsigned int side, BoundaryI
     _fe_problem.reinitMaterialsFace(elem->subdomain_id(), _tid);
     _fe_problem.reinitMaterialsBoundary(bnd_id, _tid);
 
-    // Set the active boundary id so that BoundaryRestrictable::_boundary_id is correct
-    _fe_problem.setCurrentBoundaryID(bnd_id);
-
     computeFaceJacobian(bnd_id);
-
-    // Set the active boundary to invalid
-    _fe_problem.setCurrentBoundaryID(Moose::INVALID_BOUNDARY_ID);
   }
 }
 
 void
-ComputeJacobianThread::onInternalSide(const Elem *elem, unsigned int side)
+ComputeJacobianThread::onInternalSide(const Elem * elem, unsigned int side)
 {
   if (_dg_kernels.hasActiveBlockObjects(_subdomain, _tid))
   {
     // Pointer to the neighbor we are currently working on.
-    const Elem * neighbor = elem->neighbor(side);
+    const Elem * neighbor = elem->neighbor_ptr(side);
 
     // Get the global id of the element and the neighbor
-    const dof_id_type
-      elem_id = elem->id(),
-      neighbor_id = neighbor->id();
+    const dof_id_type elem_id = elem->id(), neighbor_id = neighbor->id();
 
-    if ((neighbor->active() && (neighbor->level() == elem->level()) && (elem_id < neighbor_id)) || (neighbor->level() < elem->level()))
+    if ((neighbor->active() && (neighbor->level() == elem->level()) && (elem_id < neighbor_id)) ||
+        (neighbor->level() < elem->level()))
     {
       _fe_problem.reinitNeighbor(elem, side, _tid);
 
@@ -220,12 +252,12 @@ ComputeJacobianThread::onInternalSide(const Elem *elem, unsigned int side)
 }
 
 void
-ComputeJacobianThread::onInterface(const Elem *elem, unsigned int side, BoundaryID bnd_id)
+ComputeJacobianThread::onInterface(const Elem * elem, unsigned int side, BoundaryID bnd_id)
 {
   if (_interface_kernels.hasActiveBoundaryObjects(bnd_id, _tid))
   {
     // Pointer to the neighbor we are currently working on.
-    const Elem * neighbor = elem->neighbor(side);
+    const Elem * neighbor = elem->neighbor_ptr(side);
 
     if (neighbor->active())
     {
@@ -266,8 +298,10 @@ void
 ComputeJacobianThread::post()
 {
   _fe_problem.clearActiveElementalMooseVariables(_tid);
+  _fe_problem.clearActiveMaterialProperties(_tid);
 }
 
-void ComputeJacobianThread::join(const ComputeJacobianThread & /*y*/)
+void
+ComputeJacobianThread::join(const ComputeJacobianThread & /*y*/)
 {
 }

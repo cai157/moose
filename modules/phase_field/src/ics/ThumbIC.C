@@ -1,13 +1,17 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "ThumbIC.h"
 
-template<>
-InputParameters validParams<ThumbIC>()
+template <>
+InputParameters
+validParams<ThumbIC>()
 {
   InputParameters params = validParams<InitialCondition>();
   params.addClassDescription("Thumb shaped bicrystal for grain boundary mobility tests");
@@ -16,18 +20,18 @@ InputParameters validParams<ThumbIC>()
   params.addRequiredParam<Real>("height", "The z coordinate of the circle center");
   params.addRequiredParam<Real>("invalue", "The variable value inside the circle");
   params.addRequiredParam<Real>("outvalue", "The variable value outside the circle");
-
   return params;
 }
 
-ThumbIC::ThumbIC(const InputParameters & parameters) :
-    InitialCondition(parameters),
+ThumbIC::ThumbIC(const InputParameters & parameters)
+  : InitialCondition(parameters),
     _xcoord(parameters.get<Real>("xcoord")),
     _width(parameters.get<Real>("width")),
     _height(parameters.get<Real>("height")),
     _invalue(parameters.get<Real>("invalue")),
     _outvalue(parameters.get<Real>("outvalue"))
-{}
+{
+}
 
 Real
 ThumbIC::value(const Point & p)
@@ -43,14 +47,14 @@ ThumbIC::value(const Point & p)
 
     rad = sqrt(rad);
 
-    if (rad <= _width/2.0)
+    if (rad <= _width / 2.0)
       value = _invalue;
     else
       value = _outvalue;
   }
   else
   {
-    if (p(0) > _xcoord - _width/2.0 && p(0) < _xcoord + _width/2.0)
+    if (p(0) > _xcoord - _width / 2.0 && p(0) < _xcoord + _width / 2.0)
       value = _invalue;
     else
       value = _outvalue;
@@ -58,4 +62,3 @@ ThumbIC::value(const Point & p)
 
   return value;
 }
-

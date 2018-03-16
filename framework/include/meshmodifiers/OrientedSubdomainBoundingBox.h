@@ -1,36 +1,31 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef ORIENTEDSUBDOMAINBOUNDINGBOX_H
 #define ORIENTEDSUBDOMAINBOUNDINGBOX_H
 
 // MOOSE includes
+#include "MooseEnum.h"
 #include "MeshModifier.h"
 #include "OrientedBoxInterface.h"
 
 // Forward declerations
 class OrientedSubdomainBoundingBox;
 
-template<>
+template <>
 InputParameters validParams<OrientedSubdomainBoundingBox>();
 
 /**
- * MeshModifier for defining a Subdomain inside or outside of a bounding box with arbitrary orientation
+ * MeshModifier for defining a Subdomain inside or outside of a bounding box with arbitrary
+ * orientation
  */
-class OrientedSubdomainBoundingBox :
-  public MeshModifier,
-  public OrientedBoxInterface
+class OrientedSubdomainBoundingBox : public MeshModifier, public OrientedBoxInterface
 {
 public:
   /**
@@ -43,10 +38,10 @@ private:
   virtual void modify() override;
 
   /// ID location (inside of outside of box)
-  MooseEnum _location;
+  const MooseEnum _location;
 
   /// Block ID to assign to the region
-  SubdomainID _block_id;
+  const SubdomainID _block_id;
 };
 
-#endif //ORIENTEDSUBDOMAINBOUNDINGBOX_H
+#endif // ORIENTEDSUBDOMAINBOUNDINGBOX_H

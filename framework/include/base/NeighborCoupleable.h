@@ -1,23 +1,16 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef NEIGHBORCOUPLEABLE_H
 #define NEIGHBORCOUPLEABLE_H
 
-#include "MooseVariable.h"
-#include "MooseVariableScalar.h"
-#include "InputParameters.h"
+#include "MooseVariableBase.h"
 #include "Coupleable.h"
 
 /**
@@ -37,15 +30,29 @@ public:
   virtual ~NeighborCoupleable();
 
   // neighbor
-  virtual const VariableValue & coupledNeighborValue(const std::string & var_name, unsigned int comp = 0);
-  virtual const VariableValue & coupledNeighborValueOld(const std::string & var_name, unsigned int comp = 0);
-  virtual const VariableValue & coupledNeighborValueOlder(const std::string & var_name, unsigned int comp = 0);
+  virtual const VariableValue & coupledNeighborValue(const std::string & var_name,
+                                                     unsigned int comp = 0);
+  virtual const VariableValue & coupledNeighborValueOld(const std::string & var_name,
+                                                        unsigned int comp = 0);
+  virtual const VariableValue & coupledNeighborValueOlder(const std::string & var_name,
+                                                          unsigned int comp = 0);
 
-  virtual const VariableGradient & coupledNeighborGradient(const std::string & var_name, unsigned int comp = 0);
-  virtual const VariableGradient & coupledNeighborGradientOld(const std::string & var_name, unsigned int comp = 0);
-  virtual const VariableGradient & coupledNeighborGradientOlder(const std::string & var_name, unsigned int comp = 0);
+  virtual const VariableGradient & coupledNeighborGradient(const std::string & var_name,
+                                                           unsigned int comp = 0);
+  virtual const VariableGradient & coupledNeighborGradientOld(const std::string & var_name,
+                                                              unsigned int comp = 0);
+  virtual const VariableGradient & coupledNeighborGradientOlder(const std::string & var_name,
+                                                                unsigned int comp = 0);
 
-  virtual const VariableSecond & coupledNeighborSecond(const std::string & var_name, unsigned int i = 0);
+  virtual const VariableSecond & coupledNeighborSecond(const std::string & var_name,
+                                                       unsigned int i = 0);
+
+  virtual const DenseVector<Number> & coupledNeighborSolutionDoFs(const std::string & var_name,
+                                                                  unsigned int comp = 0);
+  virtual const DenseVector<Number> & coupledNeighborSolutionDoFsOld(const std::string & var_name,
+                                                                     unsigned int comp = 0);
+  virtual const DenseVector<Number> & coupledNeighborSolutionDoFsOlder(const std::string & var_name,
+                                                                       unsigned int comp = 0);
 
 protected:
   bool _neighbor_nodal;

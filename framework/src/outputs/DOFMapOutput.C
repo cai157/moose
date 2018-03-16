@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "DOFMapOutput.h"
@@ -22,17 +17,20 @@
 #include "MooseMesh.h"
 #include "NonlinearSystem.h"
 
-// libMesh includes
 #include "libmesh/fe.h"
 
 // compiler includes (for type demangling)
 #include <cxxabi.h>
+#include <fstream>
 
-template<>
-InputParameters validParams<DOFMapOutput>()
+registerMooseObjectAliased("MooseApp", DOFMapOutput, "DOFMap");
+
+template <>
+InputParameters
+validParams<DOFMapOutput>()
 {
   // Get the parameters from the base class
-  InputParameters params = validParams<BasicOutput<FileOutput> >();
+  InputParameters params = validParams<FileOutput>();
 
   // Screen and file output toggles
   params.addParam<bool>("output_screen", false, "Output to the screen");
@@ -40,29 +38,18 @@ InputParameters validParams<DOFMapOutput>()
   params.addParam<std::string>("system_name", "nl0", "System to output");
 
   // By default this only executes on the initial timestep
-  params.set<MultiMooseEnum>("execute_on") = "initial";
+  params.set<ExecFlagEnum>("execute_on", true) = EXEC_INITIAL;
 
   return params;
 }
 
-DOFMapOutput::DOFMapOutput(const InputParameters & parameters) :
-    BasicOutput<FileOutput>(parameters),
+DOFMapOutput::DOFMapOutput(const InputParameters & parameters)
+  : FileOutput(parameters),
     _write_file(getParam<bool>("output_file")),
     _write_screen(getParam<bool>("output_screen")),
     _system_name(getParam<std::string>("system_name")),
     _mesh(_problem_ptr->mesh())
 {
-  // Set output coloring
-  if (Moose::_color_console)
-  {
-    char * term_env = getenv("TERM");
-    if (term_env)
-    {
-      std::string term(term_env);
-      if (term != "xterm-256color" && term != "xterm")
-        Moose::_color_console = false;
-    }
-  }
 }
 
 std::string
@@ -83,7 +70,7 @@ DOFMapOutput::demangle(const std::string & name)
   // at least remove leading digits
   std::string demangled(name);
   while (demangled.length() && demangled[0] >= '0' && demangled[0] <= '9')
-    demangled.erase(0,1);
+    demangled.erase(0, 1);
 
   return demangled;
 #endif
@@ -105,9 +92,9 @@ DOFMapOutput::writeStreamToFile(bool /*append*/)
   _file_num++;
 }
 
-template<typename T>
+template <typename T>
 std::string
-DOFMapOutput::join(const T & begin, const T & end, const char* const delim)
+DOFMapOutput::join(const T & begin, const T & end, const char * const delim)
 {
   std::ostringstream os;
   for (T it = begin; it != end; ++it)
@@ -145,7 +132,7 @@ DOFMapOutput::output(const ExecFlagType & /*type*/)
   oss << ", \"vars\": [";
   for (unsigned int vg = 0; vg < dof_map.n_variable_groups(); ++vg)
   {
-    const VariableGroup &vg_description (dof_map.variable_group(vg));
+    const VariableGroup & vg_description(dof_map.variable_group(vg));
     for (unsigned int vn = 0; vn < vg_description.n_variables(); ++vn)
     {
       unsigned int var = vg_description.number(vn);
@@ -155,34 +142,42 @@ DOFMapOutput::output(const ExecFlagType & /*type*/)
       first = false;
 
       oss << "{\"name\": \"" << vg_description.name(vn) << "\", \"subdomains\": [";
-      for (std::set<SubdomainID>::const_iterator sd = subdomains.begin(); sd != subdomains.end(); ++sd)
+      for (std::set<SubdomainID>::const_iterator sd = subdomains.begin(); sd != subdomains.end();
+           ++sd)
       {
         oss << (sd != subdomains.begin() ? ", " : "") << "{\"id\": " << *sd << ", \"kernels\": [";
 
         // if this variable has active kernels output them
         if (kernels.hasActiveVariableBlockObjects(var, *sd))
         {
-          const std::vector<MooseSharedPointer<KernelBase> > & active_kernels = kernels.getActiveVariableBlockObjects(var, *sd);
-          for (unsigned i = 0; i<active_kernels.size(); ++i)
+          const auto & active_kernels = kernels.getActiveVariableBlockObjects(var, *sd);
+          for (unsigned i = 0; i < active_kernels.size(); ++i)
           {
             KernelBase & kb = *(active_kernels[i].get());
-            oss << (i>0 ? ", " : "")
-                << "{\"name\": \"" << kb.name()
-                << "\", \"type\": \"" << demangle(typeid(kb).name())
-                << "\"}";
+            oss << (i > 0 ? ", " : "") << "{\"name\": \"" << kb.name() << "\", \"type\": \""
+                << demangle(typeid(kb).name()) << "\"}";
           }
         }
         oss << "], \"dofs\": [";
 
         // get the list of unique DOFs for this variable
+        // Start by looking at local DOFs
         std::set<dof_id_type> dofs;
-        for (unsigned int i = 0; i < _mesh.nElem(); ++i)
-          if (_mesh.elemPtr(i)->subdomain_id() == *sd)
+        ConstElemRange * active_local_elems = _mesh.getActiveLocalElementRange();
+        for (const auto & elem : *active_local_elems)
+        {
+          if (elem->subdomain_id() == *sd)
           {
             std::vector<dof_id_type> di;
-            dof_map.dof_indices(_mesh.elemPtr(i), di, var);
+            dof_map.dof_indices(elem, di, var);
             dofs.insert(di.begin(), di.end());
           }
+        }
+
+        // Then collect DOFs from other processors.  On a distributed
+        // mesh they may know about DOFs we can't even see.
+        _communicator.set_union(dofs);
+
         oss << join(dofs.begin(), dofs.end(), ", ") << "]}";
       }
       oss << "]}";

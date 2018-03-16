@@ -63,7 +63,8 @@
 [Materials]
   [./stateful]
     type = StatefulTest
-    block = 1
+    prop_names = thermal_conductivity
+    prop_values = 1.0
   [../]
 []
 
@@ -78,7 +79,6 @@
 [Executioner]
   type = Transient
 
-  # Preconditioned JFNK (default)
   solve_type = 'PJFNK'
   l_max_its = 10
   start_time = 0.0

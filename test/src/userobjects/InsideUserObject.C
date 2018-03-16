@@ -1,43 +1,48 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "InsideUserObject.h"
 
-template<>
-InputParameters validParams<InsideUserObject>()
+registerMooseObject("MooseTestApp", InsideUserObject);
+
+template <>
+InputParameters
+validParams<InsideUserObject>()
 {
   InputParameters params = validParams<InternalSideUserObject>();
-  params.addParam<MaterialPropertyName>("diffusivity", 0.0, "The name of the diffusivity material property that will be used in the flux computation.");
-  params.addParam<bool>("use_old_prop", false, "A Boolean to indicate whether the current or old value of a material prop should be used.");
+  params.addParam<MaterialPropertyName>(
+      "diffusivity",
+      0.0,
+      "The name of the diffusivity material property that will be used in the flux computation.");
+  params.addParam<bool>(
+      "use_old_prop",
+      false,
+      "A Boolean to indicate whether the current or old value of a material prop should be used.");
   params.addRequiredCoupledVar("variable", "the variable name");
 
   return params;
 }
 
-InsideUserObject::InsideUserObject(const InputParameters & parameters) :
-    InternalSideUserObject(parameters),
+InsideUserObject::InsideUserObject(const InputParameters & parameters)
+  : InternalSideUserObject(parameters),
     _u(coupledValue("variable")),
     _u_neighbor(coupledNeighborValue("variable")),
     _value(0.),
-    _diffusivity_prop(getParam<bool>("use_old_prop") ? getMaterialPropertyOld<Real>("diffusivity") : getMaterialProperty<Real>("diffusivity")),
-    _neighbor_diffusivity_prop(getParam<bool>("use_old_prop") ? getNeighborMaterialPropertyOld<Real>("diffusivity") : getNeighborMaterialProperty<Real>("diffusivity"))
+    _diffusivity_prop(getParam<bool>("use_old_prop") ? getMaterialPropertyOld<Real>("diffusivity")
+                                                     : getMaterialProperty<Real>("diffusivity")),
+    _neighbor_diffusivity_prop(getParam<bool>("use_old_prop")
+                                   ? getNeighborMaterialPropertyOld<Real>("diffusivity")
+                                   : getNeighborMaterialProperty<Real>("diffusivity"))
 {
 }
 
-InsideUserObject::~InsideUserObject()
-{
-}
+InsideUserObject::~InsideUserObject() {}
 
 void
 InsideUserObject::initialize()
@@ -49,7 +54,8 @@ void
 InsideUserObject::execute()
 {
   for (unsigned int qp = 0; qp < _q_point.size(); ++qp)
-    _value += std::pow(_u[qp] - _u_neighbor[qp], 2) + (_diffusivity_prop[qp] + _neighbor_diffusivity_prop[qp] ) / 2;
+    _value += std::pow(_u[qp] - _u_neighbor[qp], 2) +
+              (_diffusivity_prop[qp] + _neighbor_diffusivity_prop[qp]) / 2;
 }
 
 void

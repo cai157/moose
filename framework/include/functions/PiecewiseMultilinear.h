@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef PIECEWISEMULTILINEAR_H
 #define PIECEWISEMULTILINEAR_H
@@ -29,18 +24,20 @@ class GriddedData;
  */
 class PiecewiseMultilinear;
 
-template<>
+template <>
 InputParameters validParams<PiecewiseMultilinear>();
 
 class PiecewiseMultilinear : public Function
 {
 public:
-
   /**
    * Create new PiecewiseMultilinear object.
    * This calls GriddedData to do most of the work
    */
   PiecewiseMultilinear(const InputParameters & parameters);
+
+  // Necessary for using forward declaration of GriddedData in std::unique_ptr
+  virtual ~PiecewiseMultilinear();
 
   /**
    * Given t and p, return the interpolated value.
@@ -48,9 +45,8 @@ public:
   virtual Real value(Real t, const Point & pt) override;
 
 private:
-
   /// object to provide function evaluations at points on the grid
-  MooseSharedPointer<GriddedData> _gridded_data;
+  std::unique_ptr<GriddedData> _gridded_data;
   /// dimension of the grid
   unsigned int _dim;
 
@@ -64,7 +60,7 @@ private:
   std::vector<int> _axes;
 
   /// the grid
-  std::vector<std::vector<Real> > _grid;
+  std::vector<std::vector<Real>> _grid;
 
   /**
    * This does the core work.  Given a point, pt, defined
@@ -84,7 +80,10 @@ private:
    * @param lower_x Upon return will contain lower_x specified above
    * @param upper_x Upon return will contain upper_x specified above
    */
-  void getNeighborIndices(std::vector<Real> in_arr, Real x, unsigned int & lower_x, unsigned int & upper_x);
+  void getNeighborIndices(std::vector<Real> in_arr,
+                          Real x,
+                          unsigned int & lower_x,
+                          unsigned int & upper_x);
 };
 
-#endif //PIECEWISEMULTILINEAR_H
+#endif // PIECEWISEMULTILINEAR_H

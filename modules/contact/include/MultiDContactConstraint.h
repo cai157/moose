@@ -1,34 +1,35 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MULTIDCONTACTCONSTRAINT_H
 #define MULTIDCONTACTCONSTRAINT_H
 
-//MOOSE includes
+// MOOSE includes
 #include "NodeFaceConstraint.h"
 
 #include "ContactMaster.h"
 
-//Forward Declarations
+// Forward Declarations
 class MultiDContactConstraint;
 
-template<>
+template <>
 InputParameters validParams<MultiDContactConstraint>();
 
 /**
- * A MultiDContactConstraint forces the value of a variable to be the same on both sides of an interface.
+ * A MultiDContactConstraint forces the value of a variable to be the same on both sides of an
+ * interface.
  */
-class MultiDContactConstraint :
-  public NodeFaceConstraint
+class MultiDContactConstraint : public NodeFaceConstraint
 {
 public:
   MultiDContactConstraint(const InputParameters & parameters);
-  virtual ~MultiDContactConstraint(){}
+  virtual ~MultiDContactConstraint() {}
 
   virtual void timestepSetup();
   virtual void jacobianSetup();
@@ -42,6 +43,7 @@ public:
   virtual Real computeQpJacobian(Moose::ConstraintJacobianType type);
 
   bool shouldApply();
+
 protected:
   NumericVector<Number> & _residual_copy;
 
@@ -59,7 +61,7 @@ protected:
 
   const unsigned int _mesh_dimension;
 
-  VectorValue<unsigned> _vars;
+  std::vector<unsigned int> _vars;
 };
 
 #endif

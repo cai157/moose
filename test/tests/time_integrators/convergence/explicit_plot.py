@@ -1,4 +1,13 @@
 #!/usr/bin/env python
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -65,17 +74,17 @@ ralston = [
 
 # Helper function which plots the results for a single method and does a curve fit.
 def plot1(data, base_label, **kwargs):
-  xdata = np.log10(np.reciprocal(data[0::2]))
-  ydata = np.log10(data[1::2])
+    xdata = np.log10(np.reciprocal(data[0::2]))
+    ydata = np.log10(data[1::2])
 
-  # Compute linear fit of last three points.
-  start_fit = len(xdata) - 3
-  end_fit = len(xdata)
-  fit = np.polyfit(xdata[start_fit:end_fit], ydata[start_fit:end_fit], 1)
+    # Compute linear fit of last three points.
+    start_fit = len(xdata) - 3
+    end_fit = len(xdata)
+    fit = np.polyfit(xdata[start_fit:end_fit], ydata[start_fit:end_fit], 1)
 
-  # Make the plot -- unpack the user's additional plotting arguments
-  # from kwargs by prepending with **.
-  ax1.plot(xdata, ydata, label=base_label + ", $" + "{:.2f}".format(fit[0]) + "$", **kwargs)
+    # Make the plot -- unpack the user's additional plotting arguments
+    # from kwargs by prepending with **.
+    ax1.plot(xdata, ydata, label=base_label + ", $" + "{:.2f}".format(fit[0]) + "$", **kwargs)
 
 
 

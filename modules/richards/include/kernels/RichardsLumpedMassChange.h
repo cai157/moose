@@ -1,10 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef RICHARDSLUMPEDMASSCHANGE
 #define RICHARDSLUMPEDMASSCHANGE
@@ -19,7 +20,7 @@
 // Forward Declarations
 class RichardsLumpedMassChange;
 
-template<>
+template <>
 InputParameters validParams<RichardsLumpedMassChange>();
 
 /**
@@ -31,11 +32,9 @@ InputParameters validParams<RichardsLumpedMassChange>();
 class RichardsLumpedMassChange : public TimeKernel
 {
 public:
-
   RichardsLumpedMassChange(const InputParameters & parameters);
 
 protected:
-
   virtual Real computeQpResidual();
 
   virtual Real computeQpJacobian();
@@ -61,10 +60,10 @@ protected:
   unsigned int _pvar;
 
   /// current value of the porosity
-  const MaterialProperty<Real> &_porosity;
+  const MaterialProperty<Real> & _porosity;
 
   /// value of the porosity at the start of the timestep
-  const MaterialProperty<Real> &_porosity_old;
+  const MaterialProperty<Real> & _porosity_old;
 
   /// The userobject that computes effective saturation (as a function of porepressure(s)) for this variable
   const RichardsSeff * _seff_UO;
@@ -79,7 +78,7 @@ protected:
    * Holds the values of pressures at all the nodes of the element
    * Eg:
    * _ps_at_nodes[_pvar] is a pointer to this variable's nodal porepressure values
-   * So: (*_ps_at_nodes[_pvar])[i] = _var.nodalSln()[i]
+   * So: (*_ps_at_nodes[_pvar])[i] = _var.nodalValue()[i]
    */
   std::vector<const VariableValue *> _ps_at_nodes;
 
@@ -90,4 +89,4 @@ protected:
   std::vector<Real> _dseff;
 };
 
-#endif //RICHARDSLUMPEDMASSCHANGE
+#endif // RICHARDSLUMPEDMASSCHANGE

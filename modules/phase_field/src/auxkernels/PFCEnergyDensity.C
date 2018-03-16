@@ -1,23 +1,26 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "PFCEnergyDensity.h"
 #include "libmesh/utility.h"
 
-template<>
-InputParameters validParams<PFCEnergyDensity>()
+template <>
+InputParameters
+validParams<PFCEnergyDensity>()
 {
-   InputParameters params = validParams<AuxKernel>();
-   params.addRequiredCoupledVar( "v", "Array of coupled variables" );
-   return params;
+  InputParameters params = validParams<AuxKernel>();
+  params.addRequiredCoupledVar("v", "Array of coupled variables");
+  return params;
 }
 
-PFCEnergyDensity::PFCEnergyDensity(const InputParameters & parameters) :
-    AuxKernel(parameters),
+PFCEnergyDensity::PFCEnergyDensity(const InputParameters & parameters)
+  : AuxKernel(parameters),
     _order(coupledComponents("v")),
     _a(getMaterialProperty<Real>("a")),
     _b(getMaterialProperty<Real>("b"))
@@ -32,7 +35,7 @@ PFCEnergyDensity::PFCEnergyDensity(const InputParameters & parameters) :
     _vals[i] = &coupledValue("v", i);
     std::string coeff_name = coeff_name_base;
     std::stringstream out;
-    out << i*2;
+    out << i * 2;
     coeff_name.append(out.str());
     _console << coeff_name << std::endl;
     _coeff[i] = &getMaterialProperty<Real>(coeff_name);
@@ -49,8 +52,8 @@ PFCEnergyDensity::computeValue()
   for (unsigned int i = 1; i < _order; ++i)
     val += (*_coeff[i])[_qp] * (*_vals[0])[_qp] * (*_vals[i])[_qp] / 2.0;
 
-  val +=   (_b[_qp]/12.0 * Utility::pow<4>((*_vals[0])[_qp]))
-         - (_a[_qp]/6.0 * Utility::pow<3>((*_vals[0])[_qp]));
+  val += (_b[_qp] / 12.0 * Utility::pow<4>((*_vals[0])[_qp])) -
+         (_a[_qp] / 6.0 * Utility::pow<3>((*_vals[0])[_qp]));
 
   return val;
 }

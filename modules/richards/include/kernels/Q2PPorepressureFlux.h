@@ -1,10 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
-
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef Q2PPOREPRESSUREFLUX
 #define Q2PPOREPRESSUREFLUX
@@ -17,7 +18,7 @@
 // Forward Declarations
 class Q2PPorepressureFlux;
 
-template<>
+template <>
 InputParameters validParams<Q2PPorepressureFlux>();
 
 /**
@@ -46,12 +47,9 @@ InputParameters validParams<Q2PPorepressureFlux>();
 class Q2PPorepressureFlux : public Kernel
 {
 public:
-
   Q2PPorepressureFlux(const InputParameters & parameters);
 
-
 protected:
-
   /**
    * Note that this is not the complete residual for the quadpoint
    * In computeResidual we sum over the quadpoints and then add
@@ -126,4 +124,4 @@ protected:
   std::vector<Real> _dmobility_ds;
 };
 
-#endif //Q2PPOREPRESSUREFLUX
+#endif // Q2PPOREPRESSUREFLUX

@@ -1,14 +1,18 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "FluxBasedStrainIncrement.h"
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<FluxBasedStrainIncrement>()
+template <>
+InputParameters
+validParams<FluxBasedStrainIncrement>()
 {
   InputParameters params = validParams<Material>();
   params.addClassDescription("Compute strain increment based on flux");
@@ -16,19 +20,21 @@ InputParameters validParams<FluxBasedStrainIncrement>()
   params.addCoupledVar("yflux", "y or 1-direction component of flux");
   params.addCoupledVar("zflux", "z or 2-direction component of flux");
   params.addCoupledVar("gb", "Grain boundary order parameter");
-  params.addRequiredParam<MaterialPropertyName>("property_name", "Name of diffusive strain increment property");
+  params.addRequiredParam<MaterialPropertyName>("property_name",
+                                                "Name of diffusive strain increment property");
   return params;
 }
 
-FluxBasedStrainIncrement::FluxBasedStrainIncrement(const InputParameters & parameters) :
-    DerivativeMaterialInterface<Material>(parameters),
+FluxBasedStrainIncrement::FluxBasedStrainIncrement(const InputParameters & parameters)
+  : DerivativeMaterialInterface<Material>(parameters),
     _grad_jx(&coupledGradient("xflux")),
     _has_yflux(isCoupled("yflux")),
     _has_zflux(isCoupled("zflux")),
     _grad_jy(_has_yflux ? &coupledGradient("yflux") : NULL),
     _grad_jz(_has_zflux ? &coupledGradient("zflux") : NULL),
     _gb(isCoupled("gb") ? coupledValue("gb") : _zero),
-    _strain_increment(declareProperty<RankTwoTensor>(getParam<MaterialPropertyName>("property_name")))
+    _strain_increment(
+        declareProperty<RankTwoTensor>(getParam<MaterialPropertyName>("property_name")))
 {
 }
 

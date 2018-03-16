@@ -1,24 +1,26 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef STRESSDIVERGENCERSPHERICAL_H
 #define STRESSDIVERGENCERSPHERICAL_H
 
 #include "Kernel.h"
 
-//Forward Declarations
+// Forward Declarations
 class SymmElasticityTensor;
 class SymmTensor;
 
 class StressDivergenceRSpherical : public Kernel
 {
 public:
-
   StressDivergenceRSpherical(const InputParameters & parameters);
-    virtual ~StressDivergenceRSpherical() {}
+  virtual ~StressDivergenceRSpherical() {}
 
 protected:
   virtual Real computeQpResidual();
@@ -37,7 +39,7 @@ private:
   const unsigned int _temp_var;
 };
 
-template<>
+template <>
 InputParameters validParams<StressDivergenceRSpherical>();
 
-#endif //STRESSDIVERGENCERSPHERICAL_H
+#endif // STRESSDIVERGENCERSPHERICAL_H

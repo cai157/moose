@@ -1,21 +1,19 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "RandomHitUserObject.h"
 
-template<>
-InputParameters validParams<RandomHitUserObject>()
+registerMooseObject("MooseTestApp", RandomHitUserObject);
+
+template <>
+InputParameters
+validParams<RandomHitUserObject>()
 {
   InputParameters params = validParams<GeneralUserObject>();
   params.addRequiredParam<unsigned int>("num_hits", "The number of 'hits' every timestep");
@@ -23,8 +21,8 @@ InputParameters validParams<RandomHitUserObject>()
   return params;
 }
 
-RandomHitUserObject::RandomHitUserObject(const InputParameters & parameters) :
-    GeneralUserObject(parameters),
+RandomHitUserObject::RandomHitUserObject(const InputParameters & parameters)
+  : GeneralUserObject(parameters),
     _num_hits(parameters.get<unsigned int>("num_hits")),
     _hit_positions(_num_hits)
 {
@@ -35,7 +33,7 @@ bool
 RandomHitUserObject::elementWasHit(const Elem * elem) const
 {
   bool was_hit = false;
-  for (unsigned int i=0; i<_num_hits; i++)
+  for (unsigned int i = 0; i < _num_hits; i++)
   {
     was_hit = elem->contains_point(_hit_positions[i]);
     if (was_hit)
@@ -48,7 +46,7 @@ RandomHitUserObject::elementWasHit(const Elem * elem) const
 void
 RandomHitUserObject::execute()
 {
-  for (unsigned int i=0; i<_num_hits; i++)
+  for (unsigned int i = 0; i < _num_hits; i++)
   {
     Real rand_x = _random.rand();
     Real rand_y = _random.rand();

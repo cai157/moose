@@ -1,26 +1,21 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef TESTSHAPEELEMENTUSEROBJECT_H
 #define TESTSHAPEELEMENTUSEROBJECT_H
 
 #include "ShapeElementUserObject.h"
 
-//Forward Declarations
+// Forward Declarations
 class TestShapeElementUserObject;
 
-template<>
+template <>
 InputParameters validParams<TestShapeElementUserObject>();
 
 /**
@@ -29,8 +24,7 @@ InputParameters validParams<TestShapeElementUserObject>();
  * Do not use this as a starting point for developing your own ShapeElementUserObject
  * Use ExampleShapeElementUserObject instead!
  */
-class TestShapeElementUserObject :
-  public ShapeElementUserObject
+class TestShapeElementUserObject : public ShapeElementUserObject
 {
 public:
   TestShapeElementUserObject(const InputParameters & parameters);

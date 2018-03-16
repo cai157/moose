@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef INTERNALSIDEINDICATOR_H
 #define INTERNALSIDEINDICATOR_H
@@ -23,9 +18,12 @@
 
 // Forward Declarations
 class InternalSideIndicator;
-class MooseVariable;
+template <typename>
+class MooseVariableField;
+typedef MooseVariableField<Real> MooseVariable;
+typedef MooseVariableField<VectorValue<Real>> VectorMooseVariable;
 
-template<>
+template <>
 InputParameters validParams<InternalSideIndicator>();
 
 /**
@@ -33,14 +31,12 @@ InputParameters validParams<InternalSideIndicator>();
  * physics on internal sides (edges/faces).
  *
  */
-class InternalSideIndicator :
-  public Indicator,
-  public NeighborCoupleable,
-  public ScalarCoupleable,
-  public NeighborMooseVariableInterface
+class InternalSideIndicator : public Indicator,
+                              public NeighborCoupleable,
+                              public ScalarCoupleable,
+                              public NeighborMooseVariableInterface<Real>
 {
 public:
-
   /**
    * Factory constructor initializes all internal references needed for indicator computation.
    *
@@ -55,22 +51,22 @@ public:
   virtual void finalize() override;
 
 protected:
-  MooseVariable & _field_var;
+  MooseVariableFE & _field_var;
 
-  const Elem * & _current_elem;
+  const Elem *& _current_elem;
   /// The neighboring element
-  const Elem * & _neighbor_elem;
+  const Elem *& _neighbor_elem;
 
   /// Current side
   unsigned int & _current_side;
   /// Current side element
-  const Elem * & _current_side_elem;
+  const Elem *& _current_side_elem;
 
   /// Coordinate system
   const Moose::CoordinateSystemType & _coord_sys;
   unsigned int _qp;
-  const MooseArray< Point > & _q_point;
-  QBase * & _qrule;
+  const MooseArray<Point> & _q_point;
+  QBase *& _qrule;
   const MooseArray<Real> & _JxW;
   const MooseArray<Real> & _coord;
 
@@ -87,7 +83,7 @@ protected:
   const VariableGradient & _grad_u;
 
   /// Normal vectors at the quadrature points
-  const MooseArray<Point>& _normals;
+  const MooseArray<Point> & _normals;
 
   /// Holds the current solution at the current quadrature point
   const VariableValue & _u_neighbor;
@@ -104,8 +100,9 @@ protected:
   virtual Real computeQpIntegral() = 0;
 
 public:
-  // boundary id used for internal edges (all DG kernels lives on this boundary id -- a made-up number)
+  // boundary id used for internal edges (all DG kernels lives on this boundary id -- a made-up
+  // number)
   static const BoundaryID InternalBndId;
 };
 
-#endif //INTERNALSIDEINDICATOR_H
+#endif // INTERNALSIDEINDICATOR_H
