@@ -20,7 +20,7 @@ InputParameters validParams<GrainTrackerCrysrot>()
 }
 
 GrainTrackerCrysrot::GrainTrackerCrysrot(const InputParameters & parameters) :
-    GrainDataTracker<RankTwoTensor>(parameters),
+    GrainDataTracker<EulerAngles>(parameters),
     _random_rotations(getParam<bool>("random_rotations")),
 
     _euler(getUserObject<EulerAngleProvider>("euler_angle_provider"))
@@ -28,12 +28,12 @@ GrainTrackerCrysrot::GrainTrackerCrysrot(const InputParameters & parameters) :
     _console << "first Finished inside of GrainTracker" << std::endl;
 }
 
-RankTwoTensor
+EulerAngles
 GrainTrackerCrysrot::newGrain(unsigned int new_grain_id)
 {
   EulerAngles angles;
-  RankTwoTensor crysrot;
-    _console << "before Finished inside of GrainTracker" << std::endl;
+  //RankTwoTensor crysrot;
+  _console << "before Finished inside of GrainTracker" << std::endl;
 
     
     if (new_grain_id < _euler.getGrainNum())
@@ -49,10 +49,8 @@ GrainTrackerCrysrot::newGrain(unsigned int new_grain_id)
       mooseError("GrainTrackerElasticity has run out of grain rotation data.");
       _console << "else Finished inside of GrainTracker" << std::endl;
   }
-    RealVectorValue angle2 = RealVectorValue(angles);
-    RotationTensor R(angle2);
-    R.update(angle2);
-    crysrot = R.transpose();
     
-  return crysrot;
+   //RealVectorValue angle2 = RealVectorValue(angles);
+    
+  return angles;
 }

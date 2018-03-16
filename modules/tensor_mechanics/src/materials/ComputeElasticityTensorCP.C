@@ -23,6 +23,11 @@ ComputeElasticityTensorCP::ComputeElasticityTensorCP(const InputParameters & par
     _crysrot(declareProperty<RankTwoTensor>("crysrot")),
     _R(_Euler_angles)
 {
+   // revokeGuarantee(_elasticity_tensor_name, Guarantee::CONSTANT_IN_TIME);
+    
+      // the base class performs a passive rotation, but the crystal plasticity
+      // materials use active rotation: recover unrotated _Cijkl here
+      _Cijkl.rotate(_R.transpose());
 }
 
 void
